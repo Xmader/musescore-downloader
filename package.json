@@ -1,0 +1,28 @@
+{
+  "name": "musescore-downloader",
+  "version": "0.1.0",
+  "description": "免登录、免 Musescore Pro，下载 musescore.com 上的曲谱",
+  "main": "dist/main.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xmader/musescore-downloader.git"
+  },
+  "author": "Xmader",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Xmader/musescore-downloader/issues"
+  },
+  "homepage": "https://github.com/Xmader/musescore-downloader#readme",
+  "devDependencies": {
+    "rollup": "^1.26.3",
+    "rollup-plugin-typescript": "^1.0.1",
+    "tslib": "^1.10.0",
+    "typescript": "^3.6.4"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "npm run build -- --watch",
+    "bump-version:patch": "npm version patch --no-git-tag",
+    "bump-version:minor": "npm version minor --no-git-tag"
+  }
+}
