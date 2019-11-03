@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.1.3
+// @version      0.1.4
 // @description  免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/user/*/scores/*
@@ -50,6 +50,9 @@
         };
         if (btn.nodeName.toLowerCase() == "button") {
             btn.setAttribute("style", "width: 205px !important");
+        }
+        else {
+            btn.dataset.target = "";
         }
         const span = [...btn.childNodes].find((x) => {
             return x.textContent.includes("Download");

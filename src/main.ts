@@ -37,6 +37,8 @@ const newDownloadBtns = Object.keys(downloadURLs).map((name) => {
 
     if (btn.nodeName.toLowerCase() == "button") {
         btn.setAttribute("style", "width: 205px !important")
+    } else {
+        btn.dataset.target = ""
     }
 
     const span = [...btn.childNodes].find((x) => {
