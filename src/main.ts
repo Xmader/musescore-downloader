@@ -10,7 +10,7 @@ const { id, vid } = scorePlayer.json
 const baseURL = scorePlayer.urls.image_path
 const scoreHexId = baseURL.split("/").filter(Boolean).reverse()[1]
 
-const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath}/${id}/score_${vid}_${scoreHexId}.mscz`
+const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath(id)}/${id}/score_${vid}_${scoreHexId}.mscz`
 const pdfURL = baseURL + "score_full.pdf"
 const mxlURL = baseURL + "score.mxl"
 const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls
@@ -34,6 +34,9 @@ const newDownloadBtns = Object.keys(downloadURLs).map((name) => {
     btn.onclick = () => {
         window.open(url)
     }
+
+    const span = downloadBtn.querySelector("span")
+    span.textContent = `Download ${name}`
 
     return btn
 })
