@@ -11,10 +11,12 @@ export default {
         file: "dist/main.js",
         format: "iife",
         banner: bannerText,
+        sourcemap: false,
     },
     plugins: [
         typescript({
             target: "ES6",
+            sourceMap: false,
             lib: [
                 "ES6",
                 "dom"

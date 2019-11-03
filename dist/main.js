@@ -1,6 +1,8 @@
 // ==UserScript==
 // @name         musescore-downloader
 // @namespace    https://www.xmader.com/
+// @homepageURL  https://github.com/Xmader/musescore-downloader/
+// @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @version      0.1.0
 // @description  免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
 // @author       Xmader
