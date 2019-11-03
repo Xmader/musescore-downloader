@@ -15,8 +15,8 @@ const pdfURL = baseURL + "score_full.pdf"
 const mxlURL = baseURL + "score.mxl"
 const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls
 
-const btnsDiv = document.querySelectorAll("aside section > div")[3]
-const downloadBtn = btnsDiv.querySelector("button")
+const btnsDiv = document.querySelector(".score-right .buttons-wrapper") || document.querySelectorAll("aside section > div")[3]
+const downloadBtn = btnsDiv.querySelector("button, .button") as HTMLElement
 downloadBtn.onclick = null
 
 const downloadURLs = {
@@ -30,14 +30,18 @@ const downloadURLs = {
 const newDownloadBtns = Object.keys(downloadURLs).map((name) => {
     const url = downloadURLs[name]
 
-    const btn = downloadBtn.cloneNode(true) as HTMLButtonElement
+    const btn = downloadBtn.cloneNode(true) as HTMLElement
     btn.onclick = () => {
         window.open(url)
     }
 
-    btn.setAttribute("style", "width: 205px !important")
+    if (btn.nodeName.toLowerCase() == "button") {
+        btn.setAttribute("style", "width: 205px !important")
+    }
 
-    const span = btn.querySelector("span")
+    const span = [...btn.childNodes].find((x) => {
+        return x.textContent.includes("Download")
+    })
     span.textContent = `Download ${name}`
 
     return btn

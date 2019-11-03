@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.1.2
+// @version      0.1.3
 // @description  免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/user/*/scores/*
@@ -32,8 +32,8 @@
     const pdfURL = baseURL + "score_full.pdf";
     const mxlURL = baseURL + "score.mxl";
     const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls;
-    const btnsDiv = document.querySelectorAll("aside section > div")[3];
-    const downloadBtn = btnsDiv.querySelector("button");
+    const btnsDiv = document.querySelector(".score-right .buttons-wrapper") || document.querySelectorAll("aside section > div")[3];
+    const downloadBtn = btnsDiv.querySelector("button, .button");
     downloadBtn.onclick = null;
     const downloadURLs = {
         "Musescore": msczURL,
@@ -48,8 +48,12 @@
         btn.onclick = () => {
             window.open(url);
         };
-        btn.setAttribute("style", "width: 205px !important");
-        const span = btn.querySelector("span");
+        if (btn.nodeName.toLowerCase() == "button") {
+            btn.setAttribute("style", "width: 205px !important");
+        }
+        const span = [...btn.childNodes].find((x) => {
+            return x.textContent.includes("Download");
+        });
         span.textContent = `Download ${name}`;
         return btn;
     });
