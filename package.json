@@ -1,6 +1,6 @@
 {
   "name": "musescore-downloader",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "免登录、免 Musescore Pro，下载 musescore.com 上的曲谱",
   "main": "dist/main.js",
   "repository": {

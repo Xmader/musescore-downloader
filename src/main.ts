@@ -8,7 +8,7 @@ const scorePlayer: ScorePlayerData = window.UGAPP.store.jmuse_settings.score_pla
 
 const { id, vid } = scorePlayer.json
 const baseURL = scorePlayer.urls.image_path
-const scoreHexId = baseURL.split("/").filter(Boolean).reverse()[1]
+const scoreHexId = baseURL.split("/").filter(Boolean).reverse()[0]
 
 const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath(id)}/${id}/score_${vid}_${scoreHexId}.mscz`
 const pdfURL = baseURL + "score_full.pdf"
@@ -35,7 +35,9 @@ const newDownloadBtns = Object.keys(downloadURLs).map((name) => {
         window.open(url)
     }
 
-    const span = downloadBtn.querySelector("span")
+    btn.setAttribute("style", "width: 205px !important")
+
+    const span = btn.querySelector("span")
     span.textContent = `Download ${name}`
 
     return btn

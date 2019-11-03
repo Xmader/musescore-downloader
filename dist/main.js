@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.1.1
+// @version      0.1.2
 // @description  免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/user/*/scores/*
@@ -27,7 +27,7 @@
     const scorePlayer = window.UGAPP.store.jmuse_settings.score_player;
     const { id, vid } = scorePlayer.json;
     const baseURL = scorePlayer.urls.image_path;
-    const scoreHexId = baseURL.split("/").filter(Boolean).reverse()[1];
+    const scoreHexId = baseURL.split("/").filter(Boolean).reverse()[0];
     const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath(id)}/${id}/score_${vid}_${scoreHexId}.mscz`;
     const pdfURL = baseURL + "score_full.pdf";
     const mxlURL = baseURL + "score.mxl";
@@ -48,7 +48,8 @@
         btn.onclick = () => {
             window.open(url);
         };
-        const span = downloadBtn.querySelector("span");
+        btn.setAttribute("style", "width: 205px !important");
+        const span = btn.querySelector("span");
         span.textContent = `Download ${name}`;
         return btn;
     });
