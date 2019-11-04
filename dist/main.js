@@ -3,10 +3,10 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.1.5
+// @version      0.1.6
 // @description  免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
 // @author       Xmader
-// @match        https://musescore.com/*/scores/*
+// @match        https://musescore.com/*/*
 // @license      MIT
 // @copyright    Copyright (c) 2019 Xmader
 // @grant        none
@@ -14,6 +14,8 @@
 
 (function () {
     'use strict';
+
+    if (!window.UGAPP || !window.UGAPP.store || !window.UGAPP.store.jmuse_settings) { return }
 
     const getIndexPath = (id) => {
         const idStr = String(id);
