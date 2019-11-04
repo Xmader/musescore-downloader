@@ -3,10 +3,10 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.1.4
+// @version      0.1.5
 // @description  免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
 // @author       Xmader
-// @match        https://musescore.com/user/*/scores/*
+// @match        https://musescore.com/*/scores/*
 // @license      MIT
 // @copyright    Copyright (c) 2019 Xmader
 // @grant        none
