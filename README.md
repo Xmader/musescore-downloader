@@ -8,7 +8,7 @@
 **Star this project on [Github](https://github.com/Xmader/musescore-downloader)**  
 **Rate this on [Greasy Fork](https://greasyfork.org/scripts/391931)**
 
-![](screenshot.png)
+![](https://cdn.statically.io/gh/Xmader/musescore-downloader/master/screenshot.png?env=dev)
 
 ## About
 
@@ -69,7 +69,7 @@ PPS: Thank you for your [react-native-musescore](https://github.com/Xmader/react
 **在 [Github](https://github.com/Xmader/musescore-downloader) 上给项目打星**  
 **在 [Greasy Fork](https://greasyfork.org/scripts/391931) 上给项目评分**  
 
-![](screenshot.png)
+![](https://cdn.statically.io/gh/Xmader/musescore-downloader/master/screenshot.png?env=dev)
 
 ## 关于
 
