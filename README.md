@@ -12,9 +12,10 @@
 
 ## About
 
-Musescore Pro ($6.99/mo) is required to download sheet music from musescore.com recently. (However, a few months ago, it was free to download.)
+Musescore Pro ($6.99/mo) is required to download sheet music from musescore.com recently.  
+(However, a few months ago, it was free to download.)
 
-The Musescore company said that this is about copyright and licensing. They must pay to the copyright owners.
+The Musescore company said that this is about copyright and licensing, and they must pay to the copyright owners.
 
 Many musics on musescore.com are already in the **Public Domain**, that means either the author posted them in Public Domain, or the author has been dead for over 70 years.   
 Do they need to pay to those composers who died hundreds of years ago?  
@@ -22,7 +23,7 @@ Do they need to pay to those composers who died hundreds of years ago?
 
 Also, there are many sheet music authors on musescore.com who created their own songs and posted them under [CC-BY-**NC** (Creative Commons Attribution-**NonCommercial**) License](https://creativecommons.org/licenses/by-nc/4.0/).  
 Is it illegal that they sell them for **profit**?  
-*Note: Putting ads (to sell Musescore Pro) on the website also means to generate revenue.*
+*Note: Putting ads (to sell Musescore Pro) on the website also means that they use it to generate revenue.*
 
 This is absolutely not acceptable, and the only purpose is to profit from stealing.
 
