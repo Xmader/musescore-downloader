@@ -8,3 +8,17 @@ export const getIndexPath = (id: number) => {
     const indexN = idStr.split("").reverse().slice(0, 3)
     return indexN.join("/")
 }
+
+export const waitForDocumentLoaded = (): Promise<void> => {
+    if (document.readyState !== "complete") {
+        return new Promise(resolve => {
+            document.addEventListener("readystatechange", () => {
+                if (document.readyState == "complete") {
+                    resolve()
+                }
+            }, { once: true })
+        })
+    } else {
+        return Promise.resolve()
+    }
+}
