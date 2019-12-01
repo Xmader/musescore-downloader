@@ -14,13 +14,10 @@
   },
   "homepage": "https://github.com/Xmader/musescore-downloader#readme",
   "dependencies": {
-    "iconv-lite": "^0.5.0",
-    "pdfkit": "^0.10.0",
     "pdfmake": "^0.1.62"
   },
   "devDependencies": {
     "@rollup/plugin-json": "^4.0.0",
-    "@types/pdfkit": "^0.10.4",
     "@types/pdfmake": "^0.1.8",
     "rollup": "^1.26.3",
     "rollup-plugin-commonjs": "^10.1.0",
