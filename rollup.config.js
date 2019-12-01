@@ -5,7 +5,6 @@ import builtins from "rollup-plugin-node-builtins"
 import nodeGlobals from "rollup-plugin-node-globals"
 import json from "@rollup/plugin-json"
 import fs from "fs"
-import multiEntry from "rollup-plugin-multi-entry"
 
 const getBannerText = () => {
     const packageJson = JSON.parse(fs.readFileSync("./package.json", "utf-8"))
@@ -64,17 +63,14 @@ export default [
             file: "dist/cache/worker.js",
             format: "iife",
             name: "Worker",
-            banner: "var PDFWorker = function () { ",
-            footer: "return Worker\n}",
+            banner: "export const PDFWorker = function () { ",
+            footer: "return Worker\n}\n",
             sourcemap: false,
         },
         plugins,
     },
     {
-        input: [
-            "dist/cache/worker.js",
-            "src/main.ts",
-        ],
+        input: "src/main.ts",
         output: {
             file: "dist/main.js",
             format: "iife",
@@ -82,9 +78,6 @@ export default [
             banner: getBannerText,
             // intro: "const global = typeof window === 'object' && window.window === window ? window : typeof self === 'object' && self.self === self ? self : typeof commonjsGlobal === 'object' && commonjsGlobal.global === commonjsGlobal ? commonjsGlobal : void 0"
         },
-        plugins:[
-            ...plugins,
-            multiEntry({ exports: false }),
-        ],
+        plugins,
     },
 ]

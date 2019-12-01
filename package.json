@@ -21,7 +21,6 @@
     "@types/pdfkit": "^0.10.4",
     "rollup": "^1.26.3",
     "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-multi-entry": "^2.1.0",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-globals": "^1.4.0",
     "rollup-plugin-node-resolve": "^5.2.0",
