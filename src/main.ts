@@ -6,6 +6,9 @@ import { getIndexPath, waitForDocumentLoaded } from "./utils"
 const main = () => {
 
     // @ts-ignore
+    if (!window.UGAPP || !window.UGAPP.store || !window.UGAPP.store.jmuse_settings) { return }
+
+    // @ts-ignore
     const scorePlayer: ScorePlayerData = window.UGAPP.store.jmuse_settings.score_player
 
     const { id, vid } = scorePlayer.json

@@ -15,8 +15,6 @@
 (function () {
     'use strict';
 
-    if (!window.UGAPP || !window.UGAPP.store || !window.UGAPP.store.jmuse_settings) { return }
-
     const getIndexPath = (id) => {
         const idStr = String(id);
         // 获取最后三位，倒序排列
@@ -42,6 +40,10 @@
     };
 
     const main = () => {
+        // @ts-ignore
+        if (!window.UGAPP || !window.UGAPP.store || !window.UGAPP.store.jmuse_settings) {
+            return;
+        }
         // @ts-ignore
         const scorePlayer = window.UGAPP.store.jmuse_settings.score_player;
         const { id, vid } = scorePlayer.json;

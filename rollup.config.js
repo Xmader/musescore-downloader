@@ -16,7 +16,6 @@ export default {
         format: "iife",
         sourcemap: false,
         banner: getBannerText,
-        intro: "if (!window.UGAPP || !window.UGAPP.store || !window.UGAPP.store.jmuse_settings) { return }"
     },
     plugins: [
         typescript({
