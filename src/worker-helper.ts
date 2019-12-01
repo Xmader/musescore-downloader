@@ -1,0 +1,29 @@
+
+import { PDFWorkerMessage } from "./worker"
+import { PDFWorker } from "../dist/cache/worker"
+
+const scriptUrlFromFunction = (fn: Function) => {
+    const blob = new Blob(["(" + fn.toString() + ")()"], { type: "application/javascript" })
+    return URL.createObjectURL(blob)
+}
+
+export class PDFWorkerHelper extends Worker {
+    constructor() {
+        const url = scriptUrlFromFunction(PDFWorker)
+        super(url)
+    }
+
+    generatePDF(imgDataBlobList: Blob[], width: number, height: number): Promise<ArrayBuffer> {
+        const msg: PDFWorkerMessage = [
+            imgDataBlobList,
+            width,
+            height,
+        ]
+        this.postMessage(msg)
+        return new Promise((resolve) => {
+            this.addEventListener("message", (e) => {
+                resolve(e.data)
+            })
+        })
+    }
+}

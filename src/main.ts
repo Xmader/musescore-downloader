@@ -3,17 +3,19 @@ import "./meta"
 import { ScorePlayerData } from "./types"
 import { waitForDocumentLoaded } from "./utils"
 
-import PDFDocument from "pdfkit/lib/document"
-import saveAs from "file-saver/dist/FileSaver.js"
+import { PDFWorkerHelper } from "./worker-helper"
+import FileSaver from "file-saver/dist/FileSaver.js"
+
+const saveAs: typeof import("file-saver").saveAs = FileSaver.saveAs
 
 let pdfBlob: Blob
 
-const svgToPng = async (svgURL: string) => {
+const imgToBlob = async (imgURL: string) => {
     const imageElement = document.createElement("img")
     imageElement.style.display = "none"
     document.body.appendChild(imageElement)
 
-    imageElement.src = svgURL
+    imageElement.src = imgURL
 
     // wait until image loaded
     await new Promise((resolve) => {
@@ -34,7 +36,7 @@ const svgToPng = async (svgURL: string) => {
     canvasContext.clearRect(0, 0, width, height)
     canvasContext.drawImage(imageElement, 0, 0)
 
-    const data = canvas.toDataURL("image/png")
+    const data: Blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"))
 
     canvas.remove()
     imageElement.remove()
@@ -50,32 +52,15 @@ const generatePDF = async (svgURLs: string[], name?: string) => {
     const cachedImg = document.querySelector("img[id^=score_]") as HTMLImageElement
     const { naturalWidth: width, naturalHeight: height } = cachedImg
 
-    const imgDataList = await Promise.all(svgURLs.map(svgToPng))
+    const imgDataBlobList = await Promise.all(svgURLs.map(imgToBlob))
 
-    // @ts-ignore
-    const pdf = new (PDFDocument as typeof import("pdfkit"))({
-        // compress: true,
-        size: [width, height],
-        autoFirstPage: false,
-        margin: 0,
-        layout: "portrait",
-    })
+    const worker = new PDFWorkerHelper()
+    const pdfArrayBuffer = await worker.generatePDF(imgDataBlobList, width, height)
+    worker.terminate()
 
-    imgDataList.forEach((data) => {
-        pdf.addPage()
-        pdf.image(data, {
-            width,
-            height,
-        })
-    })
+    pdfBlob = new Blob([pdfArrayBuffer])
 
-    // TODO: webworker
-
-    // @ts-ignore
-    return pdf.getBlob().then((blob: Blob) => {
-        pdfBlob = blob
-        saveAs(blob, `${name}.pdf`)
-    })
+    saveAs(pdfBlob, `${name}.pdf`)
 }
 
 const getPagesNumber = (scorePlayerData: ScorePlayerData) => {
@@ -83,6 +68,17 @@ const getPagesNumber = (scorePlayerData: ScorePlayerData) => {
         return scorePlayerData.json.metadata.pages
     } catch (_) {
         return document.querySelectorAll("img[id^=score_]").length
+    }
+}
+
+const getImgType = (): "svg" | "png" => {
+    try {
+        const imgE: HTMLImageElement = document.querySelector("img[id^=score_]")
+        const { pathname } = new URL(imgE.src)
+        const imgtype = pathname.match(/\.(\w+)$/)[1]
+        return imgtype as "svg" | "png"
+    } catch (_) {
+        return null
     }
 }
 
@@ -95,7 +91,7 @@ const getTitle = (scorePlayerData: ScorePlayerData) => {
 }
 
 const getScoreFileName = (scorePlayerData: ScorePlayerData) => {
-    return getTitle(scorePlayerData).replace(/\W+/g, "_")
+    return getTitle(scorePlayerData).replace(/[\s<>:"/\\|?*~\0\cA-\cZ]+/g, "_")
 }
 
 const main = () => {
@@ -121,8 +117,10 @@ const main = () => {
     const downloadBtn = btnsDiv.querySelector("button, .button") as HTMLElement
     downloadBtn.onclick = null
 
+    const imgType = getImgType() || "svg"
+
     const svgURLs = Array.from({ length: getPagesNumber(scorePlayer) }).fill(null).map((_, i) => {
-        return baseURL + `score_${i}.svg`
+        return baseURL + `score_${i}.${imgType}`
     })
 
     const downloadURLs = {
@@ -143,8 +141,7 @@ const main = () => {
         }
 
         const textNode = [...btn.childNodes].find((x) => {
-            return x.nodeName.toLowerCase() == "#text"
-                && x.textContent.includes("Download")
+            return x.textContent.includes("Download")
         })
         textNode.textContent = `Download ${name}`
 
