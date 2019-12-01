@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.1.7
+// @version      0.2.0
 // @description  免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -15,15 +15,6 @@
 (function () {
     'use strict';
 
-    const getIndexPath = (id) => {
-        const idStr = String(id);
-        // 获取最后三位，倒序排列
-        // x, y, z are the reversed last digits of the score id. Example: id 123456789, x = 9, y = 8, z = 7
-        // https://developers.musescore.com/#/file-urls
-        // "5449062" -> ["2", "6", "0"]
-        const indexN = idStr.split("").reverse().slice(0, 3);
-        return indexN.join("/");
-    };
     const waitForDocumentLoaded = () => {
         if (document.readyState !== "complete") {
             return new Promise(resolve => {
@@ -46,10 +37,11 @@
         }
         // @ts-ignore
         const scorePlayer = window.UGAPP.store.jmuse_settings.score_player;
-        const { id, vid } = scorePlayer.json;
+        const { id } = scorePlayer.json;
         const baseURL = scorePlayer.urls.image_path;
-        const scoreHexId = baseURL.split("/").filter(Boolean).reverse()[0];
-        const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath(id)}/${id}/score_${vid}_${scoreHexId}.mscz`;
+        // const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath(id)}/${id}/score_${vid}_${scoreHexId}.mscz`
+        // https://github.com/Xmader/cloudflare-worker-musescore-mscz
+        const msczURL = `https://musescore-mscz.99.workers.dev/${id}`;
         const pdfURL = baseURL + "score_full.pdf";
         const mxlURL = baseURL + "score.mxl";
         const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls;

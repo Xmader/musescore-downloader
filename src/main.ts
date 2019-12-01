@@ -1,7 +1,7 @@
 import "./meta"
 
 import { ScorePlayerData } from "./types"
-import { getIndexPath, waitForDocumentLoaded } from "./utils"
+import { waitForDocumentLoaded } from "./utils"
 
 const main = () => {
 
@@ -11,11 +11,14 @@ const main = () => {
     // @ts-ignore
     const scorePlayer: ScorePlayerData = window.UGAPP.store.jmuse_settings.score_player
 
-    const { id, vid } = scorePlayer.json
+    const { id } = scorePlayer.json
     const baseURL = scorePlayer.urls.image_path
-    const scoreHexId = baseURL.split("/").filter(Boolean).reverse()[0]
 
-    const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath(id)}/${id}/score_${vid}_${scoreHexId}.mscz`
+    // const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath(id)}/${id}/score_${vid}_${scoreHexId}.mscz`
+
+    // https://github.com/Xmader/cloudflare-worker-musescore-mscz
+    const msczURL = `https://musescore-mscz.99.workers.dev/${id}`
+
     const pdfURL = baseURL + "score_full.pdf"
     const mxlURL = baseURL + "score.mxl"
     const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls
