@@ -126,7 +126,7 @@ const main = () => {
     })
 
     const downloadURLs = {
-        "Musescore": msczURL,
+        "MSCZ": msczURL,
         "PDF": null,
         "MusicXML": mxlURL,
         "MIDI": midiURL,
