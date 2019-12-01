@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.3.1
+// @version      0.3.2
 // @description  免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -25973,7 +25973,11 @@ Please pipe the document into a Node stream.\
     mixin(ImagesMixin);
     mixin(OutputDocumentBrowser);
 
+    let pdfBlob;
     const generatePDF = (name) => {
+        if (pdfBlob) {
+            return FileSaver(pdfBlob, `${name}.pdf`);
+        }
         const scoreImgs = document.querySelectorAll("img[id^=score_]");
         const { naturalWidth: width, naturalHeight: height } = scoreImgs[0];
         const canvas = document.createElement("canvas");
@@ -26002,8 +26006,12 @@ Please pipe the document into a Node stream.\
                 height,
             });
         });
+        // TODO: webworker
         // @ts-ignore
-        return pdf.download(`${name}.pdf`);
+        return pdf.getBlob().then((blob) => {
+            pdfBlob = blob;
+            FileSaver(blob, `${name}.pdf`);
+        });
     };
     const getTitle = (scorePlayerData) => {
         try {

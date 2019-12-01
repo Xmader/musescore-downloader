@@ -4,8 +4,15 @@ import { ScorePlayerData } from "./types"
 import { waitForDocumentLoaded } from "./utils"
 
 import PDFDocument from "pdfkit/lib/document"
+import saveAs from "file-saver/dist/FileSaver.js"
+
+let pdfBlob: Blob
 
 const generatePDF = (name?: string) => {
+    if (pdfBlob) {
+        return saveAs(pdfBlob, `${name}.pdf`)
+    }
+
     const scoreImgs: NodeListOf<HTMLImageElement> = document.querySelectorAll("img[id^=score_]")
 
     const { naturalWidth: width, naturalHeight: height } = scoreImgs[0]
@@ -36,14 +43,19 @@ const generatePDF = (name?: string) => {
 
     imgDataList.forEach((data) => {
         pdf.addPage()
-        pdf.image(data,{
+        pdf.image(data, {
             width,
             height,
         })
     })
 
+    // TODO: webworker
+
     // @ts-ignore
-    return pdf.download(`${name}.pdf`)
+    return pdf.getBlob().then((blob: Blob) => {
+        pdfBlob = blob
+        saveAs(blob, `${name}.pdf`)
+    })
 }
 
 const getTitle = (scorePlayerData: ScorePlayerData) => {
