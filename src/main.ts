@@ -3,6 +3,62 @@ import "./meta"
 import { ScorePlayerData } from "./types"
 import { waitForDocumentLoaded } from "./utils"
 
+import pdfmake from "pdfmake/build/pdfmake"
+
+const generatePDF = (name?: string) => {
+    const scoreImgs: NodeListOf<HTMLImageElement> = document.querySelectorAll("img[id^=score_]")
+
+    const { naturalWidth: width, naturalHeight: height } = scoreImgs[0]
+
+    const canvas = document.createElement("canvas")
+    const canvasContext = canvas.getContext("2d")
+
+    canvas.width = width
+    canvas.height = height
+    canvas.style.display = "none"
+
+    document.body.appendChild(canvas)
+
+    const imgDataList = [...scoreImgs].map((i) => {
+        canvasContext.clearRect(0, 0, width, height)
+        canvasContext.drawImage(i, 0, 0)
+        return canvas.toDataURL("image/png")
+    })
+
+    const pdf = pdfmake.createPdf({
+        pageMargins: 0,
+        // @ts-ignore
+        pageOrientation: "PORTRAIT",
+        pageSize: { width, height },
+        // compress: true,
+        content: [
+            ...imgDataList.map((data) => {
+                return {
+                    image: data,
+                    width,
+                    height,
+                }
+            })
+        ]
+    })
+
+    return new Promise((resolve) => {
+        pdf.download(`${name}.pdf`, resolve)
+    })
+}
+
+const getTitle = (scorePlayerData: ScorePlayerData) => {
+    try {
+        return scorePlayerData.json.metadata.title
+    } catch (_) {
+        return ""
+    }
+}
+
+const getScoreFileName = (scorePlayerData: ScorePlayerData) => {
+    return getTitle(scorePlayerData).replace(/\W+/g, "_")
+}
+
 const main = () => {
 
     // @ts-ignore
@@ -19,7 +75,6 @@ const main = () => {
     // https://github.com/Xmader/cloudflare-worker-musescore-mscz
     const msczURL = `https://musescore-mscz.99.workers.dev/${id}`
 
-    const pdfURL = baseURL + "score_full.pdf"
     const mxlURL = baseURL + "score.mxl"
     const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls
 
@@ -29,19 +84,14 @@ const main = () => {
 
     const downloadURLs = {
         "Musescore": msczURL,
-        "PDF": pdfURL,
+        "PDF": null,
         "MusicXML": mxlURL,
         "MIDI": midiURL,
         "MP3": mp3URL,
     }
 
-    const newDownloadBtns = Object.keys(downloadURLs).map((name) => {
-        const url = downloadURLs[name]
-
+    const createBtn = (name: string) => {
         const btn = downloadBtn.cloneNode(true) as HTMLElement
-        btn.onclick = () => {
-            window.open(url)
-        }
 
         if (btn.nodeName.toLowerCase() == "button") {
             btn.setAttribute("style", "width: 205px !important")
@@ -49,10 +99,35 @@ const main = () => {
             btn.dataset.target = ""
         }
 
-        const span = [...btn.childNodes].find((x) => {
-            return x.textContent.includes("Download")
+        const textNode = [...btn.childNodes].find((x) => {
+            return x.nodeName.toLowerCase() == "#text"
+                && x.textContent.includes("Download")
         })
-        span.textContent = `Download ${name}`
+        textNode.textContent = `Download ${name}`
+
+        return {
+            btn,
+            textNode,
+        }
+    }
+
+    const newDownloadBtns = Object.keys(downloadURLs).map((name) => {
+        const url = downloadURLs[name]
+        const { btn, textNode } = createBtn(name)
+
+        if (name !== "PDF") {
+            btn.onclick = () => {
+                window.open(url)
+            }
+        } else {
+            btn.onclick = () => {
+                const text = textNode.textContent
+                textNode.textContent = "Processing…"
+                generatePDF(getScoreFileName(scorePlayer)).then(() => {
+                    textNode.textContent = text
+                })
+            }
+        }
 
         return btn
     })
