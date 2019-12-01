@@ -8,14 +8,19 @@ import saveAs from "file-saver/dist/FileSaver.js"
 
 let pdfBlob: Blob
 
-const generatePDF = (name?: string) => {
-    if (pdfBlob) {
-        return saveAs(pdfBlob, `${name}.pdf`)
-    }
+const svgToPng = async (svgURL: string) => {
+    const imageElement = document.createElement("img")
+    imageElement.style.display = "none"
+    document.body.appendChild(imageElement)
 
-    const scoreImgs: NodeListOf<HTMLImageElement> = document.querySelectorAll("img[id^=score_]")
+    imageElement.src = svgURL
 
-    const { naturalWidth: width, naturalHeight: height } = scoreImgs[0]
+    // wait until image loaded
+    await new Promise((resolve) => {
+        imageElement.onload = () => resolve()
+    })
+
+    const { naturalWidth: width, naturalHeight: height } = imageElement
 
     const canvas = document.createElement("canvas")
     const canvasContext = canvas.getContext("2d")
@@ -26,11 +31,21 @@ const generatePDF = (name?: string) => {
 
     document.body.appendChild(canvas)
 
-    const imgDataList = [...scoreImgs].map((i) => {
-        canvasContext.clearRect(0, 0, width, height)
-        canvasContext.drawImage(i, 0, 0)
-        return canvas.toDataURL("image/png")
-    })
+    canvasContext.clearRect(0, 0, width, height)
+    canvasContext.drawImage(imageElement, 0, 0)
+
+    return canvas.toDataURL("image/png")
+}
+
+const generatePDF = async (svgURLs: string[], name?: string) => {
+    if (pdfBlob) {
+        return saveAs(pdfBlob, `${name}.pdf`)
+    }
+
+    const cachedImg = document.querySelector("img[id^=score_]") as HTMLImageElement
+    const { naturalWidth: width, naturalHeight: height } = cachedImg
+
+    const imgDataList = await Promise.all(svgURLs.map(svgToPng))
 
     // @ts-ignore
     const pdf = new (PDFDocument as typeof import("pdfkit"))({
@@ -56,6 +71,14 @@ const generatePDF = (name?: string) => {
         pdfBlob = blob
         saveAs(blob, `${name}.pdf`)
     })
+}
+
+const getPagesNumber = (scorePlayerData: ScorePlayerData) => {
+    try {
+        return scorePlayerData.json.metadata.pages
+    } catch (_) {
+        return document.querySelectorAll("img[id^=score_]").length
+    }
 }
 
 const getTitle = (scorePlayerData: ScorePlayerData) => {
@@ -92,6 +115,10 @@ const main = () => {
     const btnsDiv = document.querySelector(".score-right .buttons-wrapper") || document.querySelectorAll("aside section > div")[3]
     const downloadBtn = btnsDiv.querySelector("button, .button") as HTMLElement
     downloadBtn.onclick = null
+
+    const svgURLs = Array.from({ length: getPagesNumber(scorePlayer) }).fill(null).map((_, i) => {
+        return baseURL + `score_${i}.svg`
+    })
 
     const downloadURLs = {
         "Musescore": msczURL,
@@ -133,8 +160,11 @@ const main = () => {
         } else {
             btn.onclick = () => {
                 const text = textNode.textContent
+                const filename = getScoreFileName(scorePlayer)
+
                 textNode.textContent = "Processing…"
-                generatePDF(getScoreFileName(scorePlayer)).then(() => {
+
+                generatePDF(svgURLs, filename).then(() => {
                     textNode.textContent = text
                 })
             }

@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.3.2
+// @version      0.3.3
 // @description  免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -14,6 +14,30 @@
 
 (function () {
     'use strict';
+
+    /*! *****************************************************************************
+    Copyright (c) Microsoft Corporation. All rights reserved.
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+    this file except in compliance with the License. You may obtain a copy of the
+    License at http://www.apache.org/licenses/LICENSE-2.0
+
+    THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+    WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+    MERCHANTABLITY OR NON-INFRINGEMENT.
+
+    See the Apache Version 2.0 License for specific language governing permissions
+    and limitations under the License.
+    ***************************************************************************** */
+
+    function __awaiter(thisArg, _arguments, P, generator) {
+        return new (P || (P = Promise))(function (resolve, reject) {
+            function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+            function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+            function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+            step((generator = generator.apply(thisArg, _arguments || [])).next());
+        });
+    }
 
     const waitForDocumentLoaded = () => {
         if (document.readyState !== "complete") {
@@ -25974,23 +25998,33 @@ Please pipe the document into a Node stream.\
     mixin(OutputDocumentBrowser);
 
     let pdfBlob;
-    const generatePDF = (name) => {
-        if (pdfBlob) {
-            return FileSaver(pdfBlob, `${name}.pdf`);
-        }
-        const scoreImgs = document.querySelectorAll("img[id^=score_]");
-        const { naturalWidth: width, naturalHeight: height } = scoreImgs[0];
+    const svgToPng = (svgURL) => __awaiter(void 0, void 0, void 0, function* () {
+        const imageElement = document.createElement("img");
+        imageElement.style.display = "none";
+        document.body.appendChild(imageElement);
+        imageElement.src = svgURL;
+        // wait until image loaded
+        yield new Promise((resolve) => {
+            imageElement.onload = () => resolve();
+        });
+        const { naturalWidth: width, naturalHeight: height } = imageElement;
         const canvas = document.createElement("canvas");
         const canvasContext = canvas.getContext("2d");
         canvas.width = width;
         canvas.height = height;
         canvas.style.display = "none";
         document.body.appendChild(canvas);
-        const imgDataList = [...scoreImgs].map((i) => {
-            canvasContext.clearRect(0, 0, width, height);
-            canvasContext.drawImage(i, 0, 0);
-            return canvas.toDataURL("image/png");
-        });
+        canvasContext.clearRect(0, 0, width, height);
+        canvasContext.drawImage(imageElement, 0, 0);
+        return canvas.toDataURL("image/png");
+    });
+    const generatePDF = (svgURLs, name) => __awaiter(void 0, void 0, void 0, function* () {
+        if (pdfBlob) {
+            return FileSaver(pdfBlob, `${name}.pdf`);
+        }
+        const cachedImg = document.querySelector("img[id^=score_]");
+        const { naturalWidth: width, naturalHeight: height } = cachedImg;
+        const imgDataList = yield Promise.all(svgURLs.map(svgToPng));
         // @ts-ignore
         const pdf = new PDFDocument({
             // compress: true,
@@ -26012,6 +26046,14 @@ Please pipe the document into a Node stream.\
             pdfBlob = blob;
             FileSaver(blob, `${name}.pdf`);
         });
+    });
+    const getPagesNumber = (scorePlayerData) => {
+        try {
+            return scorePlayerData.json.metadata.pages;
+        }
+        catch (_) {
+            return document.querySelectorAll("img[id^=score_]").length;
+        }
     };
     const getTitle = (scorePlayerData) => {
         try {
@@ -26041,6 +26083,9 @@ Please pipe the document into a Node stream.\
         const btnsDiv = document.querySelector(".score-right .buttons-wrapper") || document.querySelectorAll("aside section > div")[3];
         const downloadBtn = btnsDiv.querySelector("button, .button");
         downloadBtn.onclick = null;
+        const svgURLs = Array.from({ length: getPagesNumber(scorePlayer) }).fill(null).map((_, i) => {
+            return baseURL + `score_${i}.svg`;
+        });
         const downloadURLs = {
             "Musescore": msczURL,
             "PDF": null,
@@ -26077,8 +26122,9 @@ Please pipe the document into a Node stream.\
             else {
                 btn.onclick = () => {
                     const text = textNode.textContent;
+                    const filename = getScoreFileName(scorePlayer);
                     textNode.textContent = "Processing…";
-                    generatePDF(getScoreFileName(scorePlayer)).then(() => {
+                    generatePDF(svgURLs, filename).then(() => {
                         textNode.textContent = text;
                     });
                 };
