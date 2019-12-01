@@ -63,7 +63,9 @@ export default [
         output: {
             file: "dist/cache/worker.js",
             format: "iife",
-            name: "PDFWorker",
+            name: "Worker",
+            banner: "var PDFWorker = function () { ",
+            footer: "return Worker\n}",
             sourcemap: false,
         },
         plugins,
