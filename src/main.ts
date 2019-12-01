@@ -34,7 +34,12 @@ const svgToPng = async (svgURL: string) => {
     canvasContext.clearRect(0, 0, width, height)
     canvasContext.drawImage(imageElement, 0, 0)
 
-    return canvas.toDataURL("image/png")
+    const data = canvas.toDataURL("image/png")
+
+    canvas.remove()
+    imageElement.remove()
+
+    return data
 }
 
 const generatePDF = async (svgURLs: string[], name?: string) => {

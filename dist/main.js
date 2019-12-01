@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.3.3
+// @version      0.3.4
 // @description  免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26016,7 +26016,10 @@ Please pipe the document into a Node stream.\
         document.body.appendChild(canvas);
         canvasContext.clearRect(0, 0, width, height);
         canvasContext.drawImage(imageElement, 0, 0);
-        return canvas.toDataURL("image/png");
+        const data = canvas.toDataURL("image/png");
+        canvas.remove();
+        imageElement.remove();
+        return data;
     });
     const generatePDF = (svgURLs, name) => __awaiter(void 0, void 0, void 0, function* () {
         if (pdfBlob) {
