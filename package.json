@@ -1,6 +1,6 @@
 {
   "name": "musescore-downloader",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱",
   "main": "dist/main.js",
   "repository": {
@@ -14,14 +14,15 @@
   },
   "homepage": "https://github.com/Xmader/musescore-downloader#readme",
   "dependencies": {
-    "pdfmake": "^0.1.62"
+    "pdfkit": "git+https://github.com/Xmader/pdfkit.git"
   },
   "devDependencies": {
     "@rollup/plugin-json": "^4.0.0",
-    "@types/pdfmake": "^0.1.8",
+    "@types/pdfkit": "^0.10.4",
     "rollup": "^1.26.3",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-globals": "^1.4.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-typescript": "^1.0.1",
     "tslib": "^1.10.0",

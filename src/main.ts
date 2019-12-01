@@ -3,7 +3,7 @@ import "./meta"
 import { ScorePlayerData } from "./types"
 import { waitForDocumentLoaded } from "./utils"
 
-import pdfmake from "pdfmake/build/pdfmake"
+import PDFDocument from "pdfkit/lib/document"
 
 const generatePDF = (name?: string) => {
     const scoreImgs: NodeListOf<HTMLImageElement> = document.querySelectorAll("img[id^=score_]")
@@ -25,26 +25,25 @@ const generatePDF = (name?: string) => {
         return canvas.toDataURL("image/png")
     })
 
-    const pdf = pdfmake.createPdf({
-        pageMargins: 0,
-        // @ts-ignore
-        pageOrientation: "PORTRAIT",
-        pageSize: { width, height },
+    // @ts-ignore
+    const pdf = new (PDFDocument as typeof import("pdfkit"))({
         // compress: true,
-        content: [
-            ...imgDataList.map((data) => {
-                return {
-                    image: data,
-                    width,
-                    height,
-                }
-            })
-        ]
+        size: [width, height],
+        autoFirstPage: false,
+        margin: 0,
+        layout: "portrait",
     })
 
-    return new Promise((resolve) => {
-        pdf.download(`${name}.pdf`, resolve)
+    imgDataList.forEach((data) => {
+        pdf.addPage()
+        pdf.image(data,{
+            width,
+            height,
+        })
     })
+
+    // @ts-ignore
+    return pdf.download(`${name}.pdf`)
 }
 
 const getTitle = (scorePlayerData: ScorePlayerData) => {

@@ -2,6 +2,7 @@ import typescript from "rollup-plugin-typescript"
 import resolve from "rollup-plugin-node-resolve"
 import commonjs from "rollup-plugin-commonjs"
 import builtins from "rollup-plugin-node-builtins"
+import nodeGlobals from "rollup-plugin-node-globals"
 import json from "@rollup/plugin-json"
 import fs from "fs"
 
@@ -20,11 +21,13 @@ export default {
         format: "iife",
         sourcemap: false,
         banner: getBannerText,
+        // intro: "const global = typeof window === 'object' && window.window === window ? window : typeof self === 'object' && self.self === self ? self : typeof commonjsGlobal === 'object' && commonjsGlobal.global === commonjsGlobal ? commonjsGlobal : void 0"
     },
     plugins: [
         typescript({
             target: "ES6",
             sourceMap: false,
+            allowJs: true,
             lib: [
                 "ES6",
                 "dom"
@@ -40,5 +43,10 @@ export default {
         }),
         json(),
         builtins(),
+        nodeGlobals({
+            dirname: false,
+            filename: false,
+            baseDir: false,
+        })
     ]
 }
