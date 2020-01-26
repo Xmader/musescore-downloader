@@ -8,7 +8,7 @@
 // @author       Xmader
 // @match        https://musescore.com/*/*
 // @license      MIT
-// @copyright    Copyright (c) 2019 Xmader
+// @copyright    Copyright (c) 2019-2020 Xmader
 // @grant        none
 // ==/UserScript==
 
