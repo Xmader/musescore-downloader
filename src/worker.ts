@@ -2,8 +2,11 @@
 /// <reference lib="webworker" />
 
 import PDFDocument from "pdfkit/lib/document"
+import SVGtoPDF from "svg-to-pdfkit"
 
-const generatePDF = async (imgDataUrlList: string[], width: number, height: number): Promise<ArrayBuffer> => {
+type ImgType = "svg" | "png"
+
+const generatePDF = async (imgURLs: string[], imgType: ImgType, width: number, height: number): Promise<ArrayBuffer> => {
 
     // @ts-ignore
     const pdf = new (PDFDocument as typeof import("pdfkit"))({
@@ -14,13 +17,26 @@ const generatePDF = async (imgDataUrlList: string[], width: number, height: numb
         layout: "portrait",
     })
 
-    imgDataUrlList.forEach((data) => {
-        pdf.addPage()
-        pdf.image(data, {
-            width,
-            height,
+    if (imgType == "png") {
+        const imgDataUrlList: string[] = await Promise.all(imgURLs.map(fetchDataURL))
+
+        imgDataUrlList.forEach((data) => {
+            pdf.addPage()
+            pdf.image(data, {
+                width,
+                height,
+            })
         })
-    })
+    } else {  // imgType == "svg"
+        const svgList = await Promise.all(imgURLs.map(fetchText))
+
+        svgList.forEach((svg) => {
+            pdf.addPage()
+            SVGtoPDF(pdf, svg, 0, 0, {
+                preserveAspectRatio: "none",
+            })
+        })
+    }
 
     // @ts-ignore
     const buf: Uint8Array = await pdf.getBuffer()
@@ -40,19 +56,30 @@ const getDataURL = (blob: Blob): Promise<string> => {
     })
 }
 
-export type PDFWorkerMessage = [Blob[], number, number];
+const fetchDataURL = async (imgUrl: string): Promise<string> => {
+    const r = await fetch(imgUrl)
+    const blob = await r.blob()
+    return getDataURL(blob)
+}
+
+const fetchText = async (imgUrl: string): Promise<string> => {
+    const r = await fetch(imgUrl)
+    return r.text()
+}
+
+export type PDFWorkerMessage = [string[], ImgType, number, number];
 
 onmessage = async (e) => {
     const [
-        imgDataBlobList,
+        imgURLs,
+        imgType,
         width,
         height,
     ] = e.data as PDFWorkerMessage
 
-    const dataURLs = await Promise.all(imgDataBlobList.map(getDataURL))
-
     const pdfBuf = await generatePDF(
-        dataURLs,
+        imgURLs,
+        imgType,
         width,
         height,
     )

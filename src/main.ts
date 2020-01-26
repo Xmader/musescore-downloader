@@ -10,41 +10,7 @@ const saveAs: typeof import("file-saver").saveAs = FileSaver.saveAs
 
 let pdfBlob: Blob
 
-const imgToBlob = async (imgURL: string) => {
-    const imageElement = document.createElement("img")
-    imageElement.style.display = "none"
-    document.body.appendChild(imageElement)
-
-    imageElement.src = imgURL
-
-    // wait until image loaded
-    await new Promise((resolve) => {
-        imageElement.onload = () => resolve()
-    })
-
-    const { naturalWidth: width, naturalHeight: height } = imageElement
-
-    const canvas = document.createElement("canvas")
-    const canvasContext = canvas.getContext("2d")
-
-    canvas.width = width
-    canvas.height = height
-    canvas.style.display = "none"
-
-    document.body.appendChild(canvas)
-
-    canvasContext.clearRect(0, 0, width, height)
-    canvasContext.drawImage(imageElement, 0, 0)
-
-    const data: Blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"))
-
-    canvas.remove()
-    imageElement.remove()
-
-    return data
-}
-
-const generatePDF = async (svgURLs: string[], name?: string) => {
+const generatePDF = async (imgURLs: string[], imgType: "svg" | "png", name?: string) => {
     if (pdfBlob) {
         return saveAs(pdfBlob, `${name}.pdf`)
     }
@@ -52,10 +18,8 @@ const generatePDF = async (svgURLs: string[], name?: string) => {
     const cachedImg = document.querySelector("img[id^=score_]") as HTMLImageElement
     const { naturalWidth: width, naturalHeight: height } = cachedImg
 
-    const imgDataBlobList = await Promise.all(svgURLs.map(imgToBlob))
-
     const worker = new PDFWorkerHelper()
-    const pdfArrayBuffer = await worker.generatePDF(imgDataBlobList, width, height)
+    const pdfArrayBuffer = await worker.generatePDF(imgURLs, imgType, width, height)
     worker.terminate()
 
     pdfBlob = new Blob([pdfArrayBuffer])
@@ -91,7 +55,7 @@ const getTitle = (scorePlayerData: ScorePlayerData) => {
 }
 
 const getScoreFileName = (scorePlayerData: ScorePlayerData) => {
-    return getTitle(scorePlayerData).replace(/[\s<>:"/\\|?*~\0\cA-\cZ]+/g, "_")
+    return getTitle(scorePlayerData).replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, "_")
 }
 
 const main = () => {
@@ -119,7 +83,7 @@ const main = () => {
 
     const imgType = getImgType() || "svg"
 
-    const svgURLs = Array.from({ length: getPagesNumber(scorePlayer) }).fill(null).map((_, i) => {
+    const sheetImgURLs = Array.from({ length: getPagesNumber(scorePlayer) }).fill(null).map((_, i) => {
         return baseURL + `score_${i}.${imgType}`
     })
 
@@ -166,7 +130,7 @@ const main = () => {
 
                 textNode.textContent = "Processing…"
 
-                generatePDF(svgURLs, filename).then(() => {
+                generatePDF(sheetImgURLs, imgType, filename).then(() => {
                     textNode.textContent = text
                 })
             }

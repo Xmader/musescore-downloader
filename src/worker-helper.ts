@@ -13,9 +13,10 @@ export class PDFWorkerHelper extends Worker {
         super(url)
     }
 
-    generatePDF(imgDataBlobList: Blob[], width: number, height: number): Promise<ArrayBuffer> {
+    generatePDF(imgURLs: string[], imgType: "svg" | "png", width: number, height: number): Promise<ArrayBuffer> {
         const msg: PDFWorkerMessage = [
-            imgDataBlobList,
+            imgURLs,
+            imgType,
             width,
             height,
         ]
