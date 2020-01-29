@@ -53,6 +53,8 @@ To the Musescore company:
 If you want to DMCA take down this repo,  
 Could you imagine that your website is taken down because you disobey the principles of Public Domain and Creative Commons?
 
+**Also, I will launch an open source, serverless, and totally free version of musescore.com.**
+
 PS: There is no problem that you get money by doing piano tutorials.
 
 PPS: Thank you for your [react-native-musescore](https://github.com/Xmader/react-native-musescore) project.
