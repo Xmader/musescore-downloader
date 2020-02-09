@@ -47,17 +47,26 @@ This repo is also available on IPFS to avoid DMCA takedown.
 
 MIT
 
-## About DMCA
+## About the Takedown Request
 
-To the Musescore company:  
-If you want to DMCA take down this repo,  
-Could you imagine that your website is taken down because you disobey the principles of Public Domain and Creative Commons?
+I received a [takedown request email](https://github.com/Xmader/musescore-downloader/issues/5) from one of the Musescore developers, but I would like to say something against it.
 
-**Also, I will launch an open source, serverless, and totally free version of musescore.com.**
+> All not Public domain content on musescore.com is licensed by major music publishers (Alfred, EMI, Sony, etc.). Distribute licensed music content from Musescore.com for free you violate their rights.
 
-PS: There is no problem that you get money by doing piano tutorials.
+Firstly, if I violate the rights of major music publishers, the takedown request should be sent by them instead of the Musescore developers.
 
-PPS: Thank you for your [react-native-musescore](https://github.com/Xmader/react-native-musescore) project.
+Secondly, musescore.com is not a simple music sharing website. The authors of sheet music must transcript and rearrange the original songs to sheets, not just copying files from somewhere else to musescore.com. As a result, the licensing should focus on the rights of transcription/rearranging to the sheet music authors, instead of the rights of sharing the music on some websites.
+
+Thirdly, the copyright ownership of contents on musescore.com is not clear. Not every non-public-domain songs on musescore.com is owned by major music publishers. There are many small music publishers and independent songwriters; Songs might be licensed under free licenses like Creative Commons. Also, there are many authors who created their own songs and posted the sheet music on musescore.com. Does musescore.com pay to those authors?
+
+If we can't see proof that musescore.com really pays licensing fee to the copyright owners, we may think it is just an excuse to get profit from stealing.
+
+> you illegaly use our private API with licensed music content.
+
+No, the API document is on https://developers.musescore.com/.
+
+
+**I will launch an open source, serverless, offline-first, frontend-first, and totally free alternative to musescore.com.**
 
 ---
 
