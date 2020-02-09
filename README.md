@@ -68,6 +68,8 @@ No, the API document is on https://developers.musescore.com/.
 
 **I will launch an open source, serverless, offline-first, frontend-first, and totally free alternative to musescore.com.**
 
+**Also, I'm developing musescore.js. It could convert a mscz file into any format that the Musescore software supports, and in the browser.** Because the Musescore software is open source under [GPL](https://github.com/musescore/MuseScore/blob/master/LICENSE.GPL), I could translate the source code to js, or compile it into asm.js/WASM.
+
 ---
 
 # musescore-downloader
