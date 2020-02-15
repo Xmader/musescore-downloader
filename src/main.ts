@@ -77,7 +77,7 @@ const main = () => {
     const mxlURL = baseURL + "score.mxl"
     const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls
 
-    const btnsDiv = document.querySelector(".score-right .buttons-wrapper") || document.querySelectorAll("aside section > div")[3]
+    const btnsDiv = document.querySelector(".score-right .buttons-wrapper") || document.querySelectorAll("aside section > div")[4]
     const downloadBtn = btnsDiv.querySelector("button, .button") as HTMLElement
     downloadBtn.onclick = null
 

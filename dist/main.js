@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.5.0
+// @version      0.5.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -28881,7 +28881,7 @@ Please pipe the document into a Node stream.\
         const msczURL = `https://musescore-mscz.99.workers.dev/${id}`;
         const mxlURL = baseURL + "score.mxl";
         const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls;
-        const btnsDiv = document.querySelector(".score-right .buttons-wrapper") || document.querySelectorAll("aside section > div")[3];
+        const btnsDiv = document.querySelector(".score-right .buttons-wrapper") || document.querySelectorAll("aside section > div")[4];
         const downloadBtn = btnsDiv.querySelector("button, .button");
         downloadBtn.onclick = null;
         const imgType = getImgType() || "svg";
