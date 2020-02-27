@@ -15,7 +15,7 @@ const generatePDF = async (imgURLs: string[], imgType: "svg" | "png", name?: str
         return saveAs(pdfBlob, `${name}.pdf`)
     }
 
-    const cachedImg = document.querySelector("img[id^=score_]") as HTMLImageElement
+    const cachedImg = document.querySelector("img[src*=score_]") as HTMLImageElement
     const { naturalWidth: width, naturalHeight: height } = cachedImg
 
     const worker = new PDFWorkerHelper()
@@ -31,13 +31,13 @@ const getPagesNumber = (scorePlayerData: ScorePlayerData) => {
     try {
         return scorePlayerData.json.metadata.pages
     } catch (_) {
-        return document.querySelectorAll("img[id^=score_]").length
+        return document.querySelectorAll("img[src*=score_]").length
     }
 }
 
 const getImgType = (): "svg" | "png" => {
     try {
-        const imgE: HTMLImageElement = document.querySelector("img[id^=score_]")
+        const imgE: HTMLImageElement = document.querySelector("img[src*=score_]")
         const { pathname } = new URL(imgE.src)
         const imgtype = pathname.match(/\.(\w+)$/)[1]
         return imgtype as "svg" | "png"
