@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.5.1
+// @version      0.5.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -28829,7 +28829,7 @@ Please pipe the document into a Node stream.\
         if (pdfBlob) {
             return saveAs(pdfBlob, `${name}.pdf`);
         }
-        const cachedImg = document.querySelector("img[id^=score_]");
+        const cachedImg = document.querySelector("img[src*=score_]");
         const { naturalWidth: width, naturalHeight: height } = cachedImg;
         const worker = new PDFWorkerHelper();
         const pdfArrayBuffer = yield worker.generatePDF(imgURLs, imgType, width, height);
@@ -28842,12 +28842,12 @@ Please pipe the document into a Node stream.\
             return scorePlayerData.json.metadata.pages;
         }
         catch (_) {
-            return document.querySelectorAll("img[id^=score_]").length;
+            return document.querySelectorAll("img[src*=score_]").length;
         }
     };
     const getImgType = () => {
         try {
-            const imgE = document.querySelector("img[id^=score_]");
+            const imgE = document.querySelector("img[src*=score_]");
             const { pathname } = new URL(imgE.src);
             const imgtype = pathname.match(/\.(\w+)$/)[1];
             return imgtype;
