@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.5.3
+// @version      0.6.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -38,6 +38,42 @@
             return Promise.resolve();
         }
     };
+
+    /**
+     * the site key for Google reCAPTCHA v3
+     */
+    const SITE_KEY = "6Ldxtt8UAAAAALvcRqWTlVOVIB7MmEWwN-zw_9fM";
+    let gr;
+    /**
+     * load reCAPTCHA
+     */
+    const load = () => {
+        // load script
+        const script = document.createElement("script");
+        script.src = `https://www.google.com/recaptcha/api.js?render=${SITE_KEY}`;
+        script.async = true;
+        document.body.appendChild(script);
+        // add css
+        const style = document.createElement("style");
+        style.innerHTML = ".grecaptcha-badge { display: none !important; }";
+        document.head.appendChild(style);
+        return new Promise((resolve) => {
+            script.onload = () => {
+                const grecaptcha = window["grecaptcha"];
+                grecaptcha.ready(() => resolve(grecaptcha));
+            };
+        });
+    };
+    const init = () => {
+        if (!gr) {
+            gr = load();
+        }
+        return gr;
+    };
+    const execute = () => __awaiter(void 0, void 0, void 0, function* () {
+        const captcha = yield init();
+        return captcha.execute(SITE_KEY, { action: "downloadmscz" });
+    });
 
     var global$1 = (typeof global !== "undefined" ? global :
                 typeof self !== "undefined" ? self :
@@ -28872,13 +28908,15 @@ Please pipe the document into a Node stream.\
         if (!window.UGAPP || !window.UGAPP.store || !window.UGAPP.store.jmuse_settings) {
             return;
         }
+        // init recaptcha
+        init();
         // @ts-ignore
         const scorePlayer = window.UGAPP.store.jmuse_settings.score_player;
         const { id } = scorePlayer.json;
         const baseURL = scorePlayer.urls.image_path;
         // const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath(id)}/${id}/score_${vid}_${scoreHexId}.mscz`
         // https://github.com/Xmader/cloudflare-worker-musescore-mscz
-        const msczURL = `https://musescore.now.sh/api/mscz?id=${id}`;
+        const msczURL = `https://musescore.now.sh/api/mscz?id=${id}&token=`;
         const mxlURL = baseURL + "score.mxl";
         const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls;
         const btnsDiv = document.querySelector(".score-right .buttons-wrapper") || document.querySelectorAll("aside section > div")[4];
@@ -28915,12 +28953,7 @@ Please pipe the document into a Node stream.\
         const newDownloadBtns = Object.keys(downloadURLs).map((name) => {
             const url = downloadURLs[name];
             const { btn, textNode } = createBtn(name);
-            if (name !== "PDF") {
-                btn.onclick = () => {
-                    window.open(url);
-                };
-            }
-            else {
+            if (name == "PDF") {
                 btn.onclick = () => {
                     const text = textNode.textContent;
                     const filename = getScoreFileName(scorePlayer);
@@ -28928,6 +28961,17 @@ Please pipe the document into a Node stream.\
                     generatePDF(sheetImgURLs, imgType, filename).then(() => {
                         textNode.textContent = text;
                     });
+                };
+            }
+            else if (name == "MSCZ") {
+                btn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
+                    const token = yield execute();
+                    window.open(url + token);
+                });
+            }
+            else {
+                btn.onclick = () => {
+                    window.open(url);
                 };
             }
             return btn;

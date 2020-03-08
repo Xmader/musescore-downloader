@@ -2,6 +2,7 @@ import "./meta"
 
 import { ScorePlayerData } from "./types"
 import { waitForDocumentLoaded } from "./utils"
+import * as recaptcha from "./recaptcha"
 
 import { PDFWorkerHelper } from "./worker-helper"
 import FileSaver from "file-saver/dist/FileSaver.js"
@@ -63,6 +64,9 @@ const main = () => {
     // @ts-ignore
     if (!window.UGAPP || !window.UGAPP.store || !window.UGAPP.store.jmuse_settings) { return }
 
+    // init recaptcha
+    recaptcha.init()
+
     // @ts-ignore
     const scorePlayer: ScorePlayerData = window.UGAPP.store.jmuse_settings.score_player
 
@@ -72,7 +76,7 @@ const main = () => {
     // const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath(id)}/${id}/score_${vid}_${scoreHexId}.mscz`
 
     // https://github.com/Xmader/cloudflare-worker-musescore-mscz
-    const msczURL = `https://musescore.now.sh/api/mscz?id=${id}`
+    const msczURL = `https://musescore.now.sh/api/mscz?id=${id}&token=`
 
     const mxlURL = baseURL + "score.mxl"
     const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls
@@ -119,11 +123,7 @@ const main = () => {
         const url = downloadURLs[name]
         const { btn, textNode } = createBtn(name)
 
-        if (name !== "PDF") {
-            btn.onclick = () => {
-                window.open(url)
-            }
-        } else {
+        if (name == "PDF") {
             btn.onclick = () => {
                 const text = textNode.textContent
                 const filename = getScoreFileName(scorePlayer)
@@ -133,6 +133,15 @@ const main = () => {
                 generatePDF(sheetImgURLs, imgType, filename).then(() => {
                     textNode.textContent = text
                 })
+            }
+        } else if (name == "MSCZ") {
+            btn.onclick = async () => {
+                const token = await recaptcha.execute()
+                window.open(url + token)
+            }
+        } else {
+            btn.onclick = () => {
+                window.open(url)
             }
         }
 
