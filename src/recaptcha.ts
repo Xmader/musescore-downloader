@@ -18,7 +18,7 @@ let gr: GRecaptcha | Promise<GRecaptcha>
 const load = (): Promise<GRecaptcha> => {
     // load script
     const script = document.createElement("script")
-    script.src = `https://www.google.com/recaptcha/api.js?render=${SITE_KEY}`
+    script.src = `https://www.recaptcha.net/recaptcha/api.js?render=${SITE_KEY}`
     script.async = true
     document.body.appendChild(script)
 

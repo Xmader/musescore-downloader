@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.6.1
+// @version      0.6.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -50,7 +50,7 @@
     const load = () => {
         // load script
         const script = document.createElement("script");
-        script.src = `https://www.google.com/recaptcha/api.js?render=${SITE_KEY}`;
+        script.src = `https://www.recaptcha.net/recaptcha/api.js?render=${SITE_KEY}`;
         script.async = true;
         document.body.appendChild(script);
         // add css
