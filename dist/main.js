@@ -28878,7 +28878,7 @@ Please pipe the document into a Node stream.\
         const baseURL = scorePlayer.urls.image_path;
         // const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath(id)}/${id}/score_${vid}_${scoreHexId}.mscz`
         // https://github.com/Xmader/cloudflare-worker-musescore-mscz
-        const msczURL = `https://musescore-mscz.99.workers.dev/${id}`;
+        const msczURL = `https://musescore.now.sh/api/mscz?id=${id}`;
         const mxlURL = baseURL + "score.mxl";
         const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls;
         const btnsDiv = document.querySelector(".score-right .buttons-wrapper") || document.querySelectorAll("aside section > div")[4];
