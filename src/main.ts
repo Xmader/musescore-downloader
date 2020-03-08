@@ -136,8 +136,18 @@ const main = () => {
             }
         } else if (name == "MSCZ") {
             btn.onclick = async () => {
+                const text = textNode.textContent
+                textNode.textContent = "Processing…"
+
                 const token = await recaptcha.execute()
-                window.open(url + token)
+                const filename = getScoreFileName(scorePlayer)
+
+                const r = await fetch(url + token)
+                const data = await r.blob()
+
+                textNode.textContent = text
+
+                saveAs(data, `${filename}.mscz`)
             }
         } else {
             btn.onclick = () => {

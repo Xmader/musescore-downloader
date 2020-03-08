@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.6.0
+// @version      0.6.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -28965,8 +28965,14 @@ Please pipe the document into a Node stream.\
             }
             else if (name == "MSCZ") {
                 btn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
+                    const text = textNode.textContent;
+                    textNode.textContent = "Processing…";
                     const token = yield execute();
-                    window.open(url + token);
+                    const filename = getScoreFileName(scorePlayer);
+                    const r = yield fetch(url + token);
+                    const data = yield r.blob();
+                    textNode.textContent = text;
+                    saveAs(data, `${filename}.mscz`);
                 });
             }
             else {
