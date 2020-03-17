@@ -8,6 +8,8 @@
 **Star this project on [Github](https://github.com/Xmader/musescore-downloader)**  
 **Rate this on [Greasy Fork](https://greasyfork.org/scripts/391931)**
 
+Need dataset of musescore.com for analysis / machine learning? try [musescore-dataset](https://github.com/Xmader/musescore-dataset).
+
 ![](https://cdn.statically.io/gh/Xmader/musescore-downloader/master/screenshot.png?env=dev)
 
 ## About
