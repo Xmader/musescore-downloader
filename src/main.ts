@@ -109,7 +109,7 @@ const main = () => {
         }
 
         const textNode = [...btn.childNodes].find((x) => {
-            return x.textContent.includes("Download")
+            return x.textContent.includes("Download") || x.textContent.includes("Print")
         })
         textNode.textContent = `Download ${name}`
 
