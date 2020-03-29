@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.6.2
+// @version      0.6.3
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -28922,6 +28922,12 @@ Please pipe the document into a Node stream.\
         const btnsDiv = document.querySelector(".score-right .buttons-wrapper") || document.querySelectorAll("aside section > div")[4];
         const downloadBtn = btnsDiv.querySelector("button, .button");
         downloadBtn.onclick = null;
+        // fix the icon of the download btn
+        // if the `downloadBtn` seleted was a `Print` btn, replace the `print` icon with the `download` icon
+        const svgPath = downloadBtn.querySelector("svg > path");
+        if (svgPath) {
+            svgPath.setAttribute("d", "M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z");
+        }
         const imgType = getImgType() || "svg";
         const sheetImgURLs = Array.from({ length: getPagesNumber(scorePlayer) }).fill(null).map((_, i) => {
             return baseURL + `score_${i}.${imgType}`;
@@ -28942,7 +28948,7 @@ Please pipe the document into a Node stream.\
                 btn.dataset.target = "";
             }
             const textNode = [...btn.childNodes].find((x) => {
-                return x.textContent.includes("Download");
+                return x.textContent.includes("Download") || x.textContent.includes("Print");
             });
             textNode.textContent = `Download ${name}`;
             return {
