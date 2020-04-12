@@ -68,7 +68,7 @@ If we can't see proof that musescore.com really pays licensing fee to the copyri
 No, the API document is on https://developers.musescore.com/.
 
 
-**I will launch an open source, serverless, offline-first, frontend-first, and totally free alternative to musescore.com.**
+**I will launch an open source (GPLv3), serverless, offline-first, frontend-first, and totally free alternative to musescore.com, [LibreScore](https://github.com/LibreScore). Everyone is welcome to join the project development by opening an issue or [emailing me](mailto:i@xmader.com).**
 
 **Also, I'm developing musescore.js. It could convert a mscz file into any format that the Musescore software supports, and in the browser.** Because the Musescore software is open source under [GPL](https://github.com/musescore/MuseScore/blob/master/LICENSE.GPL), I could translate the source code to js, or compile it into asm.js/WASM.
 
