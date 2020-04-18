@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.6.3
+// @version      0.6.4
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -28960,25 +28960,34 @@ Please pipe the document into a Node stream.\
             const url = downloadURLs[name];
             const { btn, textNode } = createBtn(name);
             if (name == "PDF") {
-                btn.onclick = () => {
-                    const text = textNode.textContent;
+                btn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
                     const filename = getScoreFileName(scorePlayer);
                     textNode.textContent = "Processing…";
-                    generatePDF(sheetImgURLs, imgType, filename).then(() => {
-                        textNode.textContent = text;
-                    });
-                };
+                    try {
+                        yield generatePDF(sheetImgURLs, imgType, filename);
+                        textNode.textContent = "Download PDF";
+                    }
+                    catch (err) {
+                        textNode.textContent = "❌Download Failed!";
+                        console.error(err);
+                    }
+                });
             }
             else if (name == "MSCZ") {
                 btn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
-                    const text = textNode.textContent;
                     textNode.textContent = "Processing…";
-                    const token = yield execute();
-                    const filename = getScoreFileName(scorePlayer);
-                    const r = yield fetch(url + token);
-                    const data = yield r.blob();
-                    textNode.textContent = text;
-                    saveAs(data, `${filename}.mscz`);
+                    try {
+                        const token = yield execute();
+                        const filename = getScoreFileName(scorePlayer);
+                        const r = yield fetch(url + token);
+                        const data = yield r.blob();
+                        textNode.textContent = "Download MSCZ";
+                        saveAs(data, `${filename}.mscz`);
+                    }
+                    catch (err) {
+                        textNode.textContent = "❌Download Failed!";
+                        console.error(err);
+                    }
                 });
             }
             else {

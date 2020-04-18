@@ -88,7 +88,7 @@ const main = () => {
     // fix the icon of the download btn
     // if the `downloadBtn` seleted was a `Print` btn, replace the `print` icon with the `download` icon
     const svgPath: SVGPathElement = downloadBtn.querySelector("svg > path")
-    if(svgPath) {
+    if (svgPath) {
         svgPath.setAttribute("d", "M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z")
     }
 
@@ -131,30 +131,37 @@ const main = () => {
         const { btn, textNode } = createBtn(name)
 
         if (name == "PDF") {
-            btn.onclick = () => {
-                const text = textNode.textContent
+            btn.onclick = async () => {
                 const filename = getScoreFileName(scorePlayer)
 
                 textNode.textContent = "Processing…"
 
-                generatePDF(sheetImgURLs, imgType, filename).then(() => {
-                    textNode.textContent = text
-                })
+                try {
+                    await generatePDF(sheetImgURLs, imgType, filename)
+                    textNode.textContent = "Download PDF"
+                } catch (err) {
+                    textNode.textContent = "❌Download Failed!"
+                    console.error(err)
+                }
             }
         } else if (name == "MSCZ") {
             btn.onclick = async () => {
-                const text = textNode.textContent
                 textNode.textContent = "Processing…"
 
-                const token = await recaptcha.execute()
-                const filename = getScoreFileName(scorePlayer)
+                try {
+                    const token = await recaptcha.execute()
+                    const filename = getScoreFileName(scorePlayer)
 
-                const r = await fetch(url + token)
-                const data = await r.blob()
+                    const r = await fetch(url + token)
+                    const data = await r.blob()
 
-                textNode.textContent = text
+                    textNode.textContent = "Download MSCZ"
 
-                saveAs(data, `${filename}.mscz`)
+                    saveAs(data, `${filename}.mscz`)
+                } catch (err) {
+                    textNode.textContent = "❌Download Failed!"
+                    console.error(err)
+                }
             }
         } else {
             btn.onclick = () => {
