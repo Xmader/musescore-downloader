@@ -5,7 +5,7 @@
 
 > download sheet music from musescore.com for free, no login or Musescore Pro required
 
-**Star this project on [Github](https://github.com/Xmader/musescore-downloader)**  
+**Star this project on [Github](https://github.com/Xmader/musescore-downloader) and [Gitlab](https://gitlab.com/Xmader/musescore-downloader)**  
 **Rate this on [Greasy Fork](https://greasyfork.org/scripts/391931)**
 
 Need dataset of musescore.com for analysis / machine learning? try [musescore-dataset](https://github.com/Xmader/musescore-dataset).
@@ -41,7 +41,7 @@ This script is available as a [Userscript](https://en.wikipedia.org/wiki/Userscr
 
 Install from [Greasy Fork](https://greasyfork.org/scripts/391931)
 
-View this project on [Github](https://github.com/Xmader/musescore-downloader)
+View this project on [Github](https://github.com/Xmader/musescore-downloader) | [Gitlab](https://gitlab.com/Xmader/musescore-downloader)
 
 This repo is also available on IPFS to avoid DMCA takedown.
 
@@ -52,10 +52,6 @@ This repo is also available on IPFS to avoid DMCA takedown.
 ## License
 
 MIT
-
-## Gitlab Mirror
-
-https://gitlab.com/Xmader/musescore-downloader
 
 ## About the Takedown Request
 
@@ -89,7 +85,7 @@ No, the API document is on https://developers.musescore.com/.
 
 > 免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
 
-**在 [Github](https://github.com/Xmader/musescore-downloader) 上给项目打星**  
+**在 [Github](https://github.com/Xmader/musescore-downloader) 和 [Gitlab](https://gitlab.com/Xmader/musescore-downloader) 上给项目打星**  
 **在 [Greasy Fork](https://greasyfork.org/scripts/391931) 上给项目评分**  
 
 ![](https://cdn.statically.io/gh/Xmader/musescore-downloader/master/screenshot.png?env=dev)
