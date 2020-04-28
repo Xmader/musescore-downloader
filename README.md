@@ -12,6 +12,10 @@ Need dataset of musescore.com for analysis / machine learning? try [musescore-da
 
 ![](https://cdn.statically.io/gh/Xmader/musescore-downloader/master/screenshot.png?env=dev)
 
+## Fair Use
+
+For the purposes of research and study only
+
 ## About
 
 Musescore Pro ($6.99/mo) is required to download sheet music from musescore.com recently.  
@@ -48,6 +52,10 @@ This repo is also available on IPFS to avoid DMCA takedown.
 ## License
 
 MIT
+
+## Gitlab Mirror
+
+https://gitlab.com/Xmader/musescore-downloader
 
 ## About the Takedown Request
 
