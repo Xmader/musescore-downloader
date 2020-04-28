@@ -62,9 +62,8 @@ export default [
         output: {
             file: "dist/cache/worker.js",
             format: "iife",
-            name: "Worker",
             banner: "export const PDFWorker = function () { ",
-            footer: "return Worker\n}\n",
+            footer: "}\n",
             sourcemap: false,
         },
         plugins,
@@ -76,7 +75,8 @@ export default [
             format: "iife",
             sourcemap: false,
             banner: getBannerText,
-            // intro: "const global = typeof window === 'object' && window.window === window ? window : typeof self === 'object' && self.self === self ? self : typeof commonjsGlobal === 'object' && commonjsGlobal.global === commonjsGlobal ? commonjsGlobal : void 0"
+            intro: "// fix for Greasemonkey\nwindow.eval('(' + function () {",
+            outro: "}.toString() + ')()')"
         },
         plugins,
     },
