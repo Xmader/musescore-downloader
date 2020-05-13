@@ -9,7 +9,12 @@ import FileSaver from "file-saver/dist/FileSaver.js"
 
 const saveAs: typeof import("file-saver").saveAs = FileSaver.saveAs
 
+const PROCESSING_TEXT = "Processing…"
+const FAILED_TEXT = "❌Download Failed!"
+const WEBMSCORE_URL = "https://cdn.jsdelivr.net/npm/webmscore@0.5/webmscore.js"
+
 let pdfBlob: Blob
+let msczBufferP: Promise<ArrayBuffer>
 
 const generatePDF = async (imgURLs: string[], imgType: "svg" | "png", name?: string) => {
     if (pdfBlob) {
@@ -59,6 +64,19 @@ const getScoreFileName = (scorePlayerData: ScorePlayerData) => {
     return getTitle(scorePlayerData).replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, "_")
 }
 
+const fetchMscz = async (url: string): Promise<ArrayBuffer> => {
+    if (!msczBufferP) {
+        msczBufferP = (async () => {
+            const token = await recaptcha.execute()
+            const r = await fetch(url + token)
+            const data = await r.arrayBuffer()
+            return data
+        })()
+    }
+
+    return msczBufferP
+}
+
 const main = () => {
 
     // @ts-ignore
@@ -73,7 +91,7 @@ const main = () => {
     const { id } = scorePlayer.json
     const baseURL = scorePlayer.urls.image_path
 
-    // const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath(id)}/${id}/score_${vid}_${scoreHexId}.mscz`
+    const filename = getScoreFileName(scorePlayer)
 
     // https://github.com/Xmader/cloudflare-worker-musescore-mscz
     const msczURL = `https://musescore.now.sh/api/mscz?id=${id}&token=`
@@ -99,11 +117,12 @@ const main = () => {
     })
 
     const downloadURLs = {
-        "MSCZ": msczURL,
+        "MSCZ": null,
         "PDF": null,
         "MusicXML": mxlURL,
         "MIDI": midiURL,
         "MP3": mp3URL,
+        "Parts": null,
     }
 
     const createBtn = (name: string) => {
@@ -134,33 +153,94 @@ const main = () => {
             btn.onclick = async () => {
                 const filename = getScoreFileName(scorePlayer)
 
-                textNode.textContent = "Processing…"
+                textNode.textContent = PROCESSING_TEXT
 
                 try {
                     await generatePDF(sheetImgURLs, imgType, filename)
                     textNode.textContent = "Download PDF"
                 } catch (err) {
-                    textNode.textContent = "❌Download Failed!"
+                    textNode.textContent = FAILED_TEXT
                     console.error(err)
                 }
             }
         } else if (name == "MSCZ") {
             btn.onclick = async () => {
-                textNode.textContent = "Processing…"
+                textNode.textContent = PROCESSING_TEXT
 
                 try {
-                    const token = await recaptcha.execute()
-                    const filename = getScoreFileName(scorePlayer)
-
-                    const r = await fetch(url + token)
-                    const data = await r.blob()
-
+                    const data = new Blob([await fetchMscz(msczURL)])
                     textNode.textContent = "Download MSCZ"
-
                     saveAs(data, `${filename}.mscz`)
                 } catch (err) {
-                    textNode.textContent = "❌Download Failed!"
+                    textNode.textContent = FAILED_TEXT
                     console.error(err)
+                }
+            }
+        } else if (name == "Parts") {  // download individual parts
+            btn.title = "Download individual parts (BETA)"
+            const cb = btn.onclick = async () => {
+                btn.onclick = null
+                textNode.textContent = PROCESSING_TEXT
+
+                const w = window.open("")
+                const txt = document.createTextNode(PROCESSING_TEXT)
+                w.document.body.append(txt)
+
+                // set page hooks
+                const destroy = () => {
+                    score.destroy()
+                    w.close()
+                }
+                window.addEventListener("unload", destroy)
+                w.addEventListener("beforeunload", () => {
+                    score.destroy()
+                    window.removeEventListener("unload", destroy)
+                    textNode.textContent = "Download Parts"
+                    btn.onclick = cb
+                })
+
+                // load webmscore (https://github.com/LibreScore/webmscore)
+                const script = w.document.createElement("script")
+                script.src = WEBMSCORE_URL
+                w.document.body.append(script)
+                await new Promise(resolve => { script.onload = resolve })
+
+                // parse mscz data
+                const data = new Uint8Array(
+                    new Uint8Array(await fetchMscz(msczURL))  // copy its ArrayBuffer
+                )
+                const score = await w["WebMscore"].load("mscz", data)
+                await score.generateExcerpts()
+                const metadata = await score.metadata()
+                console.log("score metadata loaded by webmscore", metadata)
+
+                // render the part selection page
+                txt.remove()
+                const fieldset = w.document.createElement("fieldset")
+                for (const excerpt of metadata.excerpts) {
+                    const e = w.document.createElement("input")
+                    e.name = "score-part"
+                    e.type = "radio"
+                    e.value = excerpt.id
+                    const label = w.document.createElement("label")
+                    label.innerText = excerpt.title
+                    const br = w.document.createElement("br")
+                    fieldset.append(e, label, br)
+                }
+                const submitBtn = w.document.createElement("input")
+                submitBtn.type = "submit"
+                submitBtn.value = "Download PDF"
+                fieldset.append(submitBtn)
+                w.document.body.append(fieldset)
+
+                submitBtn.onclick = async () => {
+                    const checked: HTMLInputElement = w.document.querySelector("input:checked")
+                    const id = checked.value
+
+                    await score.setExcerptId(id)
+
+                    const data = new Blob([await score.savePdf()])
+                    saveAs(data, `${filename}-part-${id}.pdf`)
                 }
             }
         } else {
