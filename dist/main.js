@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.6.5
+// @version      0.7.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26344,7 +26344,11 @@ Please pipe the document into a Node stream.\
     });
 
     const saveAs = FileSaver.saveAs;
+    const PROCESSING_TEXT = "Processing…";
+    const FAILED_TEXT = "❌Download Failed!";
+    const WEBMSCORE_URL = "https://cdn.jsdelivr.net/npm/webmscore@0.5/webmscore.js";
     let pdfBlob;
+    let msczBufferP;
     const generatePDF = (imgURLs, imgType, name) => __awaiter(void 0, void 0, void 0, function* () {
         if (pdfBlob) {
             return saveAs(pdfBlob, `${name}.pdf`);
@@ -26387,6 +26391,17 @@ Please pipe the document into a Node stream.\
     const getScoreFileName = (scorePlayerData) => {
         return getTitle(scorePlayerData).replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, "_");
     };
+    const fetchMscz = (url) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!msczBufferP) {
+            msczBufferP = (() => __awaiter(void 0, void 0, void 0, function* () {
+                const token = yield execute();
+                const r = yield fetch(url + token);
+                const data = yield r.arrayBuffer();
+                return data;
+            }))();
+        }
+        return msczBufferP;
+    });
     const main = () => {
         // @ts-ignore
         if (!window.UGAPP || !window.UGAPP.store || !window.UGAPP.store.jmuse_settings) {
@@ -26398,7 +26413,7 @@ Please pipe the document into a Node stream.\
         const scorePlayer = window.UGAPP.store.jmuse_settings.score_player;
         const { id } = scorePlayer.json;
         const baseURL = scorePlayer.urls.image_path;
-        // const msczURL = `https://musescore.com/static/musescore/scoredata/score/${getIndexPath(id)}/${id}/score_${vid}_${scoreHexId}.mscz`
+        const filename = getScoreFileName(scorePlayer);
         // https://github.com/Xmader/cloudflare-worker-musescore-mscz
         const msczURL = `https://musescore.now.sh/api/mscz?id=${id}&token=`;
         const mxlURL = baseURL + "score.mxl";
@@ -26417,11 +26432,12 @@ Please pipe the document into a Node stream.\
             return baseURL + `score_${i}.${imgType}`;
         });
         const downloadURLs = {
-            "MSCZ": msczURL,
+            "MSCZ": null,
             "PDF": null,
             "MusicXML": mxlURL,
             "MIDI": midiURL,
             "MP3": mp3URL,
+            "Parts": null,
         };
         const createBtn = (name) => {
             const btn = downloadBtn.cloneNode(true);
@@ -26446,32 +26462,88 @@ Please pipe the document into a Node stream.\
             if (name == "PDF") {
                 btn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
                     const filename = getScoreFileName(scorePlayer);
-                    textNode.textContent = "Processing…";
+                    textNode.textContent = PROCESSING_TEXT;
                     try {
                         yield generatePDF(sheetImgURLs, imgType, filename);
                         textNode.textContent = "Download PDF";
                     }
                     catch (err) {
-                        textNode.textContent = "❌Download Failed!";
+                        textNode.textContent = FAILED_TEXT;
                         console.error(err);
                     }
                 });
             }
             else if (name == "MSCZ") {
                 btn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
-                    textNode.textContent = "Processing…";
+                    textNode.textContent = PROCESSING_TEXT;
                     try {
-                        const token = yield execute();
-                        const filename = getScoreFileName(scorePlayer);
-                        const r = yield fetch(url + token);
-                        const data = yield r.blob();
+                        const data = new Blob([yield fetchMscz(msczURL)]);
                         textNode.textContent = "Download MSCZ";
                         saveAs(data, `${filename}.mscz`);
                     }
                     catch (err) {
-                        textNode.textContent = "❌Download Failed!";
+                        textNode.textContent = FAILED_TEXT;
                         console.error(err);
                     }
+                });
+            }
+            else if (name == "Parts") { // download individual parts
+                btn.title = "Download individual parts (BETA)";
+                const cb = btn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
+                    btn.onclick = null;
+                    textNode.textContent = PROCESSING_TEXT;
+                    const w = window.open("");
+                    const txt = document.createTextNode(PROCESSING_TEXT);
+                    w.document.body.append(txt);
+                    // set page hooks
+                    const destroy = () => {
+                        score.destroy();
+                        w.close();
+                    };
+                    window.addEventListener("unload", destroy);
+                    w.addEventListener("beforeunload", () => {
+                        score.destroy();
+                        window.removeEventListener("unload", destroy);
+                        textNode.textContent = "Download Parts";
+                        btn.onclick = cb;
+                    });
+                    // load webmscore (https://github.com/LibreScore/webmscore)
+                    const script = w.document.createElement("script");
+                    script.src = WEBMSCORE_URL;
+                    w.document.body.append(script);
+                    yield new Promise(resolve => { script.onload = resolve; });
+                    // parse mscz data
+                    const data = new Uint8Array(new Uint8Array(yield fetchMscz(msczURL)) // copy its ArrayBuffer
+                    );
+                    const score = yield w["WebMscore"].load("mscz", data);
+                    yield score.generateExcerpts();
+                    const metadata = yield score.metadata();
+                    console.log("score metadata loaded by webmscore", metadata);
+                    // render the part selection page
+                    txt.remove();
+                    const fieldset = w.document.createElement("fieldset");
+                    for (const excerpt of metadata.excerpts) {
+                        const e = w.document.createElement("input");
+                        e.name = "score-part";
+                        e.type = "radio";
+                        e.value = excerpt.id;
+                        const label = w.document.createElement("label");
+                        label.innerText = excerpt.title;
+                        const br = w.document.createElement("br");
+                        fieldset.append(e, label, br);
+                    }
+                    const submitBtn = w.document.createElement("input");
+                    submitBtn.type = "submit";
+                    submitBtn.value = "Download PDF";
+                    fieldset.append(submitBtn);
+                    w.document.body.append(fieldset);
+                    submitBtn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
+                        const checked = w.document.querySelector("input:checked");
+                        const id = checked.value;
+                        yield score.setExcerptId(id);
+                        const data = new Blob([yield score.savePdf()]);
+                        saveAs(data, `${filename}-part-${id}.pdf`);
+                    });
                 });
             }
             else {
