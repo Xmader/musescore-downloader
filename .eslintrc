@@ -5,31 +5,41 @@
         "es6": true,
         "node": true
     },
-    "extends": "eslint:recommended",
-    "parserOptions": {
-        "ecmaVersion": 2019,
-        "sourceType": "module",
-        "ecmaFeatures": {
-            "jsx": true
-        }
-    },
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "extends": [
+        "standard",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@typescript-eslint/recommended-requiring-type-checking"
+    ],
     "rules": {
-        "indent": [
+        "dot-notation": "off",
+        "no-useless-constructor": "off",
+        "@typescript-eslint/no-useless-constructor": "error",
+        "no-dupe-class-members": "off",
+        "@typescript-eslint/no-dupe-class-members": "error",
+        "@typescript-eslint/no-floating-promises": "warn",
+        "@typescript-eslint/member-delimiter-style": "warn",
+        "@typescript-eslint/ban-ts-ignore": "off",
+        "@typescript-eslint/ban-ts-comment": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/prefer-regexp-exec": "off",
+        "no-trailing-spaces": [
             "error",
-            4
+            {
+                "ignoreComments": true
+            }
         ],
-        "linebreak-style": [
-            "error",
-            "unix"
-        ],
-        "quotes": [
+        "comma-dangle": [
             "warn",
-            "double"
-        ],
-        "semi": [
-            "warn",
-            "never"
-        ],
-        "no-console": "off"
+            "always-multiline"
+        ]
+    },
+    "parserOptions": {
+        "project": [
+            "./tsconfig.json"
+        ]
     }
 }
