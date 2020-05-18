@@ -21,7 +21,7 @@ const generatePDF = async (imgURLs: string[], imgType: 'svg' | 'png', name?: str
     return saveAs(pdfBlob, `${name}.pdf`)
   }
 
-  const cachedImg: HTMLImageElement = document.querySelector('img[src*=score_]')
+  const cachedImg = document.querySelector('img[src*=score_]') as HTMLImageElement
   const { naturalWidth: width, naturalHeight: height } = cachedImg
 
   const worker = new PDFWorkerHelper()
@@ -41,11 +41,12 @@ const getPagesNumber = (scorePlayerData: ScorePlayerData): number => {
   }
 }
 
-const getImgType = (): 'svg' | 'png' => {
+const getImgType = (): 'svg' | 'png' | null => {
   try {
-    const imgE: HTMLImageElement = document.querySelector('img[src*=score_]')
+    const imgE = document.querySelector('img[src*=score_]') as HTMLImageElement
     const { pathname } = new URL(imgE.src)
-    const imgtype = pathname.match(/\.(\w+)$/)[1]
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const imgtype = pathname.match(/\.(\w+)$/)![1]
     return imgtype as 'svg' | 'png'
   } catch (_) {
     return null
@@ -105,7 +106,7 @@ const main = (): void => {
 
   // fix the icon of the download btn
   // if the `downloadBtn` seleted was a `Print` btn, replace the `print` icon with the `download` icon
-  const svgPath: SVGPathElement = downloadBtn.querySelector('svg > path')
+  const svgPath: SVGPathElement | null = downloadBtn.querySelector('svg > path')
   if (svgPath) {
     svgPath.setAttribute('d', 'M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z')
   }
@@ -136,8 +137,9 @@ const main = (): void => {
     }
 
     const textNode = [...btn.childNodes].find((x) => {
-      return x.textContent.includes('Download') || x.textContent.includes('Print')
-    })
+      const txt = x.textContent as string
+      return txt.includes('Download') || txt.includes('Print')
+    }) as Node
     textNode.textContent = `Download ${name}`
 
     return {
@@ -183,7 +185,7 @@ const main = (): void => {
         btn.onclick = null
         textNode.textContent = PROCESSING_TEXT
 
-        const w = window.open('')
+        const w = window.open('') as Window
         const txt = document.createTextNode(PROCESSING_TEXT)
         w.document.body.append(txt)
 
@@ -237,7 +239,7 @@ const main = (): void => {
         w.document.body.append(fieldset)
 
         submitBtn.onclick = async (): Promise<void> => {
-          const checked: HTMLInputElement = fieldset.querySelector('input:checked')
+          const checked = fieldset.querySelector('input:checked') as HTMLInputElement
           const id = checked.value
 
           await score.setExcerptId(id)
