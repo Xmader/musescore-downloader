@@ -1,82 +1,14 @@
 import './meta'
 
-import { ScorePlayerData } from './types'
-import { waitForDocumentLoaded } from './utils'
+import { waitForDocumentLoaded, saveAs } from './utils'
+import { downloadPDF } from './pdf'
+import { fetchMscz, downloadMscz } from './mscz'
 import * as recaptcha from './recaptcha'
-
-import { PDFWorkerHelper } from './worker-helper'
-import FileSaver from 'file-saver/dist/FileSaver.js'
-
-const saveAs: typeof import('file-saver').saveAs = FileSaver.saveAs
+import scoreinfo from './scoreinfo'
 
 const PROCESSING_TEXT = 'Processing…'
 const FAILED_TEXT = '❌Download Failed!'
 const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.5/webmscore.js'
-
-let pdfBlob: Blob
-let msczBufferP: Promise<ArrayBuffer> | undefined
-
-const generatePDF = async (imgURLs: string[], imgType: 'svg' | 'png', name?: string): Promise<void> => {
-  if (pdfBlob) {
-    return saveAs(pdfBlob, `${name}.pdf`)
-  }
-
-  const cachedImg = document.querySelector('img[src*=score_]') as HTMLImageElement
-  const { naturalWidth: width, naturalHeight: height } = cachedImg
-
-  const worker = new PDFWorkerHelper()
-  const pdfArrayBuffer = await worker.generatePDF(imgURLs, imgType, width, height)
-  worker.terminate()
-
-  pdfBlob = new Blob([pdfArrayBuffer])
-
-  saveAs(pdfBlob, `${name}.pdf`)
-}
-
-const getPagesNumber = (scorePlayerData: ScorePlayerData): number => {
-  try {
-    return scorePlayerData.json.metadata.pages
-  } catch (_) {
-    return document.querySelectorAll('img[src*=score_]').length
-  }
-}
-
-const getImgType = (): 'svg' | 'png' | null => {
-  try {
-    const imgE = document.querySelector('img[src*=score_]') as HTMLImageElement
-    const { pathname } = new URL(imgE.src)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const imgtype = pathname.match(/\.(\w+)$/)![1]
-    return imgtype as 'svg' | 'png'
-  } catch (_) {
-    return null
-  }
-}
-
-const getTitle = (scorePlayerData: ScorePlayerData): string => {
-  try {
-    return scorePlayerData.json.metadata.title
-  } catch (_) {
-    return ''
-  }
-}
-
-const getScoreFileName = (scorePlayerData: ScorePlayerData): string => {
-  return getTitle(scorePlayerData).replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_')
-}
-
-const fetchMscz = async (url: string): Promise<ArrayBuffer> => {
-  if (!msczBufferP) {
-    msczBufferP = (async (): Promise<ArrayBuffer> => {
-      const token = await recaptcha.execute()
-      const r = await fetch(url + token)
-      const data = await r.arrayBuffer()
-      return data
-    })()
-  }
-
-  return msczBufferP
-}
 
 const main = (): void => {
   // @ts-ignore
@@ -85,20 +17,6 @@ const main = (): void => {
   // init recaptcha
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
   recaptcha.init()
-
-  // @ts-ignore
-  const scorePlayer: ScorePlayerData = window.UGAPP.store.jmuse_settings.score_player
-
-  const { id } = scorePlayer.json
-  const baseURL = scorePlayer.urls.image_path
-
-  const filename = getScoreFileName(scorePlayer)
-
-  // https://github.com/Xmader/cloudflare-worker-musescore-mscz
-  const msczURL = `https://musescore.now.sh/api/mscz?id=${id}&token=`
-
-  const mxlURL = baseURL + 'score.mxl'
-  const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls
 
   const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside section > div')[4]
   const downloadBtn = btnsDiv.querySelector('button, .button') as HTMLElement
@@ -111,18 +29,12 @@ const main = (): void => {
     svgPath.setAttribute('d', 'M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z')
   }
 
-  const imgType = getImgType() || 'svg'
-
-  const sheetImgURLs = Array.from({ length: getPagesNumber(scorePlayer) }).fill(null).map((_, i) => {
-    return baseURL + `score_${i}.${imgType}`
-  })
-
   const downloadURLs = {
     MSCZ: null,
     PDF: null,
-    MusicXML: mxlURL,
-    MIDI: midiURL,
-    MP3: mp3URL,
+    MusicXML: scoreinfo.mxlUrl,
+    MIDI: scoreinfo.midiUrl,
+    MP3: scoreinfo.mp3Url,
     Parts: null,
   }
 
@@ -154,12 +66,10 @@ const main = (): void => {
 
     if (name === 'PDF') {
       btn.onclick = async (): Promise<void> => {
-        const filename = getScoreFileName(scorePlayer)
-
         textNode.textContent = PROCESSING_TEXT
 
         try {
-          await generatePDF(sheetImgURLs, imgType, filename)
+          await downloadPDF()
           textNode.textContent = 'Download PDF'
         } catch (err) {
           textNode.textContent = FAILED_TEXT
@@ -171,9 +81,8 @@ const main = (): void => {
         textNode.textContent = PROCESSING_TEXT
 
         try {
-          const data = new Blob([await fetchMscz(msczURL)])
+          await downloadMscz()
           textNode.textContent = 'Download MSCZ'
-          saveAs(data, `${filename}.mscz`)
         } catch (err) {
           textNode.textContent = FAILED_TEXT
           console.error(err)
@@ -212,7 +121,7 @@ const main = (): void => {
 
         // parse mscz data
         const data = new Uint8Array(
-          new Uint8Array(await fetchMscz(msczURL)) // copy its ArrayBuffer
+          new Uint8Array(await fetchMscz()) // copy its ArrayBuffer
         )
         score = await w['WebMscore'].load('mscz', data)
         await score.generateExcerpts()
@@ -244,6 +153,7 @@ const main = (): void => {
 
           await score.setExcerptId(id)
 
+          const filename = scoreinfo.fileName
           const data = new Blob([await score.savePdf()])
           saveAs(data, `${filename}-part-${id}.pdf`)
         }

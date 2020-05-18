@@ -1,4 +1,8 @@
 
+import FileSaver from 'file-saver/dist/FileSaver.js'
+
+export const saveAs: typeof import('file-saver').saveAs = FileSaver.saveAs
+
 export const getIndexPath = (id: number): string => {
   const idStr = String(id)
   // 获取最后三位，倒序排列
