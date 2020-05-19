@@ -90,13 +90,19 @@ const main = (): void => {
       const fieldset = w.document.createElement('fieldset')
       metadata.excerpts.unshift({ id: -1, title: 'Full score' })
       for (const excerpt of metadata.excerpts) {
+        const id = excerpt.id
+        const partName = excerpt.title
+
         const e = w.document.createElement('input')
         e.name = 'score-part'
         e.type = 'radio'
-        e.value = excerpt.id
-        e.checked = excerpt.id === 0 // initially select the first part 
+        e.alt = partName
+        e.value = id
+        e.checked = id === 0 // initially select the first part 
+
         const label = w.document.createElement('label')
-        label.innerText = excerpt.title
+        label.innerText = partName
+
         const br = w.document.createElement('br')
         fieldset.append(e, label, br)
       }
@@ -109,12 +115,13 @@ const main = (): void => {
       submitBtn.onclick = async (): Promise<void> => {
         const checked = fieldset.querySelector('input:checked') as HTMLInputElement
         const id = checked.value
+        const partName = checked.alt
 
         await score.setExcerptId(id)
 
         const filename = scoreinfo.fileName
         const data = new Blob([await score.savePdf()])
-        saveAs(data, `${filename}-part-${id}.pdf`)
+        saveAs(data, `${filename} - ${partName}.pdf`)
       }
     },
   }).title = 'Download individual parts (BETA)'
