@@ -59,12 +59,12 @@ const main = (): void => {
       // eslint-disable-next-line prefer-const
       let score: any
       const destroy = (): void => {
-        score.destroy()
+        score && score.destroy()
         w.close()
       }
       window.addEventListener('unload', destroy)
       w.addEventListener('beforeunload', () => {
-        score.destroy()
+        score && score.destroy()
         window.removeEventListener('unload', destroy)
         setText(btnName)
         btn.onclick = _onclick
@@ -88,11 +88,13 @@ const main = (): void => {
       // render the part selection page
       txt.remove()
       const fieldset = w.document.createElement('fieldset')
+      metadata.excerpts.unshift({ id: -1, title: 'Full score' })
       for (const excerpt of metadata.excerpts) {
         const e = w.document.createElement('input')
         e.name = 'score-part'
         e.type = 'radio'
         e.value = excerpt.id
+        e.checked = excerpt.id === 0 // initially select the first part 
         const label = w.document.createElement('label')
         label.innerText = excerpt.title
         const br = w.document.createElement('br')
