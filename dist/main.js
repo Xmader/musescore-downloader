@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.7.0
+// @version      0.7.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -27,11 +27,196 @@
         });
     }
 
+    var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
+    function createCommonjsModule(fn, module) {
+    	return module = { exports: {} }, fn(module, module.exports), module.exports;
+    }
+
+    var FileSaver = createCommonjsModule(function (module, exports) {
+    (function (global, factory) {
+      {
+        factory();
+      }
+    })(commonjsGlobal, function () {
+
+      /*
+      * FileSaver.js
+      * A saveAs() FileSaver implementation.
+      *
+      * By Eli Grey, http://eligrey.com
+      *
+      * License : https://github.com/eligrey/FileSaver.js/blob/master/LICENSE.md (MIT)
+      * source  : http://purl.eligrey.com/github/FileSaver.js
+      */
+      // The one and only way of getting global scope in all environments
+      // https://stackoverflow.com/q/3277182/1008999
+      var _global = typeof window === 'object' && window.window === window ? window : typeof self === 'object' && self.self === self ? self : typeof commonjsGlobal === 'object' && commonjsGlobal.global === commonjsGlobal ? commonjsGlobal : void 0;
+
+      function bom(blob, opts) {
+        if (typeof opts === 'undefined') opts = {
+          autoBom: false
+        };else if (typeof opts !== 'object') {
+          console.warn('Deprecated: Expected third argument to be a object');
+          opts = {
+            autoBom: !opts
+          };
+        } // prepend BOM for UTF-8 XML and text/* types (including HTML)
+        // note: your browser will automatically convert UTF-16 U+FEFF to EF BB BF
+
+        if (opts.autoBom && /^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(blob.type)) {
+          return new Blob([String.fromCharCode(0xFEFF), blob], {
+            type: blob.type
+          });
+        }
+
+        return blob;
+      }
+
+      function download(url, name, opts) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url);
+        xhr.responseType = 'blob';
+
+        xhr.onload = function () {
+          saveAs(xhr.response, name, opts);
+        };
+
+        xhr.onerror = function () {
+          console.error('could not download file');
+        };
+
+        xhr.send();
+      }
+
+      function corsEnabled(url) {
+        var xhr = new XMLHttpRequest(); // use sync to avoid popup blocker
+
+        xhr.open('HEAD', url, false);
+
+        try {
+          xhr.send();
+        } catch (e) {}
+
+        return xhr.status >= 200 && xhr.status <= 299;
+      } // `a.click()` doesn't work for all browsers (#465)
+
+
+      function click(node) {
+        try {
+          node.dispatchEvent(new MouseEvent('click'));
+        } catch (e) {
+          var evt = document.createEvent('MouseEvents');
+          evt.initMouseEvent('click', true, true, window, 0, 0, 0, 80, 20, false, false, false, false, 0, null);
+          node.dispatchEvent(evt);
+        }
+      }
+
+      var saveAs = _global.saveAs || ( // probably in some web worker
+      typeof window !== 'object' || window !== _global ? function saveAs() {}
+      /* noop */
+      // Use download attribute first if possible (#193 Lumia mobile)
+      : 'download' in HTMLAnchorElement.prototype ? function saveAs(blob, name, opts) {
+        var URL = _global.URL || _global.webkitURL;
+        var a = document.createElement('a');
+        name = name || blob.name || 'download';
+        a.download = name;
+        a.rel = 'noopener'; // tabnabbing
+        // TODO: detect chrome extensions & packaged apps
+        // a.target = '_blank'
+
+        if (typeof blob === 'string') {
+          // Support regular links
+          a.href = blob;
+
+          if (a.origin !== location.origin) {
+            corsEnabled(a.href) ? download(blob, name, opts) : click(a, a.target = '_blank');
+          } else {
+            click(a);
+          }
+        } else {
+          // Support blobs
+          a.href = URL.createObjectURL(blob);
+          setTimeout(function () {
+            URL.revokeObjectURL(a.href);
+          }, 4E4); // 40s
+
+          setTimeout(function () {
+            click(a);
+          }, 0);
+        }
+      } // Use msSaveOrOpenBlob as a second approach
+      : 'msSaveOrOpenBlob' in navigator ? function saveAs(blob, name, opts) {
+        name = name || blob.name || 'download';
+
+        if (typeof blob === 'string') {
+          if (corsEnabled(blob)) {
+            download(blob, name, opts);
+          } else {
+            var a = document.createElement('a');
+            a.href = blob;
+            a.target = '_blank';
+            setTimeout(function () {
+              click(a);
+            });
+          }
+        } else {
+          navigator.msSaveOrOpenBlob(bom(blob, opts), name);
+        }
+      } // Fallback to using FileReader and a popup
+      : function saveAs(blob, name, opts, popup) {
+        // Open a popup immediately do go around popup blocker
+        // Mostly only available on user interaction and the fileReader is async so...
+        popup = popup || open('', '_blank');
+
+        if (popup) {
+          popup.document.title = popup.document.body.innerText = 'downloading...';
+        }
+
+        if (typeof blob === 'string') return download(blob, name, opts);
+        var force = blob.type === 'application/octet-stream';
+
+        var isSafari = /constructor/i.test(_global.HTMLElement) || _global.safari;
+
+        var isChromeIOS = /CriOS\/[\d]+/.test(navigator.userAgent);
+
+        if ((isChromeIOS || force && isSafari) && typeof FileReader === 'object') {
+          // Safari doesn't allow downloading of blob URLs
+          var reader = new FileReader();
+
+          reader.onloadend = function () {
+            var url = reader.result;
+            url = isChromeIOS ? url : url.replace(/^data:[^;]*;/, 'data:attachment/file;');
+            if (popup) popup.location.href = url;else location = url;
+            popup = null; // reverse-tabnabbing #460
+          };
+
+          reader.readAsDataURL(blob);
+        } else {
+          var URL = _global.URL || _global.webkitURL;
+          var url = URL.createObjectURL(blob);
+          if (popup) popup.location = url;else location.href = url;
+          popup = null; // reverse-tabnabbing #460
+
+          setTimeout(function () {
+            URL.revokeObjectURL(url);
+          }, 4E4); // 40s
+        }
+      });
+      _global.saveAs = saveAs.saveAs = saveAs;
+
+      {
+        module.exports = saveAs;
+      }
+    });
+    });
+
+    const saveAs = FileSaver.saveAs;
     const waitForDocumentLoaded = () => {
-        if (document.readyState !== "complete") {
+        if (document.readyState !== 'complete') {
             return new Promise(resolve => {
-                document.addEventListener("readystatechange", () => {
-                    if (document.readyState == "complete") {
+                document.addEventListener('readystatechange', () => {
+                    if (document.readyState === 'complete') {
                         resolve();
                     }
                 }, { once: true });
@@ -41,42 +226,6 @@
             return Promise.resolve();
         }
     };
-
-    /**
-     * the site key for Google reCAPTCHA v3
-     */
-    const SITE_KEY = "6Ldxtt8UAAAAALvcRqWTlVOVIB7MmEWwN-zw_9fM";
-    let gr;
-    /**
-     * load reCAPTCHA
-     */
-    const load = () => {
-        // load script
-        const script = document.createElement("script");
-        script.src = `https://www.recaptcha.net/recaptcha/api.js?render=${SITE_KEY}`;
-        script.async = true;
-        document.body.appendChild(script);
-        // add css
-        const style = document.createElement("style");
-        style.innerHTML = ".grecaptcha-badge { display: none !important; }";
-        document.head.appendChild(style);
-        return new Promise((resolve) => {
-            script.onload = () => {
-                const grecaptcha = window["grecaptcha"];
-                grecaptcha.ready(() => resolve(grecaptcha));
-            };
-        });
-    };
-    const init = () => {
-        if (!gr) {
-            gr = load();
-        }
-        return gr;
-    };
-    const execute = () => __awaiter(void 0, void 0, void 0, function* () {
-        const captcha = yield init();
-        return captcha.execute(SITE_KEY, { action: "downloadmscz" });
-    });
 
     var global$1 = (typeof global !== "undefined" ? global :
                 typeof self !== "undefined" ? self :
@@ -26073,38 +26222,6 @@ Please pipe the document into a Node stream.\
         });
 
         /// <reference lib="webworker" />
-        const generatePDF = (imgURLs, imgType, width, height) => __awaiter(void 0, void 0, void 0, function* () {
-            // @ts-ignore
-            const pdf = new PDFDocument({
-                // compress: true,
-                size: [width, height],
-                autoFirstPage: false,
-                margin: 0,
-                layout: "portrait",
-            });
-            if (imgType == "png") {
-                const imgDataUrlList = yield Promise.all(imgURLs.map(fetchDataURL));
-                imgDataUrlList.forEach((data) => {
-                    pdf.addPage();
-                    pdf.image(data, {
-                        width,
-                        height,
-                    });
-                });
-            }
-            else { // imgType == "svg"
-                const svgList = yield Promise.all(imgURLs.map(fetchText));
-                svgList.forEach((svg) => {
-                    pdf.addPage();
-                    source(pdf, svg, 0, 0, {
-                        preserveAspectRatio: "none",
-                    });
-                });
-            }
-            // @ts-ignore
-            const buf = yield pdf.getBuffer();
-            return buf.buffer;
-        });
         const getDataURL = (blob) => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -26125,6 +26242,38 @@ Please pipe the document into a Node stream.\
             const r = yield fetch(imgUrl);
             return r.text();
         });
+        const generatePDF = (imgURLs, imgType, width, height) => __awaiter(void 0, void 0, void 0, function* () {
+            // @ts-ignore
+            const pdf = new PDFDocument({
+                // compress: true,
+                size: [width, height],
+                autoFirstPage: false,
+                margin: 0,
+                layout: 'portrait',
+            });
+            if (imgType === 'png') {
+                const imgDataUrlList = yield Promise.all(imgURLs.map(fetchDataURL));
+                imgDataUrlList.forEach((data) => {
+                    pdf.addPage();
+                    pdf.image(data, {
+                        width,
+                        height,
+                    });
+                });
+            }
+            else { // imgType == "svg"
+                const svgList = yield Promise.all(imgURLs.map(fetchText));
+                svgList.forEach((svg) => {
+                    pdf.addPage();
+                    source(pdf, svg, 0, 0, {
+                        preserveAspectRatio: 'none',
+                    });
+                });
+            }
+            // @ts-ignore
+            const buf = yield pdf.getBuffer();
+            return buf.buffer;
+        });
         onmessage = (e) => __awaiter(void 0, void 0, void 0, function* () {
             const [imgURLs, imgType, width, height,] = e.data;
             const pdfBuf = yield generatePDF(imgURLs, imgType, width, height);
@@ -26135,7 +26284,7 @@ Please pipe the document into a Node stream.\
     };
 
     const scriptUrlFromFunction = (fn) => {
-        const blob = new Blob(["(" + fn.toString() + ")()"], { type: "application/javascript" });
+        const blob = new Blob(['(' + fn.toString() + ')()'], { type: 'application/javascript' });
         return URL.createObjectURL(blob);
     };
     class PDFWorkerHelper extends Worker {
@@ -26152,208 +26301,77 @@ Please pipe the document into a Node stream.\
             ];
             this.postMessage(msg);
             return new Promise((resolve) => {
-                this.addEventListener("message", (e) => {
+                this.addEventListener('message', (e) => {
                     resolve(e.data);
                 });
             });
         }
     }
 
-    var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+    const scoreinfo = {
+        get playerdata() {
+            // @ts-ignore
+            return window.UGAPP.store.jmuse_settings.score_player;
+        },
+        get id() {
+            return this.playerdata.json.id;
+        },
+        get title() {
+            try {
+                return this.playerdata.json.metadata.title;
+            }
+            catch (_) {
+                return '';
+            }
+        },
+        get fileName() {
+            return this.title.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_');
+        },
+        get pageCount() {
+            try {
+                return this.playerdata.json.metadata.pages;
+            }
+            catch (_) {
+                return document.querySelectorAll('img[src*=score_]').length;
+            }
+        },
+        get baseUrl() {
+            return this.playerdata.urls.image_path;
+        },
+        get mxlUrl() {
+            return this.baseUrl + 'score.mxl';
+        },
+        get midiUrl() {
+            return this.playerdata.urls.midi;
+        },
+        get mp3Url() {
+            return this.playerdata.urls.mp3;
+        },
+        get msczUrl() {
+            // https://github.com/Xmader/cloudflare-worker-musescore-mscz
+            return `https://musescore.now.sh/api/mscz?id=${this.id}&token=`;
+        },
+        get sheetImgType() {
+            try {
+                const imgE = document.querySelector('img[src*=score_]');
+                const { pathname } = new URL(imgE.src);
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                const imgtype = pathname.match(/\.(\w+)$/)[1];
+                return imgtype;
+            }
+            catch (_) {
+                // return null
+                return 'svg';
+            }
+        },
+    };
 
-    function createCommonjsModule(fn, module) {
-    	return module = { exports: {} }, fn(module, module.exports), module.exports;
-    }
-
-    var FileSaver = createCommonjsModule(function (module, exports) {
-    (function (global, factory) {
-      {
-        factory();
-      }
-    })(commonjsGlobal, function () {
-
-      /*
-      * FileSaver.js
-      * A saveAs() FileSaver implementation.
-      *
-      * By Eli Grey, http://eligrey.com
-      *
-      * License : https://github.com/eligrey/FileSaver.js/blob/master/LICENSE.md (MIT)
-      * source  : http://purl.eligrey.com/github/FileSaver.js
-      */
-      // The one and only way of getting global scope in all environments
-      // https://stackoverflow.com/q/3277182/1008999
-      var _global = typeof window === 'object' && window.window === window ? window : typeof self === 'object' && self.self === self ? self : typeof commonjsGlobal === 'object' && commonjsGlobal.global === commonjsGlobal ? commonjsGlobal : void 0;
-
-      function bom(blob, opts) {
-        if (typeof opts === 'undefined') opts = {
-          autoBom: false
-        };else if (typeof opts !== 'object') {
-          console.warn('Deprecated: Expected third argument to be a object');
-          opts = {
-            autoBom: !opts
-          };
-        } // prepend BOM for UTF-8 XML and text/* types (including HTML)
-        // note: your browser will automatically convert UTF-16 U+FEFF to EF BB BF
-
-        if (opts.autoBom && /^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(blob.type)) {
-          return new Blob([String.fromCharCode(0xFEFF), blob], {
-            type: blob.type
-          });
-        }
-
-        return blob;
-      }
-
-      function download(url, name, opts) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url);
-        xhr.responseType = 'blob';
-
-        xhr.onload = function () {
-          saveAs(xhr.response, name, opts);
-        };
-
-        xhr.onerror = function () {
-          console.error('could not download file');
-        };
-
-        xhr.send();
-      }
-
-      function corsEnabled(url) {
-        var xhr = new XMLHttpRequest(); // use sync to avoid popup blocker
-
-        xhr.open('HEAD', url, false);
-
-        try {
-          xhr.send();
-        } catch (e) {}
-
-        return xhr.status >= 200 && xhr.status <= 299;
-      } // `a.click()` doesn't work for all browsers (#465)
-
-
-      function click(node) {
-        try {
-          node.dispatchEvent(new MouseEvent('click'));
-        } catch (e) {
-          var evt = document.createEvent('MouseEvents');
-          evt.initMouseEvent('click', true, true, window, 0, 0, 0, 80, 20, false, false, false, false, 0, null);
-          node.dispatchEvent(evt);
-        }
-      }
-
-      var saveAs = _global.saveAs || ( // probably in some web worker
-      typeof window !== 'object' || window !== _global ? function saveAs() {}
-      /* noop */
-      // Use download attribute first if possible (#193 Lumia mobile)
-      : 'download' in HTMLAnchorElement.prototype ? function saveAs(blob, name, opts) {
-        var URL = _global.URL || _global.webkitURL;
-        var a = document.createElement('a');
-        name = name || blob.name || 'download';
-        a.download = name;
-        a.rel = 'noopener'; // tabnabbing
-        // TODO: detect chrome extensions & packaged apps
-        // a.target = '_blank'
-
-        if (typeof blob === 'string') {
-          // Support regular links
-          a.href = blob;
-
-          if (a.origin !== location.origin) {
-            corsEnabled(a.href) ? download(blob, name, opts) : click(a, a.target = '_blank');
-          } else {
-            click(a);
-          }
-        } else {
-          // Support blobs
-          a.href = URL.createObjectURL(blob);
-          setTimeout(function () {
-            URL.revokeObjectURL(a.href);
-          }, 4E4); // 40s
-
-          setTimeout(function () {
-            click(a);
-          }, 0);
-        }
-      } // Use msSaveOrOpenBlob as a second approach
-      : 'msSaveOrOpenBlob' in navigator ? function saveAs(blob, name, opts) {
-        name = name || blob.name || 'download';
-
-        if (typeof blob === 'string') {
-          if (corsEnabled(blob)) {
-            download(blob, name, opts);
-          } else {
-            var a = document.createElement('a');
-            a.href = blob;
-            a.target = '_blank';
-            setTimeout(function () {
-              click(a);
-            });
-          }
-        } else {
-          navigator.msSaveOrOpenBlob(bom(blob, opts), name);
-        }
-      } // Fallback to using FileReader and a popup
-      : function saveAs(blob, name, opts, popup) {
-        // Open a popup immediately do go around popup blocker
-        // Mostly only available on user interaction and the fileReader is async so...
-        popup = popup || open('', '_blank');
-
-        if (popup) {
-          popup.document.title = popup.document.body.innerText = 'downloading...';
-        }
-
-        if (typeof blob === 'string') return download(blob, name, opts);
-        var force = blob.type === 'application/octet-stream';
-
-        var isSafari = /constructor/i.test(_global.HTMLElement) || _global.safari;
-
-        var isChromeIOS = /CriOS\/[\d]+/.test(navigator.userAgent);
-
-        if ((isChromeIOS || force && isSafari) && typeof FileReader === 'object') {
-          // Safari doesn't allow downloading of blob URLs
-          var reader = new FileReader();
-
-          reader.onloadend = function () {
-            var url = reader.result;
-            url = isChromeIOS ? url : url.replace(/^data:[^;]*;/, 'data:attachment/file;');
-            if (popup) popup.location.href = url;else location = url;
-            popup = null; // reverse-tabnabbing #460
-          };
-
-          reader.readAsDataURL(blob);
-        } else {
-          var URL = _global.URL || _global.webkitURL;
-          var url = URL.createObjectURL(blob);
-          if (popup) popup.location = url;else location.href = url;
-          popup = null; // reverse-tabnabbing #460
-
-          setTimeout(function () {
-            URL.revokeObjectURL(url);
-          }, 4E4); // 40s
-        }
-      });
-      _global.saveAs = saveAs.saveAs = saveAs;
-
-      {
-        module.exports = saveAs;
-      }
-    });
-    });
-
-    const saveAs = FileSaver.saveAs;
-    const PROCESSING_TEXT = "Processing…";
-    const FAILED_TEXT = "❌Download Failed!";
-    const WEBMSCORE_URL = "https://cdn.jsdelivr.net/npm/webmscore@0.5/webmscore.js";
     let pdfBlob;
-    let msczBufferP;
-    const generatePDF = (imgURLs, imgType, name) => __awaiter(void 0, void 0, void 0, function* () {
+    const _downloadPDF = (imgURLs, imgType, name) => __awaiter(void 0, void 0, void 0, function* () {
         if (pdfBlob) {
             return saveAs(pdfBlob, `${name}.pdf`);
         }
-        const cachedImg = document.querySelector("img[src*=score_]");
+        const cachedImg = document.querySelector('img[src*=score_]');
         const { naturalWidth: width, naturalHeight: height } = cachedImg;
         const worker = new PDFWorkerHelper();
         const pdfArrayBuffer = yield worker.generatePDF(imgURLs, imgType, width, height);
@@ -26361,38 +26379,55 @@ Please pipe the document into a Node stream.\
         pdfBlob = new Blob([pdfArrayBuffer]);
         saveAs(pdfBlob, `${name}.pdf`);
     });
-    const getPagesNumber = (scorePlayerData) => {
-        try {
-            return scorePlayerData.json.metadata.pages;
-        }
-        catch (_) {
-            return document.querySelectorAll("img[src*=score_]").length;
-        }
+    const downloadPDF = () => __awaiter(void 0, void 0, void 0, function* () {
+        const imgType = scoreinfo.sheetImgType;
+        const pageCount = scoreinfo.pageCount;
+        const sheetImgURLs = Array.from({ length: pageCount }).map((_, i) => {
+            return scoreinfo.baseUrl + `score_${i}.${imgType}`;
+        });
+        return _downloadPDF(sheetImgURLs, imgType, scoreinfo.fileName);
+    });
+
+    /**
+     * the site key for Google reCAPTCHA v3
+     */
+    const SITE_KEY = '6Ldxtt8UAAAAALvcRqWTlVOVIB7MmEWwN-zw_9fM';
+    let gr;
+    /**
+     * load reCAPTCHA
+     */
+    const load = () => {
+        // load script
+        const script = document.createElement('script');
+        script.src = `https://www.recaptcha.net/recaptcha/api.js?render=${SITE_KEY}`;
+        script.async = true;
+        document.body.appendChild(script);
+        // add css
+        const style = document.createElement('style');
+        style.innerHTML = '.grecaptcha-badge { display: none !important; }';
+        document.head.appendChild(style);
+        return new Promise((resolve) => {
+            script.onload = () => {
+                const grecaptcha = window['grecaptcha'];
+                grecaptcha.ready(() => resolve(grecaptcha));
+            };
+        });
     };
-    const getImgType = () => {
-        try {
-            const imgE = document.querySelector("img[src*=score_]");
-            const { pathname } = new URL(imgE.src);
-            const imgtype = pathname.match(/\.(\w+)$/)[1];
-            return imgtype;
+    const init = () => {
+        if (!gr) {
+            gr = load();
         }
-        catch (_) {
-            return null;
-        }
+        return gr;
     };
-    const getTitle = (scorePlayerData) => {
-        try {
-            return scorePlayerData.json.metadata.title;
-        }
-        catch (_) {
-            return "";
-        }
-    };
-    const getScoreFileName = (scorePlayerData) => {
-        return getTitle(scorePlayerData).replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, "_");
-    };
-    const fetchMscz = (url) => __awaiter(void 0, void 0, void 0, function* () {
+    const execute = () => __awaiter(void 0, void 0, void 0, function* () {
+        const captcha = yield init();
+        return captcha.execute(SITE_KEY, { action: 'downloadmscz' });
+    });
+
+    let msczBufferP;
+    const fetchMscz = () => __awaiter(void 0, void 0, void 0, function* () {
         if (!msczBufferP) {
+            const url = scoreinfo.msczUrl;
             msczBufferP = (() => __awaiter(void 0, void 0, void 0, function* () {
                 const token = yield execute();
                 const r = yield fetch(url + token);
@@ -26402,159 +26437,191 @@ Please pipe the document into a Node stream.\
         }
         return msczBufferP;
     });
+    const downloadMscz = () => __awaiter(void 0, void 0, void 0, function* () {
+        const data = new Blob([yield fetchMscz()]);
+        const filename = scoreinfo.fileName;
+        saveAs(data, `${filename}.mscz`);
+    });
+
+    /**
+     * Select the original Download Button
+     */
+    const getDownloadBtn = () => {
+        const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside section > div')[4];
+        const btn = btnsDiv.querySelector('button, .button');
+        btn.onclick = null;
+        // fix the icon of the download btn
+        // if the `btn` seleted was a `Print` btn, replace the `print` icon with the `download` icon
+        const svgPath = btn.querySelector('svg > path');
+        if (svgPath) {
+            svgPath.setAttribute('d', 'M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z');
+        }
+        if (btn.nodeName.toLowerCase() === 'button') {
+            btn.setAttribute('style', 'width: 205px !important');
+        }
+        else {
+            btn.dataset.target = '';
+        }
+        return btn;
+    };
+    class BtnList {
+        constructor(templateBtn) {
+            this.templateBtn = templateBtn;
+            this.list = [];
+        }
+        add(options) {
+            const btn = this.templateBtn.cloneNode(true);
+            const textNode = [...btn.childNodes].find((x) => {
+                const txt = x.textContent;
+                return txt.includes('Download') || txt.includes('Print');
+            });
+            const setText = (str) => {
+                textNode.textContent = str;
+            };
+            setText(options.name);
+            btn.onclick = () => {
+                options.action(options.name, btn, setText);
+            };
+            this.list.push(btn);
+            return btn;
+        }
+        /**
+         * replace the template button with the list of new buttons
+         */
+        commit() {
+            this.templateBtn.replaceWith(...this.list);
+        }
+    }
+    // eslint-disable-next-line @typescript-eslint/no-namespace
+    var BtnAction;
+    (function (BtnAction) {
+        BtnAction.PROCESSING_TEXT = 'Processing…';
+        BtnAction.ERROR_TEXT = '❌Download Failed!';
+        BtnAction.openUrl = (url) => {
+            return () => window.open(url);
+        };
+        BtnAction.process = (fn) => {
+            return (name, btn, setText) => __awaiter(this, void 0, void 0, function* () {
+                const _onclick = btn.onclick;
+                btn.onclick = null;
+                setText(BtnAction.PROCESSING_TEXT);
+                try {
+                    yield fn();
+                    setText(name);
+                }
+                catch (err) {
+                    setText(BtnAction.ERROR_TEXT);
+                    console.error(err);
+                }
+                btn.onclick = _onclick;
+            });
+        };
+    })(BtnAction || (BtnAction = {}));
+
+    const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.5/webmscore.js';
     const main = () => {
         // @ts-ignore
         if (!window.UGAPP || !window.UGAPP.store || !window.UGAPP.store.jmuse_settings) {
             return;
         }
         // init recaptcha
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         init();
-        // @ts-ignore
-        const scorePlayer = window.UGAPP.store.jmuse_settings.score_player;
-        const { id } = scorePlayer.json;
-        const baseURL = scorePlayer.urls.image_path;
-        const filename = getScoreFileName(scorePlayer);
-        // https://github.com/Xmader/cloudflare-worker-musescore-mscz
-        const msczURL = `https://musescore.now.sh/api/mscz?id=${id}&token=`;
-        const mxlURL = baseURL + "score.mxl";
-        const { midi: midiURL, mp3: mp3URL } = scorePlayer.urls;
-        const btnsDiv = document.querySelector(".score-right .buttons-wrapper") || document.querySelectorAll("aside section > div")[4];
-        const downloadBtn = btnsDiv.querySelector("button, .button");
-        downloadBtn.onclick = null;
-        // fix the icon of the download btn
-        // if the `downloadBtn` seleted was a `Print` btn, replace the `print` icon with the `download` icon
-        const svgPath = downloadBtn.querySelector("svg > path");
-        if (svgPath) {
-            svgPath.setAttribute("d", "M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z");
-        }
-        const imgType = getImgType() || "svg";
-        const sheetImgURLs = Array.from({ length: getPagesNumber(scorePlayer) }).fill(null).map((_, i) => {
-            return baseURL + `score_${i}.${imgType}`;
+        const btnList = new BtnList(getDownloadBtn());
+        btnList.add({
+            name: 'Download MSCZ',
+            action: BtnAction.process(downloadMscz),
         });
-        const downloadURLs = {
-            "MSCZ": null,
-            "PDF": null,
-            "MusicXML": mxlURL,
-            "MIDI": midiURL,
-            "MP3": mp3URL,
-            "Parts": null,
-        };
-        const createBtn = (name) => {
-            const btn = downloadBtn.cloneNode(true);
-            if (btn.nodeName.toLowerCase() == "button") {
-                btn.setAttribute("style", "width: 205px !important");
-            }
-            else {
-                btn.dataset.target = "";
-            }
-            const textNode = [...btn.childNodes].find((x) => {
-                return x.textContent.includes("Download") || x.textContent.includes("Print");
-            });
-            textNode.textContent = `Download ${name}`;
-            return {
-                btn,
-                textNode,
-            };
-        };
-        const newDownloadBtns = Object.keys(downloadURLs).map((name) => {
-            const url = downloadURLs[name];
-            const { btn, textNode } = createBtn(name);
-            if (name == "PDF") {
-                btn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
-                    const filename = getScoreFileName(scorePlayer);
-                    textNode.textContent = PROCESSING_TEXT;
-                    try {
-                        yield generatePDF(sheetImgURLs, imgType, filename);
-                        textNode.textContent = "Download PDF";
-                    }
-                    catch (err) {
-                        textNode.textContent = FAILED_TEXT;
-                        console.error(err);
-                    }
-                });
-            }
-            else if (name == "MSCZ") {
-                btn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
-                    textNode.textContent = PROCESSING_TEXT;
-                    try {
-                        const data = new Blob([yield fetchMscz(msczURL)]);
-                        textNode.textContent = "Download MSCZ";
-                        saveAs(data, `${filename}.mscz`);
-                    }
-                    catch (err) {
-                        textNode.textContent = FAILED_TEXT;
-                        console.error(err);
-                    }
-                });
-            }
-            else if (name == "Parts") { // download individual parts
-                btn.title = "Download individual parts (BETA)";
-                const cb = btn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
+        btnList.add({
+            name: 'Download PDF',
+            action: BtnAction.process(downloadPDF),
+        });
+        btnList.add({
+            name: 'Download MusicXML',
+            action: BtnAction.openUrl(scoreinfo.mxlUrl),
+        });
+        btnList.add({
+            name: 'Download MIDI',
+            action: BtnAction.openUrl(scoreinfo.midiUrl),
+        });
+        btnList.add({
+            name: 'Download MP3',
+            action: BtnAction.openUrl(scoreinfo.mp3Url),
+        });
+        btnList.add({
+            name: 'Individual Parts',
+            action(btnName, btn, setText) {
+                return __awaiter(this, void 0, void 0, function* () {
+                    const _onclick = btn.onclick;
                     btn.onclick = null;
-                    textNode.textContent = PROCESSING_TEXT;
-                    const w = window.open("");
-                    const txt = document.createTextNode(PROCESSING_TEXT);
+                    setText(BtnAction.PROCESSING_TEXT);
+                    const w = window.open('');
+                    const txt = document.createTextNode(BtnAction.PROCESSING_TEXT);
                     w.document.body.append(txt);
                     // set page hooks
+                    // eslint-disable-next-line prefer-const
+                    let score;
                     const destroy = () => {
-                        score.destroy();
+                        score && score.destroy();
                         w.close();
                     };
-                    window.addEventListener("unload", destroy);
-                    w.addEventListener("beforeunload", () => {
-                        score.destroy();
-                        window.removeEventListener("unload", destroy);
-                        textNode.textContent = "Download Parts";
-                        btn.onclick = cb;
+                    window.addEventListener('unload', destroy);
+                    w.addEventListener('beforeunload', () => {
+                        score && score.destroy();
+                        window.removeEventListener('unload', destroy);
+                        setText(btnName);
+                        btn.onclick = _onclick;
                     });
                     // load webmscore (https://github.com/LibreScore/webmscore)
-                    const script = w.document.createElement("script");
+                    const script = w.document.createElement('script');
                     script.src = WEBMSCORE_URL;
                     w.document.body.append(script);
                     yield new Promise(resolve => { script.onload = resolve; });
                     // parse mscz data
-                    const data = new Uint8Array(new Uint8Array(yield fetchMscz(msczURL)) // copy its ArrayBuffer
+                    const data = new Uint8Array(new Uint8Array(yield fetchMscz()) // copy its ArrayBuffer
                     );
-                    const score = yield w["WebMscore"].load("mscz", data);
+                    score = yield w['WebMscore'].load('mscz', data);
                     yield score.generateExcerpts();
                     const metadata = yield score.metadata();
-                    console.log("score metadata loaded by webmscore", metadata);
+                    console.log('score metadata loaded by webmscore', metadata);
                     // render the part selection page
                     txt.remove();
-                    const fieldset = w.document.createElement("fieldset");
+                    const fieldset = w.document.createElement('fieldset');
+                    metadata.excerpts.unshift({ id: -1, title: 'Full score' });
                     for (const excerpt of metadata.excerpts) {
-                        const e = w.document.createElement("input");
-                        e.name = "score-part";
-                        e.type = "radio";
-                        e.value = excerpt.id;
-                        const label = w.document.createElement("label");
-                        label.innerText = excerpt.title;
-                        const br = w.document.createElement("br");
+                        const id = excerpt.id;
+                        const partName = excerpt.title;
+                        const e = w.document.createElement('input');
+                        e.name = 'score-part';
+                        e.type = 'radio';
+                        e.alt = partName;
+                        e.value = id;
+                        e.checked = id === 0; // initially select the first part 
+                        const label = w.document.createElement('label');
+                        label.innerText = partName;
+                        const br = w.document.createElement('br');
                         fieldset.append(e, label, br);
                     }
-                    const submitBtn = w.document.createElement("input");
-                    submitBtn.type = "submit";
-                    submitBtn.value = "Download PDF";
+                    const submitBtn = w.document.createElement('input');
+                    submitBtn.type = 'submit';
+                    submitBtn.value = 'Download PDF';
                     fieldset.append(submitBtn);
                     w.document.body.append(fieldset);
-                    submitBtn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
-                        const checked = w.document.querySelector("input:checked");
+                    submitBtn.onclick = () => __awaiter(this, void 0, void 0, function* () {
+                        const checked = fieldset.querySelector('input:checked');
                         const id = checked.value;
+                        const partName = checked.alt;
                         yield score.setExcerptId(id);
+                        const filename = scoreinfo.fileName;
                         const data = new Blob([yield score.savePdf()]);
-                        saveAs(data, `${filename}-part-${id}.pdf`);
+                        saveAs(data, `${filename} - ${partName}.pdf`);
                     });
                 });
-            }
-            else {
-                btn.onclick = () => {
-                    window.open(url);
-                };
-            }
-            return btn;
-        });
-        downloadBtn.replaceWith(...newDownloadBtns);
+            },
+        }).title = 'Download individual parts (BETA)';
+        btnList.commit();
     };
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     waitForDocumentLoaded().then(main);
 
     }.toString() + ')()')
