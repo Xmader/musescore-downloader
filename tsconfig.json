@@ -3,6 +3,7 @@
     "target": "es6",
     "lib": [
       "dom",
+      "dom.iterable",
       "es2019",
     ],
     "module": "commonjs",
