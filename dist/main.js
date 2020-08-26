@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.7.1
+// @version      0.7.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26447,7 +26447,7 @@ Please pipe the document into a Node stream.\
      * Select the original Download Button
      */
     const getDownloadBtn = () => {
-        const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside section > div')[4];
+        const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside > section > section > div')[3];
         const btn = btnsDiv.querySelector('button, .button');
         btn.onclick = null;
         // fix the icon of the download btn
