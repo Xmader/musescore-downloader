@@ -5,7 +5,7 @@ type BtnElement = HTMLElement
  * Select the original Download Button
  */
 export const getDownloadBtn = (): BtnElement => {
-  const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside section section > div')[4]
+  const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside > section > section > div')[3]
   const btn = btnsDiv.querySelector('button, .button') as BtnElement
   btn.onclick = null
 
