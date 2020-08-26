@@ -5,7 +5,7 @@ type BtnElement = HTMLElement
  * Select the original Download Button
  */
 export const getDownloadBtn = (): BtnElement => {
-  const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside section > div')[4]
+  const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside section section > div')[4]
   const btn = btnsDiv.querySelector('button, .button') as BtnElement
   btn.onclick = null
 
@@ -36,7 +36,7 @@ export class BtnList {
   constructor (private templateBtn: BtnElement) { }
 
   add (options: BtnOptions): BtnElement {
-    const btn: HTMLButtonElement = this.templateBtn.cloneNode(true) as any
+    const btn = this.templateBtn.cloneNode(true) as HTMLButtonElement
 
     const textNode = [...btn.childNodes].find((x) => {
       const txt = x.textContent as string
