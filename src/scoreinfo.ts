@@ -50,7 +50,7 @@ const scoreinfo = {
 
   get msczUrl (this: typeof scoreinfo): string {
     // https://github.com/Xmader/cloudflare-worker-musescore-mscz
-    return `https://musescore.now.sh/api/mscz?id=${this.id}&token=`
+    return `https://mscz.librescore.org/?id=${this.id}&name=${this.fileName}&token=`
   },
 
   get sheetImgType (): 'svg' | 'png' {

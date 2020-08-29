@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.7.2
+// @version      0.7.3
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26349,7 +26349,7 @@ Please pipe the document into a Node stream.\
         },
         get msczUrl() {
             // https://github.com/Xmader/cloudflare-worker-musescore-mscz
-            return `https://musescore.now.sh/api/mscz?id=${this.id}&token=`;
+            return `https://mscz.librescore.org/?id=${this.id}&name=${this.fileName}&token=`;
         },
         get sheetImgType() {
             try {
