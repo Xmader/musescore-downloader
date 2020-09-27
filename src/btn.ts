@@ -1,4 +1,7 @@
 
+import { text } from 'pdfkit/js/mixins/text'
+import { loadMscore, WebMscore } from './mscore'
+
 type BtnElement = HTMLElement
 
 /**
@@ -76,6 +79,37 @@ export namespace BtnAction {
 
   export const openUrl = (url: string): BtnAction => {
     return (): any => window.open(url)
+  }
+
+  export const mscoreWindow = (fn: (w: Window, score: WebMscore, processingTextEl: ChildNode) => any): BtnAction => {
+    return async (btnName, btn, setText) => {
+      const _onclick = btn.onclick
+      btn.onclick = null
+      setText(BtnAction.PROCESSING_TEXT)
+
+      const w = window.open('') as Window
+      const txt = document.createTextNode(BtnAction.PROCESSING_TEXT)
+      w.document.body.append(txt)
+
+      // set page hooks
+      // eslint-disable-next-line prefer-const
+      let score: WebMscore
+      const destroy = (): void => {
+        score && score.destroy()
+        w.close()
+      }
+      window.addEventListener('unload', destroy)
+      w.addEventListener('beforeunload', () => {
+        score && score.destroy()
+        window.removeEventListener('unload', destroy)
+        setText(btnName)
+        btn.onclick = _onclick
+      })
+
+      score = await loadMscore(w)
+
+      fn(w, score, txt)
+    }
   }
 
   export const process = (fn: () => any): BtnAction => {
