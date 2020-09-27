@@ -16,6 +16,7 @@
     ],
     "rules": {
         "dot-notation": "off",
+        "camelcase": "off",
         "no-useless-constructor": "off",
         "@typescript-eslint/no-useless-constructor": "error",
         "no-dupe-class-members": "off",
@@ -26,6 +27,9 @@
         "@typescript-eslint/ban-ts-comment": "off",
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/prefer-regexp-exec": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/no-unsafe-call": "off",
+        "@typescript-eslint/no-unsafe-member-access": "off",
         "no-trailing-spaces": [
             "error",
             {
