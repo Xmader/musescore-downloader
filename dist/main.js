@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.7.3
+// @version      0.8.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26311,6 +26311,7 @@ Please pipe the document into a Node stream.\
     const scoreinfo = {
         get playerdata() {
             // @ts-ignore
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
             return window.UGAPP.store.jmuse_settings.score_player;
         },
         get id() {
@@ -26349,7 +26350,7 @@ Please pipe the document into a Node stream.\
         },
         get msczUrl() {
             // https://github.com/Xmader/cloudflare-worker-musescore-mscz
-            return `https://mscz.librescore.org/?id=${this.id}&name=${this.fileName}&token=`;
+            return `https://musescore.now.sh/api/mscz?id=${this.id}&token=`;
         },
         get sheetImgType() {
             try {
@@ -26367,7 +26368,7 @@ Please pipe the document into a Node stream.\
     };
 
     let pdfBlob;
-    const _downloadPDF = (imgURLs, imgType, name) => __awaiter(void 0, void 0, void 0, function* () {
+    const _downloadPDF = (imgURLs, imgType, name = '') => __awaiter(void 0, void 0, void 0, function* () {
         if (pdfBlob) {
             return saveAs(pdfBlob, `${name}.pdf`);
         }
@@ -26443,6 +26444,26 @@ Please pipe the document into a Node stream.\
         saveAs(data, `${filename}.mscz`);
     });
 
+    const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.10/webmscore.js';
+    const initMscore = (w) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!w['WebMscore']) {
+            // init webmscore (https://github.com/LibreScore/webmscore)
+            const script = w.document.createElement('script');
+            script.src = WEBMSCORE_URL;
+            w.document.body.append(script);
+            yield new Promise(resolve => { script.onload = resolve; });
+        }
+    });
+    const loadMscore = (w) => __awaiter(void 0, void 0, void 0, function* () {
+        yield initMscore(w);
+        const WebMscore = w['WebMscore'];
+        // parse mscz data
+        const data = new Uint8Array(new Uint8Array(yield fetchMscz()));
+        const score = yield WebMscore.load('mscz', data);
+        yield score.generateExcerpts();
+        return score;
+    });
+
     /**
      * Select the original Download Button
      */
@@ -26500,6 +26521,32 @@ Please pipe the document into a Node stream.\
         BtnAction.openUrl = (url) => {
             return () => window.open(url);
         };
+        BtnAction.mscoreWindow = (fn) => {
+            return (btnName, btn, setText) => __awaiter(this, void 0, void 0, function* () {
+                const _onclick = btn.onclick;
+                btn.onclick = null;
+                setText(BtnAction.PROCESSING_TEXT);
+                const w = window.open('');
+                const txt = document.createTextNode(BtnAction.PROCESSING_TEXT);
+                w.document.body.append(txt);
+                // set page hooks
+                // eslint-disable-next-line prefer-const
+                let score;
+                const destroy = () => {
+                    score && score.destroy();
+                    w.close();
+                };
+                window.addEventListener('unload', destroy);
+                w.addEventListener('beforeunload', () => {
+                    score && score.destroy();
+                    window.removeEventListener('unload', destroy);
+                    setText(btnName);
+                    btn.onclick = _onclick;
+                });
+                score = yield loadMscore(w);
+                fn(w, score, txt);
+            });
+        };
         BtnAction.process = (fn) => {
             return (name, btn, setText) => __awaiter(this, void 0, void 0, function* () {
                 const _onclick = btn.onclick;
@@ -26518,7 +26565,6 @@ Please pipe the document into a Node stream.\
         };
     })(BtnAction || (BtnAction = {}));
 
-    const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.5/webmscore.js';
     const main = () => {
         // @ts-ignore
         if (!window.UGAPP || !window.UGAPP.store || !window.UGAPP.store.jmuse_settings) {
@@ -26538,7 +26584,12 @@ Please pipe the document into a Node stream.\
         });
         btnList.add({
             name: 'Download MusicXML',
-            action: BtnAction.openUrl(scoreinfo.mxlUrl),
+            action: BtnAction.mscoreWindow((w, score) => __awaiter(void 0, void 0, void 0, function* () {
+                const mxl = yield score.saveMxl();
+                const data = new Blob([mxl]);
+                saveAs(data, `${scoreinfo.fileName}.mxl`);
+                w.close();
+            })),
         });
         btnList.add({
             name: 'Download MIDI',
@@ -26550,74 +26601,42 @@ Please pipe the document into a Node stream.\
         });
         btnList.add({
             name: 'Individual Parts',
-            action(btnName, btn, setText) {
-                return __awaiter(this, void 0, void 0, function* () {
-                    const _onclick = btn.onclick;
-                    btn.onclick = null;
-                    setText(BtnAction.PROCESSING_TEXT);
-                    const w = window.open('');
-                    const txt = document.createTextNode(BtnAction.PROCESSING_TEXT);
-                    w.document.body.append(txt);
-                    // set page hooks
-                    // eslint-disable-next-line prefer-const
-                    let score;
-                    const destroy = () => {
-                        score && score.destroy();
-                        w.close();
-                    };
-                    window.addEventListener('unload', destroy);
-                    w.addEventListener('beforeunload', () => {
-                        score && score.destroy();
-                        window.removeEventListener('unload', destroy);
-                        setText(btnName);
-                        btn.onclick = _onclick;
-                    });
-                    // load webmscore (https://github.com/LibreScore/webmscore)
-                    const script = w.document.createElement('script');
-                    script.src = WEBMSCORE_URL;
-                    w.document.body.append(script);
-                    yield new Promise(resolve => { script.onload = resolve; });
-                    // parse mscz data
-                    const data = new Uint8Array(new Uint8Array(yield fetchMscz()) // copy its ArrayBuffer
-                    );
-                    score = yield w['WebMscore'].load('mscz', data);
-                    yield score.generateExcerpts();
-                    const metadata = yield score.metadata();
-                    console.log('score metadata loaded by webmscore', metadata);
-                    // render the part selection page
-                    txt.remove();
-                    const fieldset = w.document.createElement('fieldset');
-                    metadata.excerpts.unshift({ id: -1, title: 'Full score' });
-                    for (const excerpt of metadata.excerpts) {
-                        const id = excerpt.id;
-                        const partName = excerpt.title;
-                        const e = w.document.createElement('input');
-                        e.name = 'score-part';
-                        e.type = 'radio';
-                        e.alt = partName;
-                        e.value = id;
-                        e.checked = id === 0; // initially select the first part 
-                        const label = w.document.createElement('label');
-                        label.innerText = partName;
-                        const br = w.document.createElement('br');
-                        fieldset.append(e, label, br);
-                    }
-                    const submitBtn = w.document.createElement('input');
-                    submitBtn.type = 'submit';
-                    submitBtn.value = 'Download PDF';
-                    fieldset.append(submitBtn);
-                    w.document.body.append(fieldset);
-                    submitBtn.onclick = () => __awaiter(this, void 0, void 0, function* () {
-                        const checked = fieldset.querySelector('input:checked');
-                        const id = checked.value;
-                        const partName = checked.alt;
-                        yield score.setExcerptId(id);
-                        const filename = scoreinfo.fileName;
-                        const data = new Blob([yield score.savePdf()]);
-                        saveAs(data, `${filename} - ${partName}.pdf`);
-                    });
+            action: BtnAction.mscoreWindow((w, score, txt) => __awaiter(void 0, void 0, void 0, function* () {
+                const metadata = yield score.metadata();
+                console.log('score metadata loaded by webmscore', metadata);
+                // render the part selection page
+                txt.remove();
+                const fieldset = w.document.createElement('fieldset');
+                metadata.excerpts.unshift({ id: -1, title: 'Full score', parts: [] });
+                for (const excerpt of metadata.excerpts) {
+                    const id = excerpt.id;
+                    const partName = excerpt.title;
+                    const e = w.document.createElement('input');
+                    e.name = 'score-part';
+                    e.type = 'radio';
+                    e.alt = partName;
+                    e.value = id.toString();
+                    e.checked = id === 0; // initially select the first part 
+                    const label = w.document.createElement('label');
+                    label.innerText = partName;
+                    const br = w.document.createElement('br');
+                    fieldset.append(e, label, br);
+                }
+                const submitBtn = w.document.createElement('input');
+                submitBtn.type = 'submit';
+                submitBtn.value = 'Download PDF';
+                fieldset.append(submitBtn);
+                w.document.body.append(fieldset);
+                submitBtn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
+                    const checked = fieldset.querySelector('input:checked');
+                    const id = checked.value;
+                    const partName = checked.alt;
+                    yield score.setExcerptId(+id);
+                    const filename = scoreinfo.fileName;
+                    const data = new Blob([yield score.savePdf()]);
+                    saveAs(data, `${filename} - ${partName}.pdf`);
                 });
-            },
+            })),
         }).title = 'Download individual parts (BETA)';
         btnList.commit();
     };
