@@ -6,7 +6,7 @@ const SITE_KEY = '6Ldxtt8UAAAAALvcRqWTlVOVIB7MmEWwN-zw_9fM'
 
 type token = string;
 interface GRecaptcha {
-  ready (cb: Function): void;
+  ready (cb: () => any): void;
   execute (siteKey: string, opts: { action: string }): Promise<token>;
 }
 

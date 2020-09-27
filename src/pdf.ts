@@ -5,7 +5,7 @@ import scoreinfo from './scoreinfo'
 
 let pdfBlob: Blob
 
-const _downloadPDF = async (imgURLs: string[], imgType: 'svg' | 'png', name?: string): Promise<void> => {
+const _downloadPDF = async (imgURLs: string[], imgType: 'svg' | 'png', name = ''): Promise<void> => {
   if (pdfBlob) {
     return saveAs(pdfBlob, `${name}.pdf`)
   }

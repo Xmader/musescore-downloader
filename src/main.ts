@@ -78,7 +78,7 @@ const main = (): void => {
 
       // parse mscz data
       const data = new Uint8Array(
-        new Uint8Array(await fetchMscz()) // copy its ArrayBuffer
+        new Uint8Array(await fetchMscz()), // copy its ArrayBuffer
       )
       score = await w['WebMscore'].load('mscz', data)
       await score.generateExcerpts()
