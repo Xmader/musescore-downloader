@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.8.0
+// @version      0.8.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26445,6 +26445,9 @@ Please pipe the document into a Node stream.\
     });
 
     const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.10/webmscore.js';
+    // fonts for Chinese characters (CN) and Korean hangul (KR)
+    // JP characters are included in the CN font
+    const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts/SourceHanSans${l}-Regular.woff2`);
     const initMscore = (w) => __awaiter(void 0, void 0, void 0, function* () {
         if (!w['WebMscore']) {
             // init webmscore (https://github.com/LibreScore/webmscore)
@@ -26454,12 +26457,25 @@ Please pipe the document into a Node stream.\
             yield new Promise(resolve => { script.onload = resolve; });
         }
     });
+    let fonts;
+    const initFonts = () => {
+        // load CJK fonts
+        // CJK (East Asian) characters will be rendered as "tofu" if there is no font
+        if (!fonts) {
+            fonts = Promise.all(FONT_URLS.map((url) => __awaiter(void 0, void 0, void 0, function* () {
+                const r = yield fetch(url);
+                const data = yield r.arrayBuffer();
+                return new Uint8Array(data);
+            })));
+        }
+    };
     const loadMscore = (w) => __awaiter(void 0, void 0, void 0, function* () {
+        initFonts();
         yield initMscore(w);
         const WebMscore = w['WebMscore'];
         // parse mscz data
         const data = new Uint8Array(new Uint8Array(yield fetchMscz()));
-        const score = yield WebMscore.load('mscz', data);
+        const score = yield WebMscore.load('mscz', data, yield fonts);
         yield score.generateExcerpts();
         return score;
     });
@@ -26604,10 +26620,12 @@ Please pipe the document into a Node stream.\
             action: BtnAction.mscoreWindow((w, score, txt) => __awaiter(void 0, void 0, void 0, function* () {
                 const metadata = yield score.metadata();
                 console.log('score metadata loaded by webmscore', metadata);
+                // add the "full score" option as a "part" 
+                metadata.excerpts.unshift({ id: -1, title: 'Full score', parts: [] });
                 // render the part selection page
                 txt.remove();
                 const fieldset = w.document.createElement('fieldset');
-                metadata.excerpts.unshift({ id: -1, title: 'Full score', parts: [] });
+                // part selection
                 for (const excerpt of metadata.excerpts) {
                     const id = excerpt.id;
                     const partName = excerpt.title;
@@ -26622,6 +26640,7 @@ Please pipe the document into a Node stream.\
                     const br = w.document.createElement('br');
                     fieldset.append(e, label, br);
                 }
+                // submit button
                 const submitBtn = w.document.createElement('input');
                 submitBtn.type = 'submit';
                 submitBtn.value = 'Download PDF';

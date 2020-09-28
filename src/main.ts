@@ -53,10 +53,14 @@ const main = (): void => {
       const metadata = await score.metadata()
       console.log('score metadata loaded by webmscore', metadata)
 
+      // add the "full score" option as a "part" 
+      metadata.excerpts.unshift({ id: -1, title: 'Full score', parts: [] })
+
       // render the part selection page
       txt.remove()
       const fieldset = w.document.createElement('fieldset')
-      metadata.excerpts.unshift({ id: -1, title: 'Full score', parts: [] })
+
+      // part selection
       for (const excerpt of metadata.excerpts) {
         const id = excerpt.id
         const partName = excerpt.title
@@ -74,9 +78,12 @@ const main = (): void => {
         const br = w.document.createElement('br')
         fieldset.append(e, label, br)
       }
+
+      // submit button
       const submitBtn = w.document.createElement('input')
       submitBtn.type = 'submit'
       submitBtn.value = 'Download PDF'
+
       fieldset.append(submitBtn)
       w.document.body.append(fieldset)
 
