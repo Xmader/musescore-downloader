@@ -49,6 +49,7 @@ const main = (): void => {
 
   btnList.add({
     name: 'Individual Parts',
+    tooltip: 'Download individual parts (BETA)',
     action: BtnAction.mscoreWindow(async (w, score, txt) => {
       const metadata = await score.metadata()
       console.log('score metadata loaded by webmscore', metadata)
@@ -99,7 +100,7 @@ const main = (): void => {
         saveAs(data, `${filename} - ${partName}.pdf`)
       }
     }),
-  }).title = 'Download individual parts (BETA)'
+  })
 
   btnList.commit()
 }

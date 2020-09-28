@@ -30,6 +30,8 @@ export const getDownloadBtn = (): BtnElement => {
 interface BtnOptions {
   readonly name: string;
   readonly action: BtnAction;
+  readonly disabled?: boolean;
+  readonly tooltip?: string;
 }
 
 export class BtnList {
@@ -56,6 +58,14 @@ export class BtnList {
     }
 
     this.list.push(btn)
+
+    if (options.disabled) {
+      btn.disabled = options.disabled
+    }
+
+    if (options.tooltip) {
+      btn.title = options.tooltip
+    }
 
     return btn
   }
