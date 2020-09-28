@@ -1,8 +1,7 @@
 
-import { text } from 'pdfkit/js/mixins/text'
 import { loadMscore, WebMscore } from './mscore'
 
-type BtnElement = HTMLElement
+type BtnElement = HTMLButtonElement
 
 /**
  * Select the original Download Button
