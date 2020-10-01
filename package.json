@@ -29,7 +29,7 @@
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-typescript": "^1.0.1",
     "tslib": "^1.10.0",
-    "typescript": "^3.6.4"
+    "typescript": "^3.9.7"
   },
   "scripts": {
     "build": "rollup -c",
