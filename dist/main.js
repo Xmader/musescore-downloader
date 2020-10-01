@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.8.1
+// @version      0.8.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26308,18 +26308,18 @@ Please pipe the document into a Node stream.\
         }
     }
 
+    /* eslint-disable @typescript-eslint/no-unsafe-return */
     const scoreinfo = {
         get playerdata() {
             // @ts-ignore
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-            return window.UGAPP.store.jmuse_settings.score_player;
+            return window.UGAPP.store.page.data.score;
         },
         get id() {
-            return this.playerdata.json.id;
+            return this.playerdata.id;
         },
         get title() {
             try {
-                return this.playerdata.json.metadata.title;
+                return this.playerdata.title;
             }
             catch (_) {
                 return '';
@@ -26330,23 +26330,25 @@ Please pipe the document into a Node stream.\
         },
         get pageCount() {
             try {
-                return this.playerdata.json.metadata.pages;
+                return this.playerdata.pages_count;
             }
             catch (_) {
                 return document.querySelectorAll('img[src*=score_]').length;
             }
         },
         get baseUrl() {
-            return this.playerdata.urls.image_path;
+            const thumbnailUrl = this.playerdata.thumbnails.original;
+            const { origin, pathname } = new URL(thumbnailUrl);
+            return origin + pathname.split('/').slice(0, -1).join('/') + '/';
         },
         get mxlUrl() {
             return this.baseUrl + 'score.mxl';
         },
         get midiUrl() {
-            return this.playerdata.urls.midi;
+            return this.baseUrl + 'score.mid';
         },
         get mp3Url() {
-            return this.playerdata.urls.mp3;
+            return this.baseUrl + 'score.mp3';
         },
         get msczUrl() {
             // https://github.com/Xmader/cloudflare-worker-musescore-mscz
@@ -26520,6 +26522,12 @@ Please pipe the document into a Node stream.\
                 options.action(options.name, btn, setText);
             };
             this.list.push(btn);
+            if (options.disabled) {
+                btn.disabled = options.disabled;
+            }
+            if (options.tooltip) {
+                btn.title = options.tooltip;
+            }
             return btn;
         }
         /**
@@ -26582,8 +26590,9 @@ Please pipe the document into a Node stream.\
     })(BtnAction || (BtnAction = {}));
 
     const main = () => {
+        var _a, _b, _c, _d;
         // @ts-ignore
-        if (!window.UGAPP || !window.UGAPP.store || !window.UGAPP.store.jmuse_settings) {
+        if (!((_d = (_c = (_b = (_a = window === null || window === void 0 ? void 0 : window.UGAPP) === null || _a === void 0 ? void 0 : _a.store) === null || _b === void 0 ? void 0 : _b.page) === null || _c === void 0 ? void 0 : _c.data) === null || _d === void 0 ? void 0 : _d.score)) {
             return;
         }
         // init recaptcha
@@ -26617,6 +26626,7 @@ Please pipe the document into a Node stream.\
         });
         btnList.add({
             name: 'Individual Parts',
+            tooltip: 'Download individual parts (BETA)',
             action: BtnAction.mscoreWindow((w, score, txt) => __awaiter(void 0, void 0, void 0, function* () {
                 const metadata = yield score.metadata();
                 console.log('score metadata loaded by webmscore', metadata);
@@ -26656,7 +26666,7 @@ Please pipe the document into a Node stream.\
                     saveAs(data, `${filename} - ${partName}.pdf`);
                 });
             })),
-        }).title = 'Download individual parts (BETA)';
+        });
         btnList.commit();
     };
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
