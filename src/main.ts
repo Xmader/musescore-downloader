@@ -9,7 +9,7 @@ import scoreinfo from './scoreinfo'
 
 const main = (): void => {
   // @ts-ignore
-  if (!window.UGAPP || !window.UGAPP.store || !window.UGAPP.store.jmuse_settings) { return }
+  if (!window?.UGAPP?.store?.page?.data?.score) { return }
 
   // init recaptcha
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
