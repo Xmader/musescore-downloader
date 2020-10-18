@@ -1,5 +1,6 @@
 
 import { loadMscore, WebMscore } from './mscore'
+import { saveAs } from './utils'
 
 type BtnElement = HTMLButtonElement
 
@@ -86,8 +87,27 @@ export namespace BtnAction {
   export const PROCESSING_TEXT = 'Processing…'
   export const ERROR_TEXT = '❌Download Failed!'
 
-  export const openUrl = (url: string): BtnAction => {
-    return (): any => window.open(url)
+  type Promisable<T> = T | Promise<T>
+  type UrlInput = Promisable<string> | (() => Promisable<string>)
+
+  const normalizeUrlInput = (url: UrlInput) => {
+    if (typeof url === 'function') return url()
+    else return url
+  }
+
+  export const openUrl = (url: UrlInput): BtnAction => {
+    return process(async (): Promise<any> => {
+      window.open(await normalizeUrlInput(url))
+    })
+  }
+
+  export const download = (url: UrlInput, filename?: string): BtnAction => {
+    return process(async (): Promise<any> => {
+      const _url = await normalizeUrlInput(url)
+      const r = await fetch(_url)
+      const blob = await r.blob()
+      saveAs(blob, filename)
+    })
   }
 
   export const mscoreWindow = (fn: (w: Window, score: WebMscore, processingTextEl: ChildNode) => any): BtnAction => {

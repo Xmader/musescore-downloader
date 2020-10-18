@@ -14,6 +14,7 @@
   },
   "homepage": "https://github.com/Xmader/musescore-downloader#readme",
   "dependencies": {
+    "md5": "^2.3.0",
     "pdfkit": "git+https://github.com/Xmader/pdfkit.git",
     "svg-to-pdfkit": "^0.1.8",
     "webmscore": "^0.10.4"
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@rollup/plugin-json": "^4.0.0",
     "@types/file-saver": "^2.0.1",
+    "@types/md5": "^2.2.0",
     "@types/pdfkit": "^0.10.4",
     "rollup": "^1.26.3",
     "rollup-plugin-commonjs": "^10.1.0",

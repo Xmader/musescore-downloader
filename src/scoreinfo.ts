@@ -38,14 +38,6 @@ const scoreinfo = {
     return origin + pathname.split('/').slice(0, -1).join('/') + '/'
   },
 
-  get midiUrl (this: typeof scoreinfo): string {
-    return this.baseUrl + 'score.mid'
-  },
-
-  get mp3Url (this: typeof scoreinfo): string {
-    return this.baseUrl + 'score.mp3'
-  },
-
   get msczUrl (this: typeof scoreinfo): string {
     // https://github.com/Xmader/cloudflare-worker-musescore-mscz
     return `https://musescore.now.sh/api/mscz?id=${this.id}&token=`

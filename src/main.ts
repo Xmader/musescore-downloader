@@ -3,6 +3,7 @@ import './meta'
 import { waitForDocumentLoaded, saveAs } from './utils'
 import { downloadPDF } from './pdf'
 import { downloadMscz } from './mscz'
+import { getFileUrl } from './file'
 import { getDownloadBtn, BtnList, BtnAction } from './btn'
 import * as recaptcha from './recaptcha'
 import scoreinfo from './scoreinfo'
@@ -16,6 +17,7 @@ const main = (): void => {
   recaptcha.init()
 
   const btnList = new BtnList(getDownloadBtn())
+  const filename = scoreinfo.fileName
 
   btnList.add({
     name: 'Download MSCZ',
@@ -32,19 +34,19 @@ const main = (): void => {
     action: BtnAction.mscoreWindow(async (w, score) => {
       const mxl = await score.saveMxl()
       const data = new Blob([mxl])
-      saveAs(data, `${scoreinfo.fileName}.mxl`)
+      saveAs(data, `${filename}.mxl`)
       w.close()
     }),
   })
 
   btnList.add({
     name: 'Download MIDI',
-    action: BtnAction.openUrl(scoreinfo.midiUrl),
+    action: BtnAction.download(() => getFileUrl('midi'), `${filename}.mid`),
   })
 
   btnList.add({
     name: 'Download MP3',
-    action: BtnAction.openUrl(scoreinfo.mp3Url),
+    action: BtnAction.download(() => getFileUrl('mp3'), `${filename}.mp3`),
   })
 
   btnList.add({
@@ -95,7 +97,6 @@ const main = (): void => {
 
         await score.setExcerptId(+id)
 
-        const filename = scoreinfo.fileName
         const data = new Blob([await score.savePdf()])
         saveAs(data, `${filename} - ${partName}.pdf`)
       }

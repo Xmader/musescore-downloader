@@ -1,5 +1,6 @@
 
 import { PDFWorkerHelper } from './worker-helper'
+import { getFileUrl } from './file'
 import { saveAs } from './utils'
 import scoreinfo from './scoreinfo'
 
@@ -26,9 +27,14 @@ export const downloadPDF = async (): Promise<void> => {
   const imgType = scoreinfo.sheetImgType
   const pageCount = scoreinfo.pageCount
 
-  const sheetImgURLs = Array.from({ length: pageCount }).map((_, i) => {
-    return scoreinfo.baseUrl + `score_${i}.${imgType}`
+  const rs = Array.from({ length: pageCount }).map((_, i) => {
+    if (i === 0) { // The url to the first page is static. We don't need to use API to obtain it.
+      return scoreinfo.baseUrl + `score_${i}.${imgType}`
+    } else { // obtain image urls using the API
+      return getFileUrl('img', i)
+    }
   })
+  const sheetImgURLs = await Promise.all(rs)
 
   return _downloadPDF(sheetImgURLs, imgType, scoreinfo.fileName)
 }
