@@ -34,11 +34,8 @@ const scoreinfo = {
   get baseUrl (this: typeof scoreinfo): string {
     const thumbnailUrl = this.playerdata.thumbnails.original
     const { origin, pathname } = new URL(thumbnailUrl)
+    // remove the last part
     return origin + pathname.split('/').slice(0, -1).join('/') + '/'
-  },
-
-  get mxlUrl (this: typeof scoreinfo): string {
-    return this.baseUrl + 'score.mxl'
   },
 
   get midiUrl (this: typeof scoreinfo): string {
