@@ -1,9 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 
 import scoreinfo from './scoreinfo'
-import md5 from 'md5'
 
-const MAGIC = String(4 * 11 * 1607 * 2767) // '195649036' // I don't know what this is
-const AUTH_LEN = 4
+const AUTH_MODULE_ID = 'FNf8'
 
 type FileType = 'img' | 'mp3' | 'midi'
 
@@ -12,9 +11,35 @@ const getApiUrl = (type: FileType, index: number): string => {
   return `https://musescore.now.sh/api/jmuse?id=${scoreinfo.id}&type=${type}&index=${index}`
 }
 
+/**
+ * Retrieve (webpack_require) a module from the page's webpack package
+ * 
+ * I know this is super hacking.
+ */
+const webpackHook = (moduleId: string, globalWebpackJson = window['webpackJsonpmusescore']) => {
+  const pack = globalWebpackJson.find(x => x[1][moduleId])
+
+  const t = Object.assign((id: string) => {
+    const r: any = {}
+    pack[1][id](r, r, t)
+    if (r.exports) return r.exports
+    return r
+  }, {
+    d (exp, name, fn) {
+      return Object.defineProperty(exp, name, { value: fn })
+    },
+    n (e) {
+      return () => e
+    },
+  })
+
+  return t(moduleId)
+}
+
 const getApiAuth = (type: FileType, index: number): string => {
-  const str = String(scoreinfo.id) + type + String(index) + MAGIC
-  return md5(str).slice(0, AUTH_LEN)
+  const authModule = webpackHook(AUTH_MODULE_ID)
+  const fn: (id: number, type: string, index: number) => string = authModule.a()
+  return fn(scoreinfo.id, type, index)
 }
 
 export const getFileUrl = async (type: FileType, index = 0): Promise<string> => {
