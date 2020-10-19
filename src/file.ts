@@ -14,7 +14,7 @@ const getApiUrl = (type: FileType, index: number): string => {
 /**
  * Retrieve (webpack_require) a module from the page's webpack package
  * 
- * I know this is super hacking.
+ * I know this is super hacky.
  */
 const webpackHook = (moduleId: string, globalWebpackJson = window['webpackJsonpmusescore']) => {
   const pack = globalWebpackJson.find(x => x[1][moduleId])
