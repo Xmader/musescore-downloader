@@ -85,25 +85,27 @@ const main = (): void => {
         fieldset.append(e, label, br)
       }
 
-      // submit button
-      const submitBtn = w.document.createElement('input')
-      submitBtn.type = 'submit'
-      submitBtn.value = 'Download PDF'
-      fieldset.append(submitBtn)
+      // submit buttons
+      for (const btn of btns) {
+        const submitBtn = w.document.createElement('input')
+        submitBtn.type = 'submit'
+        submitBtn.value = btn.name
+        fieldset.append(submitBtn)
 
-      const onSubmit = async (): Promise<void> => {
-        // lock the button when processing
-        submitBtn.onclick = null
+        const onSubmit = async (): Promise<void> => {
+          // lock the button when processing
+          submitBtn.onclick = null
 
-        const checked = fieldset.querySelector('input:checked') as HTMLInputElement
-        const partName = checked.alt
+          const checked = fieldset.querySelector('input:checked') as HTMLInputElement
+          const partName = checked.alt
 
-        const data = new Blob([await score.savePdf()])
-        saveAs(data, `${filename} - ${partName}.pdf`)
+          const data = new Blob([await btn.action(score)])
+          saveAs(data, `${filename} - ${partName}.${btn.fileExt}`)
 
+          submitBtn.onclick = onSubmit
+        }
         submitBtn.onclick = onSubmit
       }
-      submitBtn.onclick = onSubmit
     }),
   })
 
