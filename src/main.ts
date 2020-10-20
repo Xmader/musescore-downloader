@@ -85,6 +85,8 @@ const main = (): void => {
         fieldset.append(e, label, br)
       }
 
+      await score.setExcerptId(0) // initially select the first part 
+
       // submit buttons
       for (const btn of btns) {
         const submitBtn = w.document.createElement('input')
