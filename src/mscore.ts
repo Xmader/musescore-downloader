@@ -1,5 +1,6 @@
 
 import { fetchMscz } from './mscz'
+import { fetchData } from './utils'
 
 const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.10/webmscore.js'
 
@@ -25,11 +26,7 @@ const initFonts = () => {
   // CJK (East Asian) characters will be rendered as "tofu" if there is no font
   if (!fonts) {
     fonts = Promise.all(
-      FONT_URLS.map(async (url) => {
-        const r = await fetch(url)
-        const data = await r.arrayBuffer()
-        return new Uint8Array(data)
-      }),
+      FONT_URLS.map(url => fetchData(url)),
     )
   }
 }
