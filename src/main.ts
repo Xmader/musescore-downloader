@@ -4,6 +4,7 @@ import { waitForDocumentLoaded, saveAs } from './utils'
 import { downloadPDF } from './pdf'
 import { downloadMscz } from './mscz'
 import { getFileUrl } from './file'
+import { WebMscore, loadSoundFont } from './mscore'
 import { getDownloadBtn, BtnList, BtnAction } from './btn'
 import * as recaptcha from './recaptcha'
 import scoreinfo from './scoreinfo'
@@ -67,7 +68,7 @@ const main = (): void => {
       interface IndividualDownload {
         name: string;
         fileExt: string;
-        action (score: import('webmscore').default): Promise<Uint8Array>;
+        action (score: WebMscore): Promise<Uint8Array>;
       }
 
       const downloads: IndividualDownload[] = [
@@ -75,11 +76,6 @@ const main = (): void => {
           name: 'Download PDF',
           fileExt: 'pdf',
           action: (score) => score.savePdf(),
-        },
-        {
-          name: 'Download MIDI',
-          fileExt: 'mid',
-          action: (score) => score.saveMidi(true, true),
         },
         {
           name: 'Download Part MSCZ',
@@ -90,6 +86,21 @@ const main = (): void => {
           name: 'Download Part MusicXML',
           fileExt: 'mxl',
           action: (score) => score.saveMxl(),
+        },
+        {
+          name: 'Download MIDI',
+          fileExt: 'mid',
+          action: (score) => score.saveMidi(true, true),
+        },
+        {
+          name: 'Download FLAC Audio',
+          fileExt: 'flac',
+          action: (score) => loadSoundFont(score).then(() => score.saveAudio('flac')),
+        },
+        {
+          name: 'Download OGG Audio',
+          fileExt: 'ogg',
+          action: (score) => loadSoundFont(score).then(() => score.saveAudio('ogg')),
         },
       ]
 

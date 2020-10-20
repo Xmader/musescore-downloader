@@ -8,6 +8,9 @@ const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.10/webmscore.js'
 // JP characters are included in the CN font
 const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts/SourceHanSans${l}-Regular.woff2`)
 
+const SF3_URL = 'https://cdn.jsdelivr.net/npm/@librescore/sf3/FluidR3Mono_GM.sf3'
+const SOUND_FONT_LOADED = Symbol('SoundFont loaded')
+
 export type WebMscore = import('webmscore').default
 
 const initMscore = async (w: Window) => {
@@ -29,6 +32,18 @@ const initFonts = () => {
       FONT_URLS.map(url => fetchData(url)),
     )
   }
+}
+
+export const loadSoundFont = (score: WebMscore): Promise<void> => {
+  if (!score[SOUND_FONT_LOADED]) {
+    const loadPromise = (async () => {
+      await score.setSoundFont(
+        await fetchData(SF3_URL),
+      )
+    })()
+    score[SOUND_FONT_LOADED] = loadPromise
+  }
+  return score[SOUND_FONT_LOADED] as Promise<void>
 }
 
 export const loadMscore = async (w: Window): Promise<WebMscore> => {
