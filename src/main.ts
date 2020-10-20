@@ -91,13 +91,19 @@ const main = (): void => {
       submitBtn.value = 'Download PDF'
       fieldset.append(submitBtn)
 
-      submitBtn.onclick = async (): Promise<void> => {
+      const onSubmit = async (): Promise<void> => {
+        // lock the button when processing
+        submitBtn.onclick = null
+
         const checked = fieldset.querySelector('input:checked') as HTMLInputElement
         const partName = checked.alt
 
         const data = new Blob([await score.savePdf()])
         saveAs(data, `${filename} - ${partName}.pdf`)
+
+        submitBtn.onclick = onSubmit
       }
+      submitBtn.onclick = onSubmit
     }),
   })
 
