@@ -62,6 +62,7 @@ const main = (): void => {
       // render the part selection page
       txt.remove()
       const fieldset = w.document.createElement('fieldset')
+      w.document.body.append(fieldset)
 
       // part selection
       for (const excerpt of metadata.excerpts) {
@@ -72,8 +73,10 @@ const main = (): void => {
         e.name = 'score-part'
         e.type = 'radio'
         e.alt = partName
-        e.value = id.toString()
         e.checked = id === 0 // initially select the first part 
+        e.onclick = () => {
+          return score.setExcerptId(id)
+        }
 
         const label = w.document.createElement('label')
         label.innerText = partName
@@ -86,16 +89,11 @@ const main = (): void => {
       const submitBtn = w.document.createElement('input')
       submitBtn.type = 'submit'
       submitBtn.value = 'Download PDF'
-
       fieldset.append(submitBtn)
-      w.document.body.append(fieldset)
 
       submitBtn.onclick = async (): Promise<void> => {
         const checked = fieldset.querySelector('input:checked') as HTMLInputElement
-        const id = checked.value
         const partName = checked.alt
-
-        await score.setExcerptId(+id)
 
         const data = new Blob([await score.savePdf()])
         saveAs(data, `${filename} - ${partName}.pdf`)
