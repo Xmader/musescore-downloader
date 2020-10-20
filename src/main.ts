@@ -64,6 +64,35 @@ const main = (): void => {
       const fieldset = w.document.createElement('fieldset')
       w.document.body.append(fieldset)
 
+      interface IndividualDownload {
+        name: string;
+        fileExt: string;
+        action (score: import('webmscore').default): Promise<Uint8Array>;
+      }
+
+      const downloads: IndividualDownload[] = [
+        {
+          name: 'Download PDF',
+          fileExt: 'pdf',
+          action: (score) => score.savePdf(),
+        },
+        {
+          name: 'Download MIDI',
+          fileExt: 'mid',
+          action: (score) => score.saveMidi(true, true),
+        },
+        {
+          name: 'Download Part MSCZ',
+          fileExt: 'mscz',
+          action: (score) => score.saveMsc('mscz'),
+        },
+        {
+          name: 'Download Part MusicXML',
+          fileExt: 'mxl',
+          action: (score) => score.saveMxl(),
+        },
+      ]
+
       // part selection
       for (const excerpt of metadata.excerpts) {
         const id = excerpt.id
@@ -75,7 +104,7 @@ const main = (): void => {
         e.alt = partName
         e.checked = id === 0 // initially select the first part 
         e.onclick = () => {
-          return score.setExcerptId(id)
+          return score.setExcerptId(id) // set selected part
         }
 
         const label = w.document.createElement('label')
@@ -88,25 +117,35 @@ const main = (): void => {
       await score.setExcerptId(0) // initially select the first part 
 
       // submit buttons
-      for (const btn of btns) {
+      for (const d of downloads) {
         const submitBtn = w.document.createElement('input')
         submitBtn.type = 'submit'
-        submitBtn.value = btn.name
+        submitBtn.style.margin = '0.5em'
         fieldset.append(submitBtn)
+
+        const initBtn = () => {
+          submitBtn.onclick = onSubmit
+          submitBtn.disabled = false
+          submitBtn.value = d.name
+        }
 
         const onSubmit = async (): Promise<void> => {
           // lock the button when processing
           submitBtn.onclick = null
+          submitBtn.disabled = true
+          submitBtn.value = 'Processing…'
 
           const checked = fieldset.querySelector('input:checked') as HTMLInputElement
           const partName = checked.alt
 
-          const data = new Blob([await btn.action(score)])
-          saveAs(data, `${filename} - ${partName}.${btn.fileExt}`)
+          const data = new Blob([await d.action(score)])
+          saveAs(data, `${filename} - ${partName}.${d.fileExt}`)
 
-          submitBtn.onclick = onSubmit
+          // unlock button
+          initBtn()
         }
-        submitBtn.onclick = onSubmit
+
+        initBtn()
       }
     }),
   })
