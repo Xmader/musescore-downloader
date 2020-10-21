@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.8.4
+// @version      0.9.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -212,6 +212,11 @@
     });
 
     const saveAs = FileSaver.saveAs;
+    const fetchData = (url, init) => __awaiter(void 0, void 0, void 0, function* () {
+        const r = yield fetch(url, init);
+        const data = yield r.arrayBuffer();
+        return new Uint8Array(data);
+    });
     const waitForDocumentLoaded = () => {
         if (document.readyState !== 'complete') {
             return new Promise(resolve => {
@@ -26370,7 +26375,7 @@ Please pipe the document into a Node stream.\
     /**
      * Retrieve (webpack_require) a module from the page's webpack package
      *
-     * I know this is super hacking.
+     * I know this is super hacky.
      */
     const webpackHook = (moduleId, globalWebpackJson = window['webpackJsonpmusescore']) => {
         const pack = globalWebpackJson.find(x => x[1][moduleId]);
@@ -26494,6 +26499,8 @@ Please pipe the document into a Node stream.\
     // fonts for Chinese characters (CN) and Korean hangul (KR)
     // JP characters are included in the CN font
     const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts/SourceHanSans${l}-Regular.woff2`);
+    const SF3_URL = 'https://cdn.jsdelivr.net/npm/@librescore/sf3/FluidR3Mono_GM.sf3';
+    const SOUND_FONT_LOADED = Symbol('SoundFont loaded');
     const initMscore = (w) => __awaiter(void 0, void 0, void 0, function* () {
         if (!w['WebMscore']) {
             // init webmscore (https://github.com/LibreScore/webmscore)
@@ -26508,12 +26515,17 @@ Please pipe the document into a Node stream.\
         // load CJK fonts
         // CJK (East Asian) characters will be rendered as "tofu" if there is no font
         if (!fonts) {
-            fonts = Promise.all(FONT_URLS.map((url) => __awaiter(void 0, void 0, void 0, function* () {
-                const r = yield fetch(url);
-                const data = yield r.arrayBuffer();
-                return new Uint8Array(data);
-            })));
+            fonts = Promise.all(FONT_URLS.map(url => fetchData(url)));
         }
+    };
+    const loadSoundFont = (score) => {
+        if (!score[SOUND_FONT_LOADED]) {
+            const loadPromise = (() => __awaiter(void 0, void 0, void 0, function* () {
+                yield score.setSoundFont(yield fetchData(SF3_URL));
+            }))();
+            score[SOUND_FONT_LOADED] = loadPromise;
+        }
+        return score[SOUND_FONT_LOADED];
     };
     const loadMscore = (w) => __awaiter(void 0, void 0, void 0, function* () {
         initFonts();
@@ -26696,6 +26708,39 @@ Please pipe the document into a Node stream.\
                 // render the part selection page
                 txt.remove();
                 const fieldset = w.document.createElement('fieldset');
+                w.document.body.append(fieldset);
+                const downloads = [
+                    {
+                        name: 'Download PDF',
+                        fileExt: 'pdf',
+                        action: (score) => score.savePdf(),
+                    },
+                    {
+                        name: 'Download Part MSCZ',
+                        fileExt: 'mscz',
+                        action: (score) => score.saveMsc('mscz'),
+                    },
+                    {
+                        name: 'Download Part MusicXML',
+                        fileExt: 'mxl',
+                        action: (score) => score.saveMxl(),
+                    },
+                    {
+                        name: 'Download MIDI',
+                        fileExt: 'mid',
+                        action: (score) => score.saveMidi(true, true),
+                    },
+                    {
+                        name: 'Download FLAC Audio',
+                        fileExt: 'flac',
+                        action: (score) => loadSoundFont(score).then(() => score.saveAudio('flac')),
+                    },
+                    {
+                        name: 'Download OGG Audio',
+                        fileExt: 'ogg',
+                        action: (score) => loadSoundFont(score).then(() => score.saveAudio('ogg')),
+                    },
+                ];
                 // part selection
                 for (const excerpt of metadata.excerpts) {
                     const id = excerpt.id;
@@ -26704,27 +26749,41 @@ Please pipe the document into a Node stream.\
                     e.name = 'score-part';
                     e.type = 'radio';
                     e.alt = partName;
-                    e.value = id.toString();
                     e.checked = id === 0; // initially select the first part 
+                    e.onclick = () => {
+                        return score.setExcerptId(id); // set selected part
+                    };
                     const label = w.document.createElement('label');
                     label.innerText = partName;
                     const br = w.document.createElement('br');
                     fieldset.append(e, label, br);
                 }
-                // submit button
-                const submitBtn = w.document.createElement('input');
-                submitBtn.type = 'submit';
-                submitBtn.value = 'Download PDF';
-                fieldset.append(submitBtn);
-                w.document.body.append(fieldset);
-                submitBtn.onclick = () => __awaiter(void 0, void 0, void 0, function* () {
-                    const checked = fieldset.querySelector('input:checked');
-                    const id = checked.value;
-                    const partName = checked.alt;
-                    yield score.setExcerptId(+id);
-                    const data = new Blob([yield score.savePdf()]);
-                    saveAs(data, `${filename} - ${partName}.pdf`);
-                });
+                yield score.setExcerptId(0); // initially select the first part 
+                // submit buttons
+                for (const d of downloads) {
+                    const submitBtn = w.document.createElement('input');
+                    submitBtn.type = 'submit';
+                    submitBtn.style.margin = '0.5em';
+                    fieldset.append(submitBtn);
+                    const initBtn = () => {
+                        submitBtn.onclick = onSubmit;
+                        submitBtn.disabled = false;
+                        submitBtn.value = d.name;
+                    };
+                    const onSubmit = () => __awaiter(void 0, void 0, void 0, function* () {
+                        // lock the button when processing
+                        submitBtn.onclick = null;
+                        submitBtn.disabled = true;
+                        submitBtn.value = 'Processing…';
+                        const checked = fieldset.querySelector('input:checked');
+                        const partName = checked.alt;
+                        const data = new Blob([yield d.action(score)]);
+                        saveAs(data, `${filename} - ${partName}.${d.fileExt}`);
+                        // unlock button
+                        initBtn();
+                    });
+                    initBtn();
+                }
             })),
         });
         btnList.commit();
