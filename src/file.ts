@@ -11,25 +11,42 @@ const getApiUrl = (type: FileType, index: number): string => {
   return `https://musescore.now.sh/api/jmuse?id=${scoreinfo.id}&type=${type}&index=${index}`
 }
 
+interface Module {
+  (module, exports, __webpack_require__): void;
+}
+
 /**
  * Retrieve (webpack_require) a module from the page's webpack package
  * 
  * I know this is super hacky.
  */
-const webpackHook = (moduleId: string, globalWebpackJson = window['webpackJsonpmusescore']) => {
-  const pack = globalWebpackJson.find(x => x[1][moduleId])
+const webpackHook = (moduleId: string, moduleOverrides: { [id: string]: Module } = {}, globalWebpackJson = window['webpackJsonpmusescore']) => {
+  const moduleLookup = (id: string) => {
+    const pack = globalWebpackJson.find(x => x[1][id])
+    return pack[1][id]
+  }
 
-  const t = Object.assign((id: string) => {
+  const t = Object.assign((id: string, override = true) => {
     const r: any = {}
-    pack[1][id](r, r, t)
+    const m: Module = (override && moduleOverrides[id])
+      ? moduleOverrides[id]
+      : moduleLookup(id)
+    m(r, r, t)
     if (r.exports) return r.exports
     return r
   }, {
     d (exp, name, fn) {
-      return Object.defineProperty(exp, name, { value: fn })
+      return Object.prototype.hasOwnProperty.call(exp, name) ||
+        Object.defineProperty(exp, name, { enumerable: true, get: fn })
     },
     n (e) {
-      return () => e
+      return e.__esModule ? () => e.default : () => e
+    },
+    r (r) {
+      Object.defineProperty(r, '__esModule', { value: true })
+    },
+    e () {
+      return Promise.resolve()
     },
   })
 
@@ -37,7 +54,13 @@ const webpackHook = (moduleId: string, globalWebpackJson = window['webpackJsonpm
 }
 
 const getApiAuth = (type: FileType, index: number): string => {
-  const authModule = webpackHook(AUTH_MODULE_ID)
+  const authModule = webpackHook(AUTH_MODULE_ID, {
+    '6Ulw' (_, r, t) { // override
+      t.d(r, 'a', () => {
+        return type
+      })
+    },
+  })
   const fn: (id: number, type: string, index: number) => string = authModule.a()
   return fn(scoreinfo.id, type, index)
 }
