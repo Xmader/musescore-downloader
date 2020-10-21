@@ -2,13 +2,13 @@
 
 import scoreinfo from './scoreinfo'
 
-const AUTH_MODULE_ID = 'FNf8'
+const FILE_URL_MODULE_ID = 'iNJA'
 
 type FileType = 'img' | 'mp3' | 'midi'
 
-const getApiUrl = (type: FileType, index: number): string => {
+const getApiUrl = (id: number, type: FileType, index: number): string => {
   // proxy
-  return `https://musescore.now.sh/api/jmuse?id=${scoreinfo.id}&type=${type}&index=${index}`
+  return `https://musescore.now.sh/api/jmuse?id=${id}&type=${type}&index=${index}`
 }
 
 interface Module {
@@ -53,28 +53,23 @@ const webpackHook = (moduleId: string, moduleOverrides: { [id: string]: Module }
   return t(moduleId)
 }
 
-const getApiAuth = (type: FileType, index: number): string => {
-  const authModule = webpackHook(AUTH_MODULE_ID, {
+export const getFileUrl = async (type: FileType, index = 0): Promise<string> => {
+  const fileUrlModule = webpackHook(FILE_URL_MODULE_ID, {
     '6Ulw' (_, r, t) { // override
       t.d(r, 'a', () => {
         return type
       })
     },
-  })
-  const fn: (id: number, type: string, index: number) => string = authModule.a()
-  return fn(scoreinfo.id, type, index)
-}
-
-export const getFileUrl = async (type: FileType, index = 0): Promise<string> => {
-  const url = getApiUrl(type, index)
-  const auth = getApiAuth(type, index)
-
-  const r = await fetch(url, {
-    headers: {
-      Authorization: auth,
+    'VSrV' (_, r, t) { // override
+      t.d(r, 'b', () => {
+        return getApiUrl
+      })
     },
   })
 
-  const { info } = await r.json()
-  return info.url as string
+  const fn: (id: number, index: number, cb: (url: string) => any) => string = fileUrlModule.default
+
+  return new Promise((resolve) => {
+    return fn(scoreinfo.id, index, resolve)
+  })
 }
