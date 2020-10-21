@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.9.0
+// @version      0.9.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26367,49 +26367,66 @@ Please pipe the document into a Node stream.\
     };
 
     /* eslint-disable @typescript-eslint/no-unsafe-return */
-    const AUTH_MODULE_ID = 'FNf8';
-    const getApiUrl = (type, index) => {
-        // proxy
-        return `https://musescore.now.sh/api/jmuse?id=${scoreinfo.id}&type=${type}&index=${index}`;
+    /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+    const moduleLookup = (id, globalWebpackJson) => {
+        const pack = globalWebpackJson.find(x => x[1][id]);
+        return pack[1][id];
     };
     /**
      * Retrieve (webpack_require) a module from the page's webpack package
      *
      * I know this is super hacky.
      */
-    const webpackHook = (moduleId, globalWebpackJson = window['webpackJsonpmusescore']) => {
-        const pack = globalWebpackJson.find(x => x[1][moduleId]);
-        const t = Object.assign((id) => {
+    const webpackHook = (moduleId, moduleOverrides = {}, globalWebpackJson = window['webpackJsonpmusescore']) => {
+        const t = Object.assign((id, override = true) => {
             const r = {};
-            pack[1][id](r, r, t);
+            const m = (override && moduleOverrides[id])
+                ? moduleOverrides[id]
+                : moduleLookup(id, globalWebpackJson);
+            m(r, r, t);
             if (r.exports)
                 return r.exports;
             return r;
         }, {
             d(exp, name, fn) {
-                return Object.defineProperty(exp, name, { value: fn });
+                return Object.prototype.hasOwnProperty.call(exp, name) ||
+                    Object.defineProperty(exp, name, { enumerable: true, get: fn });
             },
             n(e) {
-                return () => e;
+                return e.__esModule ? () => e.default : () => e;
+            },
+            r(r) {
+                Object.defineProperty(r, '__esModule', { value: true });
+            },
+            e() {
+                return Promise.resolve();
             },
         });
         return t(moduleId);
     };
-    const getApiAuth = (type, index) => {
-        const authModule = webpackHook(AUTH_MODULE_ID);
-        const fn = authModule.a();
-        return fn(scoreinfo.id, type, index);
+
+    const FILE_URL_MODULE_ID = 'iNJA';
+    const getApiUrl = (id, type, index) => {
+        // proxy
+        return `https://musescore.now.sh/api/jmuse?id=${id}&type=${type}&index=${index}`;
     };
     const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
-        const url = getApiUrl(type, index);
-        const auth = getApiAuth(type, index);
-        const r = yield fetch(url, {
-            headers: {
-                Authorization: auth,
+        const fileUrlModule = webpackHook(FILE_URL_MODULE_ID, {
+            '6Ulw'(_, r, t) {
+                t.d(r, 'a', () => {
+                    return type;
+                });
+            },
+            'VSrV'(_, r, t) {
+                t.d(r, 'b', () => {
+                    return getApiUrl;
+                });
             },
         });
-        const { info } = yield r.json();
-        return info.url;
+        const fn = fileUrlModule.default;
+        return new Promise((resolve) => {
+            return fn(scoreinfo.id, index, resolve);
+        });
     });
 
     let pdfBlob;
