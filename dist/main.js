@@ -26641,7 +26641,7 @@ Please pipe the document into a Node stream.\
         BtnAction.PROCESSING_TEXT = 'Processing…';
         BtnAction.ERROR_TEXT = '❌Download Failed!';
         const deprecationNotice = (btnName) => {
-            return `DEPRECATED! (may still work)\n\nUse \`${btnName}\` inside \`Individual Parts\` instead.`;
+            return `DEPRECATED!\nUse \`${btnName}\` inside \`Individual Parts\` instead.\n(This may still work. Click \`OK\` to continue.)`;
         };
         const normalizeUrlInput = (url) => {
             if (typeof url === 'function')
