@@ -32,7 +32,9 @@ export const webpackHook = (moduleId: string, moduleOverrides: { [id: string]: M
         Object.defineProperty(exp, name, { enumerable: true, get: fn })
     },
     n (e) {
-      return e.__esModule ? () => e.default : () => e
+      const m = e.__esModule ? () => e.default : () => e
+      t.d(m, 'a', m)
+      return m
     },
     r (r) {
       Object.defineProperty(r, '__esModule', { value: true })
