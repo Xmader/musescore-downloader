@@ -87,6 +87,10 @@ export namespace BtnAction {
   export const PROCESSING_TEXT = 'Processing…'
   export const ERROR_TEXT = '❌Download Failed!'
 
+  const deprecationNotice = (btnName: string): string => {
+    return `DEPRECATED! (may still work)\n\nUse \`${btnName}\` inside \`Individual Parts\` instead.`
+  }
+
   type Promisable<T> = T | Promise<T>
   type UrlInput = Promisable<string> | (() => Promisable<string>)
 
@@ -157,6 +161,14 @@ export namespace BtnAction {
       }
 
       btn.onclick = _onclick
+    }
+  }
+
+  export const deprecate = (action: BtnAction): BtnAction => {
+    return (name, btn, setText) => {
+      alert(deprecationNotice(name))
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return action(name, btn, setText)
     }
   }
 
