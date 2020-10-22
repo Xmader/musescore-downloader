@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.9.1
+// @version      0.9.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26367,7 +26367,6 @@ Please pipe the document into a Node stream.\
     };
 
     /* eslint-disable @typescript-eslint/no-unsafe-return */
-    /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
     const moduleLookup = (id, globalWebpackJson) => {
         const pack = globalWebpackJson.find(x => x[1][id]);
         return pack[1][id];
@@ -26393,7 +26392,9 @@ Please pipe the document into a Node stream.\
                     Object.defineProperty(exp, name, { enumerable: true, get: fn });
             },
             n(e) {
-                return e.__esModule ? () => e.default : () => e;
+                const m = e.__esModule ? () => e.default : () => e;
+                t.d(m, 'a', m);
+                return m;
             },
             r(r) {
                 Object.defineProperty(r, '__esModule', { value: true });
@@ -26410,6 +26411,24 @@ Please pipe the document into a Node stream.\
         // proxy
         return `https://musescore.now.sh/api/jmuse?id=${id}&type=${type}&index=${index}`;
     };
+    /**
+     * I know this is super hacky.
+     */
+    let magic = new Promise((resolve) => {
+        const reg = '^\\d+(img|mp3|midi)\\d(\\w+)$';
+        const _encode = encodeURIComponent;
+        window.encodeURIComponent = (s) => {
+            const m = s.toString().match(reg);
+            if (m) {
+                // the auth string will be encoded using `encodeURIComponent` before `md5`,
+                // so hook here
+                resolve(m[2]);
+                magic = m[2];
+                window.encodeURIComponent = _encode; // detach
+            }
+            return _encode(s);
+        };
+    });
     const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
         const fileUrlModule = webpackHook(FILE_URL_MODULE_ID, {
             '6Ulw'(_, r, t) {
@@ -26424,8 +26443,14 @@ Please pipe the document into a Node stream.\
             },
         });
         const fn = fileUrlModule.default;
+        if (typeof magic !== 'string') {
+            // force to retrieve the MAGIC
+            const el = document.querySelectorAll('._13vRI')[6];
+            el.click();
+            magic = yield magic;
+        }
         return new Promise((resolve) => {
-            return fn(scoreinfo.id, index, resolve);
+            return fn(scoreinfo.id, index, resolve, magic);
         });
     });
 
@@ -26615,6 +26640,9 @@ Please pipe the document into a Node stream.\
     (function (BtnAction) {
         BtnAction.PROCESSING_TEXT = 'Processing…';
         BtnAction.ERROR_TEXT = '❌Download Failed!';
+        const deprecationNotice = (btnName) => {
+            return `DEPRECATED! (may still work)\n\nUse \`${btnName}\` inside \`Individual Parts\` instead.`;
+        };
         const normalizeUrlInput = (url) => {
             if (typeof url === 'function')
                 return url();
@@ -26676,6 +26704,13 @@ Please pipe the document into a Node stream.\
                 btn.onclick = _onclick;
             });
         };
+        BtnAction.deprecate = (action) => {
+            return (name, btn, setText) => {
+                alert(deprecationNotice(name));
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return action(name, btn, setText);
+            };
+        };
     })(BtnAction || (BtnAction = {}));
 
     const main = () => {
@@ -26695,7 +26730,7 @@ Please pipe the document into a Node stream.\
         });
         btnList.add({
             name: 'Download PDF',
-            action: BtnAction.process(downloadPDF),
+            action: BtnAction.deprecate(BtnAction.process(downloadPDF)),
         });
         btnList.add({
             name: 'Download MusicXML',
@@ -26708,7 +26743,7 @@ Please pipe the document into a Node stream.\
         });
         btnList.add({
             name: 'Download MIDI',
-            action: BtnAction.download(() => getFileUrl('midi'), `${filename}.mid`),
+            action: BtnAction.deprecate(BtnAction.download(() => getFileUrl('midi'), `${filename}.mid`)),
         });
         btnList.add({
             name: 'Download MP3',
