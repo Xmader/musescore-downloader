@@ -1,10 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
-const scoreinfo = {
+// run at document-start
+export const ugappJsStore = (() => {
+  const el = document.querySelector('.js-store') as HTMLDivElement
+  const json = el.dataset.content as string
+  return JSON.parse(json)
+})()
+
+export const scoreinfo = {
 
   get playerdata (): any {
     // @ts-ignore
-    return window.UGAPP.store.page.data.score
+    return ugappJsStore.store.page.data.score
   },
 
   get id (this: typeof scoreinfo): number {

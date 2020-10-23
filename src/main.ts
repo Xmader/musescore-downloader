@@ -10,9 +10,6 @@ import * as recaptcha from './recaptcha'
 import scoreinfo from './scoreinfo'
 
 const main = (): void => {
-  // @ts-ignore
-  if (!window?.UGAPP?.store?.page?.data?.score) { return }
-
   // init recaptcha
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
   recaptcha.init()
