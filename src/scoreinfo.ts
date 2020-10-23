@@ -1,10 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
 // run at document-start
-export const ugappJsStore = (() => {
-  const el = document.querySelector('.js-store') as HTMLDivElement
-  const json = el.dataset.content as string
-  return JSON.parse(json)
+export const ugappJsStore: Record<string, any> | null = (() => {
+  try {
+    const el = document.querySelector('.js-store') as HTMLDivElement
+    const json = el.dataset.content as string
+    return JSON.parse(json)
+  } catch (err) {
+    console.error(err)
+    return null
+  }
 })()
 
 export const scoreinfo = {
@@ -15,14 +20,21 @@ export const scoreinfo = {
   },
 
   get id (this: typeof scoreinfo): number {
-    return this.playerdata.id
+    try {
+      return this.playerdata.id
+    } catch {
+      const el = document.querySelector("meta[property='al:ios:url']") as HTMLMetaElement
+      const m = el.content.match(/(\d+)$/) as RegExpMatchArray
+      return +m[1]
+    }
   },
 
   get title (this: typeof scoreinfo): string {
     try {
       return this.playerdata.title
-    } catch (_) {
-      return ''
+    } catch {
+      const el = document.querySelector("meta[property='og:title']") as HTMLMetaElement
+      return el.content
     }
   },
 
@@ -33,13 +45,20 @@ export const scoreinfo = {
   get pageCount (this: typeof scoreinfo): number {
     try {
       return this.playerdata.pages_count
-    } catch (_) {
-      return document.querySelectorAll('img[src*=score_]').length
+    } catch {
+      return document.querySelectorAll('.gXB83').length
     }
   },
 
   get baseUrl (this: typeof scoreinfo): string {
-    const thumbnailUrl = this.playerdata.thumbnails.original
+    let thumbnailUrl: string
+    try {
+      thumbnailUrl = this.playerdata.thumbnails.original
+    } catch {
+      const el = document.querySelector("meta[property='og:image']") as HTMLMetaElement
+      thumbnailUrl = el.content
+    }
+
     const { origin, pathname } = new URL(thumbnailUrl)
     // remove the last part
     return origin + pathname.split('/').slice(0, -1).join('/') + '/'
