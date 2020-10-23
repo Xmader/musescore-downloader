@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.9.3
+// @version      0.9.4
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -221,11 +221,13 @@
     const waitForDocumentLoaded = () => {
         if (document.readyState !== 'complete') {
             return new Promise(resolve => {
-                document.addEventListener('readystatechange', () => {
+                const cb = () => {
                     if (document.readyState === 'complete') {
                         resolve();
+                        document.removeEventListener('readystatechange', cb);
                     }
-                }, { once: true });
+                };
+                document.addEventListener('readystatechange', cb);
             });
         }
         else {
@@ -26317,9 +26319,15 @@ Please pipe the document into a Node stream.\
     /* eslint-disable @typescript-eslint/no-unsafe-return */
     // run at document-start
     const ugappJsStore = (() => {
-        const el = document.querySelector('.js-store');
-        const json = el.dataset.content;
-        return JSON.parse(json);
+        try {
+            const el = document.querySelector('.js-store');
+            const json = el.dataset.content;
+            return JSON.parse(json);
+        }
+        catch (err) {
+            console.error(err);
+            return null;
+        }
     })();
     const scoreinfo = {
         get playerdata() {
@@ -26327,14 +26335,22 @@ Please pipe the document into a Node stream.\
             return ugappJsStore.store.page.data.score;
         },
         get id() {
-            return this.playerdata.id;
+            try {
+                return this.playerdata.id;
+            }
+            catch (_a) {
+                const el = document.querySelector("meta[property='al:ios:url']");
+                const m = el.content.match(/(\d+)$/);
+                return +m[1];
+            }
         },
         get title() {
             try {
                 return this.playerdata.title;
             }
-            catch (_) {
-                return '';
+            catch (_a) {
+                const el = document.querySelector("meta[property='og:title']");
+                return el.content;
             }
         },
         get fileName() {
@@ -26344,12 +26360,19 @@ Please pipe the document into a Node stream.\
             try {
                 return this.playerdata.pages_count;
             }
-            catch (_) {
-                return document.querySelectorAll('img[src*=score_]').length;
+            catch (_a) {
+                return document.querySelectorAll('.gXB83').length;
             }
         },
         get baseUrl() {
-            const thumbnailUrl = this.playerdata.thumbnails.original;
+            let thumbnailUrl;
+            try {
+                thumbnailUrl = this.playerdata.thumbnails.original;
+            }
+            catch (_a) {
+                const el = document.querySelector("meta[property='og:image']");
+                thumbnailUrl = el.content;
+            }
             const { origin, pathname } = new URL(thumbnailUrl);
             // remove the last part
             return origin + pathname.split('/').slice(0, -1).join('/') + '/';
