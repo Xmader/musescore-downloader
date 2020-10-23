@@ -10,4 +10,5 @@
 // @license      MIT
 // @copyright    Copyright (c) 2019-2020 Xmader
 // @grant        none
+// @run-at       document-start
 // ==/UserScript==
