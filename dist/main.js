@@ -3,13 +3,14 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.9.2
+// @version      0.9.3
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
 // @license      MIT
 // @copyright    Copyright (c) 2019-2020 Xmader
 // @grant        none
+// @run-at       document-start
 // ==/UserScript==
 
 (function () {
@@ -26314,10 +26315,16 @@ Please pipe the document into a Node stream.\
     }
 
     /* eslint-disable @typescript-eslint/no-unsafe-return */
+    // run at document-start
+    const ugappJsStore = (() => {
+        const el = document.querySelector('.js-store');
+        const json = el.dataset.content;
+        return JSON.parse(json);
+    })();
     const scoreinfo = {
         get playerdata() {
             // @ts-ignore
-            return window.UGAPP.store.page.data.score;
+            return ugappJsStore.store.page.data.score;
         },
         get id() {
             return this.playerdata.id;
@@ -26714,11 +26721,6 @@ Please pipe the document into a Node stream.\
     })(BtnAction || (BtnAction = {}));
 
     const main = () => {
-        var _a, _b, _c, _d;
-        // @ts-ignore
-        if (!((_d = (_c = (_b = (_a = window === null || window === void 0 ? void 0 : window.UGAPP) === null || _a === void 0 ? void 0 : _a.store) === null || _b === void 0 ? void 0 : _b.page) === null || _c === void 0 ? void 0 : _c.data) === null || _d === void 0 ? void 0 : _d.score)) {
-            return;
-        }
         // init recaptcha
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
         init();
