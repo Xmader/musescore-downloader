@@ -22,11 +22,13 @@ export const fetchData = async (url: string, init?: RequestInit): Promise<Uint8A
 export const waitForDocumentLoaded = (): Promise<void> => {
   if (document.readyState !== 'complete') {
     return new Promise(resolve => {
-      document.addEventListener('readystatechange', () => {
+      const cb = () => {
         if (document.readyState === 'complete') {
           resolve()
+          document.removeEventListener('readystatechange', cb)
         }
-      }, { once: true })
+      }
+      document.addEventListener('readystatechange', cb)
     })
   } else {
     return Promise.resolve()
