@@ -15,20 +15,23 @@ const getApiUrl = (id: number, type: FileType, index: number): string => {
  * I know this is super hacky.
  */
 let magic: Promise<string> | string = new Promise((resolve) => {
-  const reg = '^\\d+(img|mp3|midi)\\d(\\w+)$'
+  const reg = /^\d+(img|mp3|midi)\d(.+)$/
 
-  const _encode = encodeURIComponent
+  const method = 'encodeURIComponent'
+  const _fn = window[method]
 
-  window.encodeURIComponent = (s) => {
+  // This script can run before anything on the page,  
+  // so setting `encodeURIComponent` to be non-configurable and non-writable is no use.
+  window[method] = (s) => {
     const m = s.toString().match(reg)
     if (m) {
       // the auth string will be encoded using `encodeURIComponent` before `md5`,
       // so hook here
       resolve(m[2])
       magic = m[2]
-      window.encodeURIComponent = _encode // detach
+      window[method] = _fn // detach
     }
-    return _encode(s)
+    return _fn(s)
   }
 })
 
