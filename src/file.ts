@@ -3,6 +3,7 @@ import scoreinfo from './scoreinfo'
 import { webpackHook } from './webpack-hook'
 
 const FILE_URL_MODULE_ID = 'iNJA'
+const MAGIC_REG = /^\d+(img|mp3|midi)\d(.+)$/
 
 type FileType = 'img' | 'mp3' | 'midi'
 
@@ -15,15 +16,14 @@ const getApiUrl = (id: number, type: FileType, index: number): string => {
  * I know this is super hacky.
  */
 let magic: Promise<string> | string = new Promise((resolve) => {
-  const reg = /^\d+(img|mp3|midi)\d(.+)$/
-
+  // reserve for future hook update
   const method = 'encodeURIComponent'
   const _fn = window[method]
 
   // This script can run before anything on the page,  
   // so setting `encodeURIComponent` to be non-configurable and non-writable is no use.
   window[method] = (s) => {
-    const m = s.toString().match(reg)
+    const m = s.toString().match(MAGIC_REG)
     if (m) {
       // the auth string will be encoded using `encodeURIComponent` before `md5`,
       // so hook here
