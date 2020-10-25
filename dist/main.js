@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.9.4
+// @version      0.9.5
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26445,18 +26445,21 @@ Please pipe the document into a Node stream.\
      * I know this is super hacky.
      */
     let magic = new Promise((resolve) => {
-        const reg = '^\\d+(img|mp3|midi)\\d(\\w+)$';
-        const _encode = encodeURIComponent;
-        window.encodeURIComponent = (s) => {
+        const reg = /^\d+(img|mp3|midi)\d(.+)$/;
+        const method = 'encodeURIComponent';
+        const _fn = window[method];
+        // This script can run before anything on the page,  
+        // so setting `encodeURIComponent` to be non-configurable and non-writable is no use.
+        window[method] = (s) => {
             const m = s.toString().match(reg);
             if (m) {
                 // the auth string will be encoded using `encodeURIComponent` before `md5`,
                 // so hook here
                 resolve(m[2]);
                 magic = m[2];
-                window.encodeURIComponent = _encode; // detach
+                window[method] = _fn; // detach
             }
-            return _encode(s);
+            return _fn(s);
         };
     });
     const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
