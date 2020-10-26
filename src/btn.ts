@@ -1,6 +1,5 @@
 
 import { loadMscore, WebMscore } from './mscore'
-import { saveAs } from './utils'
 
 type BtnElement = HTMLButtonElement
 
@@ -50,6 +49,13 @@ export class BtnList {
 
     const setText = (str: string): void => {
       textNode.textContent = str
+
+      // Anti-detection:
+      // musescore will send a track event "MSCZDOWNLOADER_INSTALLED" to its backend 
+      //    if detected "Download MSCZ"
+      Object.defineProperty(textNode, 'textContent', {
+        get () { return 'Download' },
+      })
     }
 
     setText(options.name)
