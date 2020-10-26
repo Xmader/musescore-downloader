@@ -45,17 +45,20 @@ export class BtnList {
     const textNode = [...btn.childNodes].find((x) => {
       const txt = x.textContent as string
       return txt.includes('Download') || txt.includes('Print')
-    }) as Node
+    }) as HTMLSpanElement
+
+    // Anti-detection:
+    // musescore will send a track event "MSCZDOWNLOADER_INSTALLED" to its backend 
+    //    if detected "Download MSCZ"
+    const _property = 'textContent'
+    const _set = textNode['__lookupSetter__'](_property)
+    Object.defineProperty(textNode, _property, {
+      set (v) { _set.call(textNode, v) },
+      get () { return 'Download' },
+    })
 
     const setText = (str: string): void => {
       textNode.textContent = str
-
-      // Anti-detection:
-      // musescore will send a track event "MSCZDOWNLOADER_INSTALLED" to its backend 
-      //    if detected "Download MSCZ"
-      Object.defineProperty(textNode, 'textContent', {
-        get () { return 'Download' },
-      })
     }
 
     setText(options.name)
