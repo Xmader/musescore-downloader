@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.9.5
+// @version      0.9.6
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26437,6 +26437,7 @@ Please pipe the document into a Node stream.\
     };
 
     const FILE_URL_MODULE_ID = 'iNJA';
+    const MAGIC_REG = /^\d+(img|mp3|midi)\d(.+)$/;
     const getApiUrl = (id, type, index) => {
         // proxy
         return `https://musescore.now.sh/api/jmuse?id=${id}&type=${type}&index=${index}`;
@@ -26445,13 +26446,13 @@ Please pipe the document into a Node stream.\
      * I know this is super hacky.
      */
     let magic = new Promise((resolve) => {
-        const reg = /^\d+(img|mp3|midi)\d(.+)$/;
+        // reserve for future hook update
         const method = 'encodeURIComponent';
         const _fn = window[method];
         // This script can run before anything on the page,  
         // so setting `encodeURIComponent` to be non-configurable and non-writable is no use.
         window[method] = (s) => {
-            const m = s.toString().match(reg);
+            const m = s.toString().match(MAGIC_REG);
             if (m) {
                 // the auth string will be encoded using `encodeURIComponent` before `md5`,
                 // so hook here
@@ -26687,12 +26688,12 @@ Please pipe the document into a Node stream.\
                 window.open(yield normalizeUrlInput(url));
             }));
         };
-        BtnAction.download = (url, filename) => {
+        BtnAction.download = (url) => {
             return BtnAction.process(() => __awaiter(this, void 0, void 0, function* () {
                 const _url = yield normalizeUrlInput(url);
-                const r = yield fetch(_url);
-                const blob = yield r.blob();
-                saveAs(blob, filename);
+                const a = document.createElement('a');
+                a.href = _url;
+                a.dispatchEvent(new MouseEvent('click'));
             }));
         };
         BtnAction.mscoreWindow = (fn) => {
@@ -26771,11 +26772,11 @@ Please pipe the document into a Node stream.\
         });
         btnList.add({
             name: 'Download MIDI',
-            action: BtnAction.deprecate(BtnAction.download(() => getFileUrl('midi'), `${filename}.mid`)),
+            action: BtnAction.deprecate(BtnAction.download(() => getFileUrl('midi'))),
         });
         btnList.add({
             name: 'Download MP3',
-            action: BtnAction.download(() => getFileUrl('mp3'), `${filename}.mp3`),
+            action: BtnAction.download(() => getFileUrl('mp3')),
         });
         btnList.add({
             name: 'Individual Parts',
