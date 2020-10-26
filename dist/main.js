@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.9.7
+// @version      0.9.8
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26647,14 +26647,17 @@ Please pipe the document into a Node stream.\
                 const txt = x.textContent;
                 return txt.includes('Download') || txt.includes('Print');
             });
+            // Anti-detection:
+            // musescore will send a track event "MSCZDOWNLOADER_INSTALLED" to its backend 
+            //    if detected "Download MSCZ"
+            const _property = 'textContent';
+            const _set = textNode['__lookupSetter__'](_property);
+            Object.defineProperty(textNode, _property, {
+                set(v) { _set.call(textNode, v); },
+                get() { return 'Download'; },
+            });
             const setText = (str) => {
                 textNode.textContent = str;
-                // Anti-detection:
-                // musescore will send a track event "MSCZDOWNLOADER_INSTALLED" to its backend 
-                //    if detected "Download MSCZ"
-                Object.defineProperty(textNode, 'textContent', {
-                    get() { return 'Download'; },
-                });
             };
             setText(options.name);
             btn.onclick = () => {
