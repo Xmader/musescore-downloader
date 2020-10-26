@@ -105,12 +105,12 @@ export namespace BtnAction {
     })
   }
 
-  export const download = (url: UrlInput, filename?: string): BtnAction => {
+  export const download = (url: UrlInput): BtnAction => {
     return process(async (): Promise<any> => {
       const _url = await normalizeUrlInput(url)
-      const r = await fetch(_url)
-      const blob = await r.blob()
-      saveAs(blob, filename)
+      const a = document.createElement('a')
+      a.href = _url
+      a.dispatchEvent(new MouseEvent('click'))
     })
   }
 

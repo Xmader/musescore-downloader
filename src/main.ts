@@ -42,13 +42,13 @@ const main = (): void => {
   btnList.add({
     name: 'Download MIDI',
     action: BtnAction.deprecate(
-      BtnAction.download(() => getFileUrl('midi'), `${filename}.mid`),
+      BtnAction.download(() => getFileUrl('midi')),
     ),
   })
 
   btnList.add({
     name: 'Download MP3',
-    action: BtnAction.download(() => getFileUrl('mp3'), `${filename}.mp3`),
+    action: BtnAction.download(() => getFileUrl('mp3')),
   })
 
   btnList.add({
