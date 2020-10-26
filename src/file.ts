@@ -1,3 +1,4 @@
+/* eslint-disable no-extend-native */
 
 import scoreinfo from './scoreinfo'
 import { webpackHook } from './webpack-hook'
@@ -17,21 +18,20 @@ const getApiUrl = (id: number, type: FileType, index: number): string => {
  */
 let magic: Promise<string> | string = new Promise((resolve) => {
   // reserve for future hook update
-  const method = 'encodeURIComponent'
-  const _fn = window[method]
+  const target = String.prototype
+  const method = 'charCodeAt'
+  const _fn = target[method]
 
   // This script can run before anything on the page,  
-  // so setting `encodeURIComponent` to be non-configurable and non-writable is no use.
-  window[method] = (s) => {
-    const m = s.toString().match(MAGIC_REG)
+  // so setting this function to be non-configurable and non-writable is no use.
+  target[method] = function (i) {
+    const m = this.match(MAGIC_REG)
     if (m) {
-      // the auth string will be encoded using `encodeURIComponent` before `md5`,
-      // so hook here
       resolve(m[2])
       magic = m[2]
-      window[method] = _fn // detach
+      target[method] = _fn // detach
     }
-    return _fn(s)
+    return _fn.call(this, i) as number
   }
 })
 
@@ -49,7 +49,7 @@ export const getFileUrl = async (type: FileType, index = 0): Promise<string> => 
     },
   })
 
-  const fn: (id: number, index: number, cb: (url: string) => any, magic: string) => string = fileUrlModule.default
+  const fn: (id: number, index: number, cb: (url: string) => any, magic: string) => string = fileUrlModule.a
 
   if (typeof magic !== 'string') {
     // force to retrieve the MAGIC
