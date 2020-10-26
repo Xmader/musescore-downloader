@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.9.6
+// @version      0.9.7
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26320,8 +26320,9 @@ Please pipe the document into a Node stream.\
     // run at document-start
     const ugappJsStore = (() => {
         try {
-            const el = document.querySelector('.js-store');
-            const json = el.dataset.content;
+            const l = document.body.children;
+            const el = [...l].find(e => Object.keys(e.dataset).length > 0);
+            const json = Object.values(el.dataset)[0];
             return JSON.parse(json);
         }
         catch (err) {
@@ -26436,6 +26437,7 @@ Please pipe the document into a Node stream.\
         return t(moduleId);
     };
 
+    /* eslint-disable no-extend-native */
     const FILE_URL_MODULE_ID = 'iNJA';
     const MAGIC_REG = /^\d+(img|mp3|midi)\d(.+)$/;
     const getApiUrl = (id, type, index) => {
@@ -26447,20 +26449,19 @@ Please pipe the document into a Node stream.\
      */
     let magic = new Promise((resolve) => {
         // reserve for future hook update
-        const method = 'encodeURIComponent';
-        const _fn = window[method];
+        const target = String.prototype;
+        const method = 'charCodeAt';
+        const _fn = target[method];
         // This script can run before anything on the page,  
-        // so setting `encodeURIComponent` to be non-configurable and non-writable is no use.
-        window[method] = (s) => {
-            const m = s.toString().match(MAGIC_REG);
+        // so setting this function to be non-configurable and non-writable is no use.
+        target[method] = function (i) {
+            const m = this.match(MAGIC_REG);
             if (m) {
-                // the auth string will be encoded using `encodeURIComponent` before `md5`,
-                // so hook here
                 resolve(m[2]);
                 magic = m[2];
-                window[method] = _fn; // detach
+                target[method] = _fn; // detach
             }
-            return _fn(s);
+            return _fn.call(this, i);
         };
     });
     const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
@@ -26476,7 +26477,7 @@ Please pipe the document into a Node stream.\
                 });
             },
         });
-        const fn = fileUrlModule.default;
+        const fn = fileUrlModule.a;
         if (typeof magic !== 'string') {
             // force to retrieve the MAGIC
             const el = document.querySelectorAll('._13vRI')[6];
@@ -26648,6 +26649,12 @@ Please pipe the document into a Node stream.\
             });
             const setText = (str) => {
                 textNode.textContent = str;
+                // Anti-detection:
+                // musescore will send a track event "MSCZDOWNLOADER_INSTALLED" to its backend 
+                //    if detected "Download MSCZ"
+                Object.defineProperty(textNode, 'textContent', {
+                    get() { return 'Download'; },
+                });
             };
             setText(options.name);
             btn.onclick = () => {
