@@ -3,8 +3,9 @@
 // run at document-start
 export const ugappJsStore: Record<string, any> | null = (() => {
   try {
-    const el = document.querySelector('.js-store') as HTMLDivElement
-    const json = el.dataset.content as string
+    const l = document.body.children as HTMLCollectionOf<HTMLElement>
+    const el = [...l].find(e => Object.keys(e.dataset).length > 0) as HTMLDivElement
+    const json = Object.values(el.dataset)[0] as string
     return JSON.parse(json)
   } catch (err) {
     console.error(err)
