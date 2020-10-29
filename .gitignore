@@ -63,8 +63,6 @@ typings/
 # parcel build cache
 .cache
 
-package-lock.json
-
 1.*
 
 dist/cache
