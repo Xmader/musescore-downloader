@@ -45,6 +45,8 @@ jobs:
 
       - name: NPM Publish
         run: npm publish --tag $NPM_TAG
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # 0301...
 
       - name: Github Release
         env:
