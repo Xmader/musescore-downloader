@@ -22,10 +22,13 @@
         "*://musescore.com/*/*"
       ],
       "js": [
-        "dist/main.js"
+        "src/web-ext.js"
       ],
       "run_at": "document_start"
     }
+  ],
+  "web_accessible_resources": [
+    "dist/main.js"
   ],
   "dependencies": {
     "pdfkit": "git+https://github.com/Xmader/pdfkit.git",
@@ -48,6 +51,8 @@
   "scripts": {
     "build": "rollup -c",
     "watch": "npm run build -- --watch",
+    "start:ext": "web-ext run",
+    "start:ext-chrome": "npm run start:ext -- -t chromium",
     "bump-version:patch": "npm version patch --no-git-tag",
     "bump-version:minor": "npm version minor --no-git-tag"
   }
