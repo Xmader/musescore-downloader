@@ -3,7 +3,7 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.9.8
+// @version      0.10.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26480,7 +26480,7 @@ Please pipe the document into a Node stream.\
         const fn = fileUrlModule.a;
         if (typeof magic !== 'string') {
             // force to retrieve the MAGIC
-            const el = document.querySelectorAll('._13vRI')[6];
+            const el = document.querySelectorAll('.SD7H- > button')[3];
             el.click();
             magic = yield magic;
         }
