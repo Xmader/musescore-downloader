@@ -13,6 +13,20 @@
     "url": "https://github.com/Xmader/musescore-downloader/issues"
   },
   "homepage": "https://github.com/Xmader/musescore-downloader#readme",
+  "homepage_url": "https://github.com/Xmader/musescore-downloader#readme",
+  "manifest_version": 2,
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+  "content_scripts": [
+    {
+      "matches": [
+        "*://musescore.com/*/*"
+      ],
+      "js": [
+        "dist/main.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
   "dependencies": {
     "pdfkit": "git+https://github.com/Xmader/pdfkit.git",
     "svg-to-pdfkit": "^0.1.8",
