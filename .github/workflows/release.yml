@@ -48,13 +48,25 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # 0301...
 
+      - name: Sign Firefox Extension
+        id: web_ext_sign
+        uses: kewisch/action-web-ext@v1
+        with:
+          cmd: sign
+          source: dist/ext.zip
+          channel: unlisted
+          apiKey: ${{ secrets.AMO_SIGN_KEY }}
+          apiSecret: ${{ secrets.AMO_SIGN_SECRET }}
+
       - name: Github Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SIGNED_WEB_EXT: ${{ steps.web-ext-build.outputs.target }}
         run: |
           hub release create \
             -a "dist/main.js#userscript.js" \
             -a "dist/ext.zip#webextension.zip" \
+            -a "$SIGNED_WEB_EXT" \
             -m v$VERSION \
             -t $REF \
             v$VERSION
