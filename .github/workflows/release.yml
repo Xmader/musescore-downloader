@@ -13,12 +13,11 @@ on:
       ref:
         description: 'The branch, tag or SHA to release from'
         required: false
-        default: ${{ github.sha }}
 
 env:
   VERSION: ${{ github.event.inputs.version }}
   NPM_TAG: ${{ github.event.inputs.npm_tag }}
-  REF: ${{ github.event.inputs.ref }}
+  REF: ${{ github.event.inputs.ref || github.sha }}
 
 jobs:
   release:
