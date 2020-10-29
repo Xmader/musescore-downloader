@@ -45,6 +45,16 @@ View this project on [Github](https://github.com/Xmader/musescore-downloader) | 
 
 This repo is also available on IPFS to avoid DMCA takedown.
 
+## Building Instructions
+
+Make sure you have [Node.js](https://nodejs.org/en/) environment installed.
+
+```bash
+npm install
+npm run build     # build as User Script
+npm run build:ext # build as Web Extension
+```
+
 ## Feedback
 
 [Github Issues](https://github.com/Xmader/musescore-downloader/issues)
