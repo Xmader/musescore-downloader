@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version number. default: the version number in package.json'
+        required: false
+      npm_tag:
+        description: 'The tag to register the published NPM package with'
+        required: false
+        default: 'latest'
+      ref:
+        description: 'The branch, tag or SHA to release from'
+        required: false
+        default: ${{ github.sha }}
+
+env:
+  VERSION: ${{ github.event.inputs.version }}
+  NPM_TAG: ${{ github.event.inputs.npm_tag }}
+  REF: ${{ github.event.inputs.ref }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          ref: ${{ env.REF }}
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          registry-url: https://registry.npmjs.org/
+
+      - name: Set Env
+        run: |
+          VER=$(node -p "require('./package.json').version")
+          echo "VERSION=$VER" >> $GITHUB_ENV
+        if: ${{ !env.VERSION }}
+
+      - run: npm install
+      - name: Bump Version
+        run: npm version --allow-same-version --no-git-tag $VERSION
+      - run: npm run build
+      - run: npm run pack:ext
+
+      - name: NPM Publish
+        run: npm publish --tag $NPM_TAG
+
+      - name: Github Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          hub release create \
+            -a "dist/main.js#userscript.js" \
+            -a "dist/ext.zip#webextension.zip" \
+            -m v$VERSION \
+            -t $REF \
+            v$VERSION
