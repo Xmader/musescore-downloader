@@ -53,7 +53,7 @@ export const getFileUrl = async (type: FileType, index = 0): Promise<string> => 
 
   if (typeof magic !== 'string') {
     // force to retrieve the MAGIC
-    const el = document.querySelectorAll('._13vRI')[6] as HTMLButtonElement
+    const el = document.querySelectorAll('.SD7H- > button')[3] as HTMLButtonElement
     el.click()
     magic = await magic
   }
