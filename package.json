@@ -15,6 +15,11 @@
   "homepage": "https://github.com/Xmader/musescore-downloader#readme",
   "homepage_url": "https://github.com/Xmader/musescore-downloader#readme",
   "manifest_version": 2,
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{69856097-6e10-42e9-acc7-0c063550c7b8}"
+    }
+  },
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
   "content_scripts": [
     {
@@ -51,7 +56,7 @@
   "scripts": {
     "build": "rollup -c",
     "watch": "npm run build -- --watch",
-    "start:ext": "web-ext run",
+    "start:ext": "web-ext run --url https://musescore.com/",
     "start:ext-chrome": "npm run start:ext -- -t chromium",
     "pack:ext": "zip -r dist/ext.zip manifest.json src/web-ext.js dist/main.js",
     "bump-version:patch": "npm version patch --no-git-tag",
