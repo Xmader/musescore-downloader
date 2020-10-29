@@ -66,3 +66,4 @@ typings/
 1.*
 
 dist/cache
+dist/ext*
