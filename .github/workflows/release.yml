@@ -56,7 +56,7 @@ jobs:
         with:
           cmd: sign
           source: dist/ext.zip
-          channel: unlisted
+          channel: listed
           apiKey: ${{ secrets.AMO_SIGN_KEY }}
           apiSecret: ${{ secrets.AMO_SIGN_SECRET }}
 
