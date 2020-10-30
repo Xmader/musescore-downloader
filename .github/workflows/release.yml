@@ -48,9 +48,11 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # 0301...
 
+      - run: mkdir -p web-ext-artifacts
       - name: Sign Firefox Extension
         id: web_ext_sign
         uses: kewisch/action-web-ext@v1
+        continue-on-error: true
         with:
           cmd: sign
           source: dist/ext.zip
