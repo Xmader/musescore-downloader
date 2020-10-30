@@ -58,14 +58,17 @@ jobs:
           apiKey: ${{ secrets.AMO_SIGN_KEY }}
           apiSecret: ${{ secrets.AMO_SIGN_SECRET }}
 
+      - run: |
+          cp dist/main.js musescore-downloader.user.js && \
+          cp dist/ext.zip musescore-downloader.webextension.zip
       - name: Github Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SIGNED_WEB_EXT: ${{ steps.web-ext-build.outputs.target }}
         run: |
           hub release create \
-            -a "dist/main.js#userscript.js" \
-            -a "dist/ext.zip#webextension.zip" \
+            -a "musescore-downloader.user.js" \
+            -a "musescore-downloader.webextension.zip" \
             -a "$SIGNED_WEB_EXT" \
             -m v$VERSION \
             -t $REF \
