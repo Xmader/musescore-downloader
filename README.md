@@ -37,13 +37,22 @@ There is an article on their website: [Score download becomes a part of the Pro 
 
 ## Installation
 
+### Install as Userscript
+
 This script is available as a [Userscript](https://en.wikipedia.org/wiki/Userscript). To use this Userscript, you need to first install a [user script manager](https://greasyfork.org/en/help/installing-user-scripts), like Tampermonkey.
 
-Install from [Greasy Fork](https://greasyfork.org/scripts/391931)
+1. Install [Tampermonkey](https://www.tampermonkey.net/)
 
-View this project on [Github](https://github.com/Xmader/musescore-downloader) | [Gitlab](https://gitlab.com/Xmader/musescore-downloader) (Mirror)
+2. ~~Install from [Greasy Fork](https://greasyfork.org/scripts/391931).~~   [#42](https://github.com/Xmader/musescore-downloader/issues/42)  
+Install this script from <https://msdl.librescore.org/install.user.js>
 
-This repo is also available on IPFS to avoid DMCA takedown.
+### Install as Web Extension
+
+The alternative method is to install this script as a Chrome or Firefox extension.
+
+You may install the browser extension directly from [addons.mozilla.org (for Firefox)](https://addons.mozilla.org/en-US/firefox/addon/musescore-downloader/) or [chrome web store (for Chrome and Chromium based browsers)](https://chrome.google.com/webstore/detail/fmmnkcdlphpgbdcdfnjkldfljedbbokp).
+
+The up-to-date version can be found on the [Github Releases](https://github.com/Xmader/musescore-downloader/releases) page.
 
 ## Building Instructions
 
@@ -54,6 +63,12 @@ npm install
 npm run build     # build as User Script
 npm run pack:ext  # pack Web Extension
 ```
+
+## Mirrors
+
+* View this project on [Github](https://github.com/Xmader/musescore-downloader) (Main repo) | [Gitlab](https://gitlab.com/Xmader/musescore-downloader) (Mirror)
+
+* This repo is also available on IPFS to avoid DMCA takedown.
 
 ## Feedback
 
