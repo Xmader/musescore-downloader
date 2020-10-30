@@ -69,9 +69,18 @@ jobs:
           EXT_ID: musescore-downloader
           OUT_DIR: ${{ env.ARTIFACTS_DIR }}
 
+      - name: Upload to IPFS
+        uses: aquiladev/ipfs-action@v0.1.5
+        id: ipfs
+        with:
+          path: ${{ env.ARTIFACTS_DIR }}
+          service: infura
+          verbose: true
+
       - name: Github Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IPFS_HASH: ${{ steps.ipfs.outputs.hash }}
         run: |
           cd $ARTIFACTS_DIR
 
@@ -82,5 +91,6 @@ jobs:
           hub release create \
             "${assets[@]}" \
             -m v$VERSION \
+            -m "IPFS Hash: [$IPFS_HASH](https://ipfs.io/ipfs/$IPFS_HASH)" \
             -t $REF \
             v$VERSION
