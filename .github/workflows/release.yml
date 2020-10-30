@@ -66,12 +66,10 @@ jobs:
       - name: Github Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SIGNED_WEB_EXT: ${{ steps.web-ext-build.outputs.target }}
         run: |
           hub release create \
             -a "musescore-downloader.user.js" \
             -a "musescore-downloader.webextension.zip" \
-            -a "$SIGNED_WEB_EXT" \
             -m v$VERSION \
             -t $REF \
             v$VERSION
