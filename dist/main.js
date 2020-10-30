@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.10.1
+// @version      0.10.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26456,7 +26456,7 @@ Please pipe the document into a Node stream.\
         const _fn = target[method];
         // This script can run before anything on the page,  
         // so setting this function to be non-configurable and non-writable is no use.
-        target[method] = function (i) {
+        const hookFn = function (i) {
             const m = this.match(MAGIC_REG);
             if (m) {
                 resolve(m[2]);
@@ -26464,6 +26464,16 @@ Please pipe the document into a Node stream.\
                 target[method] = _fn; // detach
             }
             return _fn.call(this, i);
+        };
+        target[method] = hookFn;
+        // make hooked methods "native"
+        const _toString = Function.prototype['toString'];
+        Function.prototype.toString = function s() {
+            if (this === hookFn || this === s) {
+                // "function () {\n    [native code]\n}"
+                return _toString.call(parseInt);
+            }
+            return _toString.call(this);
         };
     });
     const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
