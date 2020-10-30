@@ -64,7 +64,7 @@ jobs:
           mkdir -p $ARTIFACTS_DIR
           cp dist/main.js $ARTIFACTS_DIR/musescore-downloader.user.js
           cp dist/ext.zip $ARTIFACTS_DIR/musescore-downloader.webextension.zip
-      - run: sh ./.github/workflows/get-signed-ext.sh
+      - run: bash ./.github/workflows/get-signed-ext.sh
         env:
           EXT_ID: musescore-downloader
           OUT_DIR: ${{ env.ARTIFACTS_DIR }}
