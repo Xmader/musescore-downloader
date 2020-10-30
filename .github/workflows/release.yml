@@ -60,6 +60,9 @@ jobs:
           apiKey: ${{ secrets.AMO_SIGN_KEY }}
           apiSecret: ${{ secrets.AMO_SIGN_SECRET }}
 
+      - run: sh ./.github/workflows/get-signed-ext.sh
+        env:
+          EXT_ID: musescore-downloader
       - run: |
           cp dist/main.js musescore-downloader.user.js && \
           cp dist/ext.zip musescore-downloader.webextension.zip
@@ -67,9 +70,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          files=$(ls musescore?downloader*)
+          assets=()
+          for f in $files; do [ -f "$f" ] && assets+=(-a "$f"); done
+
           hub release create \
-            -a "musescore-downloader.user.js" \
-            -a "musescore-downloader.webextension.zip" \
+            "${assets[@]}" \
             -m v$VERSION \
             -t $REF \
             v$VERSION
