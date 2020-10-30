@@ -3,7 +3,9 @@
 // @namespace    https://www.xmader.com/
 // @homepageURL  https://github.com/Xmader/musescore-downloader/
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
-// @version      0.10.0
+// @updateURL    https://msdl.librescore.org/install.user.js
+// @downloadURL  https://msdl.librescore.org/install.user.js
+// @version      0.10.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
