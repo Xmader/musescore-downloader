@@ -11,7 +11,7 @@ do
 
   if [ -n "$url" ]; then
     echo "v$VERSION available!"
-    wget -nv $url
+    wget -nv $url -P ${OUT_DIR:-./}
     exit
   else
     echo "v$VERSION unavailable"

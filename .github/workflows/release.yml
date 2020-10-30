@@ -18,6 +18,7 @@ env:
   VERSION: ${{ github.event.inputs.version }}
   NPM_TAG: ${{ github.event.inputs.npm_tag }}
   REF: ${{ github.event.inputs.ref || github.sha }}
+  ARTIFACTS_DIR: ./.artifacts
 
 jobs:
   release:
@@ -48,7 +49,6 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # 0301...
 
-      - run: mkdir -p web-ext-artifacts
       - name: Publish Firefox Extension
         id: web-ext-build
         uses: kewisch/action-web-ext@v1
@@ -60,16 +60,21 @@ jobs:
           apiKey: ${{ secrets.AMO_SIGN_KEY }}
           apiSecret: ${{ secrets.AMO_SIGN_SECRET }}
 
+      - run: |
+          mkdir -p $ARTIFACTS_DIR
+          cp dist/main.js $ARTIFACTS_DIR/musescore-downloader.user.js
+          cp dist/ext.zip $ARTIFACTS_DIR/musescore-downloader.webextension.zip
       - run: sh ./.github/workflows/get-signed-ext.sh
         env:
           EXT_ID: musescore-downloader
-      - run: |
-          cp dist/main.js musescore-downloader.user.js && \
-          cp dist/ext.zip musescore-downloader.webextension.zip
+          OUT_DIR: ${{ env.ARTIFACTS_DIR }}
+
       - name: Github Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          cd $ARTIFACTS_DIR
+
           files=$(ls musescore?downloader*)
           assets=()
           for f in $files; do [ -f "$f" ] && assets+=(-a "$f"); done
