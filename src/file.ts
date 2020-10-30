@@ -24,7 +24,7 @@ let magic: Promise<string> | string = new Promise((resolve) => {
 
   // This script can run before anything on the page,  
   // so setting this function to be non-configurable and non-writable is no use.
-  target[method] = function (i) {
+  const hookFn = function (i: number) {
     const m = this.match(MAGIC_REG)
     if (m) {
       resolve(m[2])
@@ -32,6 +32,17 @@ let magic: Promise<string> | string = new Promise((resolve) => {
       target[method] = _fn // detach
     }
     return _fn.call(this, i) as number
+  }
+  target[method] = hookFn
+
+  // make hooked methods "native"
+  const _toString = Function.prototype['toString']
+  Function.prototype.toString = function s () {
+    if (this === hookFn || this === s) {
+      // "function () {\n    [native code]\n}"
+      return _toString.call(parseInt) as string
+    }
+    return _toString.call(this) as string
   }
 })
 
