@@ -82,7 +82,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IPFS_HASH: ${{ steps.ipfs.outputs.hash }}
         run: |
-          files=$(ls $ARTIFACTS_DIR)
+          cd $ARTIFACTS_DIR
+
+          files=$(ls .)
           assets=()
           for f in $files; do [ -f "$f" ] && assets+=(-a "$f"); done
 
