@@ -68,7 +68,7 @@ npm run pack:ext  # pack Web Extension
 
 * View this project on [Github](https://github.com/Xmader/musescore-downloader) (Main repo) | [Gitlab](https://gitlab.com/Xmader/musescore-downloader) (Mirror)
 
-* This repo is also available on IPFS to avoid DMCA takedown.
+* This repo is also available on IPFS to avoid DMCA takedown: [ipns://msdl.librescore.org](https://ipfs.io/ipns/msdl.librescore.org/)
 
 ## Feedback
 
@@ -206,7 +206,7 @@ npm run pack:ext  # pack Web Extension
 
 * Mira este proyecto en [Github](https://github.com/Xmader/musescore-downloader) (Principal) | [Gitlab](https://gitlab.com/Xmader/musescore-downloader) (Respaldo)
 
-* Este repositorio también está disponible en IPFS para evitar la eliminación por parte de DMCA.
+* Este repositorio también está disponible en IPFS para evitar la eliminación por parte de DMCA. [ipns://msdl.librescore.org](https://ipfs.io/ipns/msdl.librescore.org/)
 
 ## Feedback
 
