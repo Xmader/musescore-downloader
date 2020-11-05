@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.11.1
+// @version      0.11.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26441,6 +26441,54 @@ Please pipe the document into a Node stream.\
     };
 
     /* eslint-disable no-extend-native */
+    /* eslint-disable @typescript-eslint/ban-types */
+    /**
+     * make hooked methods "native"
+     */
+    const makeNative = (() => {
+        const l = new Set();
+        hookNative(Function.prototype, 'toString', (_toString) => {
+            return function () {
+                if (l.has(this)) {
+                    // "function () {\n    [native code]\n}"
+                    return _toString.call(parseInt);
+                }
+                return _toString.call(this);
+            };
+        });
+        return (fn) => {
+            l.add(fn);
+        };
+    })();
+    function hookNative(target, method, hook) {
+        // reserve for future hook update
+        const _fn = target[method];
+        const detach = () => {
+            target[method] = _fn; // detach
+        };
+        // This script can run before anything on the page,  
+        // so setting this function to be non-configurable and non-writable is no use.
+        const hookedFn = hook(_fn, detach);
+        target[method] = hookedFn;
+        setTimeout(() => {
+            makeNative(hookedFn);
+        });
+    }
+    const hideFromArrFilter = (() => {
+        const l = new Set();
+        hookNative(Array.prototype, 'filter', (_filter) => {
+            return function (...args) {
+                const arr = _filter.apply(this, args);
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return _filter.call(arr, (e) => !l.has(e));
+            };
+        });
+        return (item) => {
+            l.add(item);
+        };
+    })();
+
+    /* eslint-disable no-extend-native */
     const FILE_URL_MODULE_ID = 'iNJA';
     const MAGIC_REG = /^\d+(img|mp3|midi)\d(.+)$/;
     const getApiUrl = (id, type, index) => {
@@ -26451,31 +26499,17 @@ Please pipe the document into a Node stream.\
      * I know this is super hacky.
      */
     let magic = new Promise((resolve) => {
-        // reserve for future hook update
-        const target = String.prototype;
-        const method = 'charCodeAt';
-        const _fn = target[method];
-        // This script can run before anything on the page,  
-        // so setting this function to be non-configurable and non-writable is no use.
-        const hookFn = function (i) {
-            const m = this.match(MAGIC_REG);
-            if (m) {
-                resolve(m[2]);
-                magic = m[2];
-                target[method] = _fn; // detach
-            }
-            return _fn.call(this, i);
-        };
-        target[method] = hookFn;
-        // make hooked methods "native"
-        const _toString = Function.prototype['toString'];
-        Function.prototype.toString = function s() {
-            if (this === hookFn || this === s) {
-                // "function () {\n    [native code]\n}"
-                return _toString.call(parseInt);
-            }
-            return _toString.call(this);
-        };
+        hookNative(String.prototype, 'charCodeAt', (_fn, detach) => {
+            return function (i) {
+                const m = this.match(MAGIC_REG);
+                if (m) {
+                    resolve(m[2]);
+                    magic = m[2];
+                    detach();
+                }
+                return _fn.call(this, i);
+            };
+        });
     });
     const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
         const fileUrlModule = webpackHook(FILE_URL_MODULE_ID, {
@@ -26734,6 +26768,9 @@ Please pipe the document into a Node stream.\
             this.list = [];
             this.antiDetectionText = 'Download';
         }
+        hide(el) {
+            hideFromArrFilter(el);
+        }
         add(options) {
             const btn = this.templateBtn.cloneNode(true);
             const textNode = [...btn.childNodes].find((x) => {
@@ -26750,10 +26787,13 @@ Please pipe the document into a Node stream.\
                 get: () => {
                     // first time only
                     const t = this.antiDetectionText;
-                    this.antiDetectionText = '';
+                    this.antiDetectionText = ' ';
                     return t;
                 },
             });
+            // hide this button from Array.prototype.filter
+            this.hide(btn);
+            this.hide(textNode);
             const setText = (str) => {
                 textNode.textContent = str;
             };
