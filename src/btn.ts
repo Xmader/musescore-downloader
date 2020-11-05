@@ -58,16 +58,17 @@ export class BtnList {
     // Anti-detection:
     // musescore will send a track event "MSCZDOWNLOADER_INSTALLED" to its backend 
     //    if detected "Download MSCZ"
-    const _property = 'textContent'
-    const _set = textNode['__lookupSetter__'](_property)
-    Object.defineProperty(textNode, _property, {
-      set (v) { _set.call(textNode, v) },
-      get: () => {
-        // first time only
-        const t = this.antiDetectionText
-        this.antiDetectionText = ' '
-        return t
-      },
+    ['textContent', 'innerHTML'].forEach((_property) => {
+      const _set = textNode['__lookupSetter__'](_property)
+      Object.defineProperty(textNode, _property, {
+        set (v) { _set.call(textNode, v) },
+        get: () => {
+          // first time only
+          const t = this.antiDetectionText
+          this.antiDetectionText = ' '
+          return t
+        },
+      })
     })
     // hide this button from Array.prototype.filter
     this.hide(btn)
