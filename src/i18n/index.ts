@@ -1,5 +1,6 @@
 
 import en from './en'
+import es from './es'
 
 export interface LOCALE {
   'PROCESSING' (): string;
@@ -25,6 +26,7 @@ export function createLocale<OBJ extends LOCALE> (obj: OBJ): OBJ {
 
 const locales = (<L extends { [n: string]: LOCALE } /** type checking */> (l: L) => Object.freeze(l))({
   en,
+  es,
 })
 
 // detect browser language
