@@ -2,6 +2,7 @@
 
 import scoreinfo from './scoreinfo'
 import { webpackHook } from './webpack-hook'
+import { makeNative } from './anti-detection'
 
 const FILE_URL_MODULE_ID = 'iNJA'
 const MAGIC_REG = /^\d+(img|mp3|midi)\d(.+)$/
@@ -35,15 +36,7 @@ let magic: Promise<string> | string = new Promise((resolve) => {
   }
   target[method] = hookFn
 
-  // make hooked methods "native"
-  const _toString = Function.prototype['toString']
-  Function.prototype.toString = function s () {
-    if (this === hookFn || this === s) {
-      // "function () {\n    [native code]\n}"
-      return _toString.call(parseInt) as string
-    }
-    return _toString.call(this) as string
-  }
+  makeNative(hookFn)
 })
 
 export const getFileUrl = async (type: FileType, index = 0): Promise<string> => {
