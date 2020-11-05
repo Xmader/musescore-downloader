@@ -2,7 +2,7 @@
 
 import scoreinfo from './scoreinfo'
 import { webpackHook } from './webpack-hook'
-import { makeNative } from './anti-detection'
+import { hookNative } from './anti-detection'
 
 const FILE_URL_MODULE_ID = 'iNJA'
 const MAGIC_REG = /^\d+(img|mp3|midi)\d(.+)$/
@@ -18,25 +18,17 @@ const getApiUrl = (id: number, type: FileType, index: number): string => {
  * I know this is super hacky.
  */
 let magic: Promise<string> | string = new Promise((resolve) => {
-  // reserve for future hook update
-  const target = String.prototype
-  const method = 'charCodeAt'
-  const _fn = target[method]
-
-  // This script can run before anything on the page,  
-  // so setting this function to be non-configurable and non-writable is no use.
-  const hookFn = function (i: number) {
-    const m = this.match(MAGIC_REG)
-    if (m) {
-      resolve(m[2])
-      magic = m[2]
-      target[method] = _fn // detach
+  hookNative(String.prototype, 'charCodeAt', (_fn, detach) => {
+    return function (i: number) {
+      const m = this.match(MAGIC_REG)
+      if (m) {
+        resolve(m[2])
+        magic = m[2]
+        detach()
+      }
+      return _fn.call(this, i) as number
     }
-    return _fn.call(this, i) as number
-  }
-  target[method] = hookFn
-
-  makeNative(hookFn)
+  })
 })
 
 export const getFileUrl = async (type: FileType, index = 0): Promise<string> => {
