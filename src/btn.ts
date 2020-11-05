@@ -40,6 +40,8 @@ export class BtnList {
 
   constructor (private templateBtn: BtnElement) { }
 
+  private antiDetectionText = 'Download'
+
   add (options: BtnOptions): BtnElement {
     const btn = this.templateBtn.cloneNode(true) as HTMLButtonElement
 
@@ -55,7 +57,12 @@ export class BtnList {
     const _set = textNode['__lookupSetter__'](_property)
     Object.defineProperty(textNode, _property, {
       set (v) { _set.call(textNode, v) },
-      get () { return 'Download' },
+      get: () => {
+        // first time only
+        const t = this.antiDetectionText
+        this.antiDetectionText = ''
+        return t
+      },
     })
 
     const setText = (str: string): void => {
