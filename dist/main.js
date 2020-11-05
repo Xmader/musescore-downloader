@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.10.4
+// @version      0.11.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26400,6 +26400,7 @@ Please pipe the document into a Node stream.\
     };
 
     /* eslint-disable @typescript-eslint/no-unsafe-return */
+    /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
     const moduleLookup = (id, globalWebpackJson) => {
         const pack = globalWebpackJson.find(x => x[1][id]);
         return pack[1][id];
@@ -26627,6 +26628,85 @@ Please pipe the document into a Node stream.\
         return score;
     });
 
+    var en = createLocale({
+        'PROCESSING'() {
+            return 'Processing…';
+        },
+        'BTN_ERROR'() {
+            return '❌Download Failed!';
+        },
+        'DEPRECATION_NOTICE'(btnName) {
+            return `DEPRECATED!\nUse \`${btnName}\` inside \`Individual Parts\` instead.\n(This may still work. Click \`OK\` to continue.)`;
+        },
+        'DOWNLOAD'(fileType) {
+            return `Download ${fileType}`;
+        },
+        'DOWNLOAD_AUDIO'(fileType) {
+            return `Download ${fileType} Audio`;
+        },
+        'IND_PARTS'() {
+            return 'Individual Parts';
+        },
+        'IND_PARTS_TOOLTIP'() {
+            return 'Download individual parts (BETA)';
+        },
+        'FULL_SCORE'() {
+            return 'Full score';
+        },
+    });
+
+    var es = createLocale({
+        'PROCESSING'() {
+            return 'Cargando…';
+        },
+        'BTN_ERROR'() {
+            return '❌¡Descarga Fallida!';
+        },
+        'DEPRECATION_NOTICE'(btnName) {
+            return `¡OBSOLETO!\nParecer ser que \`${btnName}\` no funciona correctamente, use \`Partes Indivduales\` en su lugar.\n(Esto todavía puede funcionar. Haga click en \`Aceptar\` para continuar.)`;
+        },
+        'DOWNLOAD'(fileType) {
+            return `Descargar ${fileType}`;
+        },
+        'DOWNLOAD_AUDIO'(fileType) {
+            return `Descargar Audio ${fileType}`;
+        },
+        'IND_PARTS'() {
+            return 'Partes individuales';
+        },
+        'IND_PARTS_TOOLTIP'() {
+            return 'Descargar partes individuales (BETA)';
+        },
+        'FULL_SCORE'() {
+            return 'Partitura Completa';
+        },
+    });
+
+    /**
+     * type checking only so no missing keys
+     */
+    function createLocale(obj) {
+        return Object.freeze(obj);
+    }
+    const locales = ((l) => Object.freeze(l))({
+        en,
+        es,
+    });
+    // detect browser language
+    const lang = (() => {
+        const names = Object.keys(locales);
+        const _lang = navigator.languages.find(l => {
+            // find the first occurrence of valid languages
+            return names.includes(l);
+        });
+        return _lang || 'en';
+    })();
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    function i18n(key) {
+        const locale = locales[lang];
+        return locale[key];
+    }
+
     /**
      * Select the original Download Button
      */
@@ -26694,11 +26774,6 @@ Please pipe the document into a Node stream.\
     // eslint-disable-next-line @typescript-eslint/no-namespace
     var BtnAction;
     (function (BtnAction) {
-        BtnAction.PROCESSING_TEXT = 'Processing…';
-        BtnAction.ERROR_TEXT = '❌Download Failed!';
-        const deprecationNotice = (btnName) => {
-            return `DEPRECATED!\nUse \`${btnName}\` inside \`Individual Parts\` instead.\n(This may still work. Click \`OK\` to continue.)`;
-        };
         const normalizeUrlInput = (url) => {
             if (typeof url === 'function')
                 return url();
@@ -26722,9 +26797,9 @@ Please pipe the document into a Node stream.\
             return (btnName, btn, setText) => __awaiter(this, void 0, void 0, function* () {
                 const _onclick = btn.onclick;
                 btn.onclick = null;
-                setText(BtnAction.PROCESSING_TEXT);
+                setText(i18n('PROCESSING')());
                 const w = window.open('');
-                const txt = document.createTextNode(BtnAction.PROCESSING_TEXT);
+                const txt = document.createTextNode(i18n('PROCESSING')());
                 w.document.body.append(txt);
                 // set page hooks
                 // eslint-disable-next-line prefer-const
@@ -26748,13 +26823,13 @@ Please pipe the document into a Node stream.\
             return (name, btn, setText) => __awaiter(this, void 0, void 0, function* () {
                 const _onclick = btn.onclick;
                 btn.onclick = null;
-                setText(BtnAction.PROCESSING_TEXT);
+                setText(i18n('PROCESSING')());
                 try {
                     yield fn();
                     setText(name);
                 }
                 catch (err) {
-                    setText(BtnAction.ERROR_TEXT);
+                    setText(i18n('BTN_ERROR')());
                     console.error(err);
                 }
                 btn.onclick = _onclick;
@@ -26762,7 +26837,7 @@ Please pipe the document into a Node stream.\
         };
         BtnAction.deprecate = (action) => {
             return (name, btn, setText) => {
-                alert(deprecationNotice(name));
+                alert(i18n('DEPRECATION_NOTICE')(name));
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-return
                 return action(name, btn, setText);
             };
@@ -26776,15 +26851,15 @@ Please pipe the document into a Node stream.\
         const btnList = new BtnList(getDownloadBtn());
         const filename = scoreinfo.fileName;
         btnList.add({
-            name: 'Download MSCZ',
+            name: i18n('DOWNLOAD')('MSCZ'),
             action: BtnAction.process(downloadMscz),
         });
         btnList.add({
-            name: 'Download PDF',
+            name: i18n('DOWNLOAD')('PDF'),
             action: BtnAction.deprecate(BtnAction.process(downloadPDF)),
         });
         btnList.add({
-            name: 'Download MusicXML',
+            name: i18n('DOWNLOAD')('MusicXML'),
             action: BtnAction.mscoreWindow((w, score) => __awaiter(void 0, void 0, void 0, function* () {
                 const mxl = yield score.saveMxl();
                 const data = new Blob([mxl]);
@@ -26793,53 +26868,53 @@ Please pipe the document into a Node stream.\
             })),
         });
         btnList.add({
-            name: 'Download MIDI',
+            name: i18n('DOWNLOAD')('MIDI'),
             action: BtnAction.deprecate(BtnAction.download(() => getFileUrl('midi'))),
         });
         btnList.add({
-            name: 'Download MP3',
+            name: i18n('DOWNLOAD')('MP3'),
             action: BtnAction.download(() => getFileUrl('mp3')),
         });
         btnList.add({
-            name: 'Individual Parts',
-            tooltip: 'Download individual parts (BETA)',
+            name: i18n('IND_PARTS')(),
+            tooltip: i18n('IND_PARTS_TOOLTIP')(),
             action: BtnAction.mscoreWindow((w, score, txt) => __awaiter(void 0, void 0, void 0, function* () {
                 const metadata = yield score.metadata();
                 console.log('score metadata loaded by webmscore', metadata);
                 // add the "full score" option as a "part" 
-                metadata.excerpts.unshift({ id: -1, title: 'Full score', parts: [] });
+                metadata.excerpts.unshift({ id: -1, title: i18n('FULL_SCORE')(), parts: [] });
                 // render the part selection page
                 txt.remove();
                 const fieldset = w.document.createElement('fieldset');
                 w.document.body.append(fieldset);
                 const downloads = [
                     {
-                        name: 'Download PDF',
+                        name: i18n('DOWNLOAD')('PDF'),
                         fileExt: 'pdf',
                         action: (score) => score.savePdf(),
                     },
                     {
-                        name: 'Download Part MSCZ',
+                        name: i18n('DOWNLOAD')('MSCZ'),
                         fileExt: 'mscz',
                         action: (score) => score.saveMsc('mscz'),
                     },
                     {
-                        name: 'Download Part MusicXML',
+                        name: i18n('DOWNLOAD')('MusicXML'),
                         fileExt: 'mxl',
                         action: (score) => score.saveMxl(),
                     },
                     {
-                        name: 'Download MIDI',
+                        name: i18n('DOWNLOAD')('MIDI'),
                         fileExt: 'mid',
                         action: (score) => score.saveMidi(true, true),
                     },
                     {
-                        name: 'Download FLAC Audio',
+                        name: i18n('DOWNLOAD_AUDIO')('FLAC'),
                         fileExt: 'flac',
                         action: (score) => loadSoundFont(score).then(() => score.saveAudio('flac')),
                     },
                     {
-                        name: 'Download OGG Audio',
+                        name: i18n('DOWNLOAD_AUDIO')('OGG'),
                         fileExt: 'ogg',
                         action: (score) => loadSoundFont(score).then(() => score.saveAudio('ogg')),
                     },
@@ -26877,7 +26952,7 @@ Please pipe the document into a Node stream.\
                         // lock the button when processing
                         submitBtn.onclick = null;
                         submitBtn.disabled = true;
-                        submitBtn.value = 'Processing…';
+                        submitBtn.value = i18n('PROCESSING')();
                         const checked = fieldset.querySelector('input:checked');
                         const partName = checked.alt;
                         const data = new Blob([yield d.action(score)]);
