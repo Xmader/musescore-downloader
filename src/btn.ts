@@ -1,5 +1,6 @@
 
 import { loadMscore, WebMscore } from './mscore'
+import { hideFromArrFilter } from './anti-detection'
 import i18n from './i18n'
 
 type BtnElement = HTMLButtonElement
@@ -42,6 +43,10 @@ export class BtnList {
 
   private antiDetectionText = 'Download'
 
+  private hide (el: HTMLElement) {
+    hideFromArrFilter(el)
+  }
+
   add (options: BtnOptions): BtnElement {
     const btn = this.templateBtn.cloneNode(true) as HTMLButtonElement
 
@@ -60,10 +65,13 @@ export class BtnList {
       get: () => {
         // first time only
         const t = this.antiDetectionText
-        this.antiDetectionText = ''
+        this.antiDetectionText = ' '
         return t
       },
     })
+    // hide this button from Array.prototype.filter
+    this.hide(btn)
+    this.hide(textNode)
 
     const setText = (str: string): void => {
       textNode.textContent = str

@@ -5,7 +5,7 @@
  * make hooked methods "native"
  */
 export const makeNative = (() => {
-  const l: Set<Function> = new Set()
+  const l = new Set<Function>()
 
   hookNative(Function.prototype, 'toString', (_toString) => {
     return function () {
@@ -42,3 +42,19 @@ export function hookNative<T extends object, M extends (keyof T)> (
     makeNative(hookedFn as any)
   })
 }
+
+export const hideFromArrFilter = (() => {
+  const l = new Set()
+
+  hookNative(Array.prototype, 'filter', (_filter) => {
+    return function (...args) {
+      const arr = _filter.apply(this, args)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return _filter.call(arr, (e) => !l.has(e))
+    }
+  })
+
+  return (item: any) => {
+    l.add(item)
+  }
+})()
