@@ -8,6 +8,7 @@ import { WebMscore, loadSoundFont } from './mscore'
 import { getDownloadBtn, BtnList, BtnAction } from './btn'
 import * as recaptcha from './recaptcha'
 import scoreinfo from './scoreinfo'
+import i18n from './i18n'
 
 const main = (): void => {
   // init recaptcha
@@ -18,19 +19,19 @@ const main = (): void => {
   const filename = scoreinfo.fileName
 
   btnList.add({
-    name: 'Download MSCZ',
+    name: i18n('DOWNLOAD')('MSCZ'),
     action: BtnAction.process(downloadMscz),
   })
 
   btnList.add({
-    name: 'Download PDF',
+    name: i18n('DOWNLOAD')('PDF'),
     action: BtnAction.deprecate(
       BtnAction.process(downloadPDF),
     ),
   })
 
   btnList.add({
-    name: 'Download MusicXML',
+    name: i18n('DOWNLOAD')('MusicXML'),
     action: BtnAction.mscoreWindow(async (w, score) => {
       const mxl = await score.saveMxl()
       const data = new Blob([mxl])
@@ -40,26 +41,26 @@ const main = (): void => {
   })
 
   btnList.add({
-    name: 'Download MIDI',
+    name: i18n('DOWNLOAD')('MIDI'),
     action: BtnAction.deprecate(
       BtnAction.download(() => getFileUrl('midi')),
     ),
   })
 
   btnList.add({
-    name: 'Download MP3',
+    name: i18n('DOWNLOAD')('MP3'),
     action: BtnAction.download(() => getFileUrl('mp3')),
   })
 
   btnList.add({
-    name: 'Individual Parts',
-    tooltip: 'Download individual parts (BETA)',
+    name: i18n('IND_PARTS')(),
+    tooltip: i18n('IND_PARTS_TOOLTIP')(),
     action: BtnAction.mscoreWindow(async (w, score, txt) => {
       const metadata = await score.metadata()
       console.log('score metadata loaded by webmscore', metadata)
 
       // add the "full score" option as a "part" 
-      metadata.excerpts.unshift({ id: -1, title: 'Full score', parts: [] })
+      metadata.excerpts.unshift({ id: -1, title: i18n('FULL_SCORE')(), parts: [] })
 
       // render the part selection page
       txt.remove()
@@ -74,32 +75,32 @@ const main = (): void => {
 
       const downloads: IndividualDownload[] = [
         {
-          name: 'Download PDF',
+          name: i18n('DOWNLOAD')('PDF'),
           fileExt: 'pdf',
           action: (score) => score.savePdf(),
         },
         {
-          name: 'Download Part MSCZ',
+          name: i18n('DOWNLOAD')('MSCZ'),
           fileExt: 'mscz',
           action: (score) => score.saveMsc('mscz'),
         },
         {
-          name: 'Download Part MusicXML',
+          name: i18n('DOWNLOAD')('MusicXML'),
           fileExt: 'mxl',
           action: (score) => score.saveMxl(),
         },
         {
-          name: 'Download MIDI',
+          name: i18n('DOWNLOAD')('MIDI'),
           fileExt: 'mid',
           action: (score) => score.saveMidi(true, true),
         },
         {
-          name: 'Download FLAC Audio',
+          name: i18n('DOWNLOAD_AUDIO')('FLAC'),
           fileExt: 'flac',
           action: (score) => loadSoundFont(score).then(() => score.saveAudio('flac')),
         },
         {
-          name: 'Download OGG Audio',
+          name: i18n('DOWNLOAD_AUDIO')('OGG'),
           fileExt: 'ogg',
           action: (score) => loadSoundFont(score).then(() => score.saveAudio('ogg')),
         },
@@ -145,7 +146,7 @@ const main = (): void => {
           // lock the button when processing
           submitBtn.onclick = null
           submitBtn.disabled = true
-          submitBtn.value = 'Processing…'
+          submitBtn.value = i18n('PROCESSING')()
 
           const checked = fieldset.querySelector('input:checked') as HTMLInputElement
           const partName = checked.alt

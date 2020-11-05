@@ -1,5 +1,6 @@
 
 import { loadMscore, WebMscore } from './mscore'
+import i18n from './i18n'
 
 type BtnElement = HTMLButtonElement
 
@@ -93,13 +94,6 @@ type BtnAction = (btnName: string, btnEl: BtnElement, setText: (str: string) => 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace BtnAction {
 
-  export const PROCESSING_TEXT = 'Processing…'
-  export const ERROR_TEXT = '❌Download Failed!'
-
-  const deprecationNotice = (btnName: string): string => {
-    return `DEPRECATED!\nUse \`${btnName}\` inside \`Individual Parts\` instead.\n(This may still work. Click \`OK\` to continue.)`
-  }
-
   type Promisable<T> = T | Promise<T>
   type UrlInput = Promisable<string> | (() => Promisable<string>)
 
@@ -127,10 +121,10 @@ export namespace BtnAction {
     return async (btnName, btn, setText) => {
       const _onclick = btn.onclick
       btn.onclick = null
-      setText(BtnAction.PROCESSING_TEXT)
+      setText(i18n('PROCESSING')())
 
       const w = window.open('') as Window
-      const txt = document.createTextNode(BtnAction.PROCESSING_TEXT)
+      const txt = document.createTextNode(i18n('PROCESSING')())
       w.document.body.append(txt)
 
       // set page hooks
@@ -159,13 +153,13 @@ export namespace BtnAction {
       const _onclick = btn.onclick
 
       btn.onclick = null
-      setText(PROCESSING_TEXT)
+      setText(i18n('PROCESSING')())
 
       try {
         await fn()
         setText(name)
       } catch (err) {
-        setText(ERROR_TEXT)
+        setText(i18n('BTN_ERROR')())
         console.error(err)
       }
 
@@ -175,7 +169,7 @@ export namespace BtnAction {
 
   export const deprecate = (action: BtnAction): BtnAction => {
     return (name, btn, setText) => {
-      alert(deprecationNotice(name))
+      alert(i18n('DEPRECATION_NOTICE')(name))
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return action(name, btn, setText)
     }
