@@ -15,7 +15,7 @@ export const makeNative = (() => {
       }
       return _toString.call(this) as string
     }
-  })
+  }, true)
 
   return (fn: Function) => {
     l.add(fn)
@@ -26,6 +26,7 @@ export function hookNative<T extends object, M extends (keyof T)> (
   target: T,
   method: M,
   hook: (originalFn: T[M], detach: () => void) => T[M],
+  async = false,
 ): void {
   // reserve for future hook update
   const _fn = target[method]
@@ -38,9 +39,13 @@ export function hookNative<T extends object, M extends (keyof T)> (
   const hookedFn = hook(_fn, detach)
   target[method] = hookedFn
 
-  setTimeout(() => {
+  if (!async) {
     makeNative(hookedFn as any)
-  })
+  } else {
+    setTimeout(() => {
+      makeNative(hookedFn as any)
+    })
+  }
 }
 
 export const hideFromArrFilter = (() => {
