@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.11.3
+// @version      0.11.4
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26481,13 +26481,15 @@ Please pipe the document into a Node stream.\
     }
     const hideFromArrFilter = (() => {
         const l = new Set();
-        hookNative(Array.prototype, 'filter', (_filter) => {
+        const qsaHook = (_fn) => {
             return function (...args) {
-                const arr = _filter.apply(this, args);
+                const arr = _fn.apply(this, args);
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                return _filter.call(arr, (e) => !l.has(e));
+                return Array.prototype.filter.call(arr, (e) => !l.has(e));
             };
-        });
+        };
+        hookNative(Element.prototype, 'querySelectorAll', qsaHook);
+        hookNative(document, 'querySelectorAll', qsaHook);
         return (item) => {
             l.add(item);
         };
