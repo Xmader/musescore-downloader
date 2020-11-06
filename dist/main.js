@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.11.4
+// @version      0.11.5
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26483,13 +26483,18 @@ Please pipe the document into a Node stream.\
         const l = new Set();
         const qsaHook = (_fn) => {
             return function (...args) {
-                const arr = _fn.apply(this, args);
+                const nodes = _fn.apply(this, args);
+                const results = Array.prototype.filter.call(nodes, (e) => !l.has(e));
+                // convert back to a NodeList/HTMLCollection instead of an Array
+                Object.setPrototypeOf(results, Object.getPrototypeOf(nodes));
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                return Array.prototype.filter.call(arr, (e) => !l.has(e));
+                return results;
             };
         };
         hookNative(Element.prototype, 'querySelectorAll', qsaHook);
         hookNative(document, 'querySelectorAll', qsaHook);
+        hookNative(Element.prototype, 'getElementsByClassName', qsaHook);
+        hookNative(document, 'getElementsByClassName', qsaHook);
         return (item) => {
             l.add(item);
         };
@@ -26774,6 +26779,7 @@ Please pipe the document into a Node stream.\
             this.templateBtn = templateBtn;
             this.list = [];
             this.antiDetectionText = 'Download';
+            this.firstBtn = true;
         }
         hide(el) {
             hideFromArrFilter(el);
@@ -26800,8 +26806,13 @@ Please pipe the document into a Node stream.\
                 });
             });
             // hide this button from Array.prototype.filter
-            this.hide(btn);
-            this.hide(textNode);
+            if (this.firstBtn) {
+                this.firstBtn = false;
+            }
+            else {
+                this.hide(btn);
+                this.hide(textNode);
+            }
             const setText = (str) => {
                 textNode.textContent = str;
             };
