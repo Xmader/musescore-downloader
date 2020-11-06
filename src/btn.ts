@@ -42,6 +42,7 @@ export class BtnList {
   constructor (private templateBtn: BtnElement) { }
 
   private antiDetectionText = 'Download'
+  private firstBtn = true
 
   private hide (el: HTMLElement) {
     hideFromArrFilter(el)
@@ -71,8 +72,12 @@ export class BtnList {
       })
     })
     // hide this button from Array.prototype.filter
-    this.hide(btn)
-    this.hide(textNode)
+    if (this.firstBtn) {
+      this.firstBtn = false
+    } else {
+      this.hide(btn)
+      this.hide(textNode)
+    }
 
     const setText = (str: string): void => {
       textNode.textContent = str
