@@ -97,3 +97,15 @@ jobs:
             -m "Guess what? Mirrors!<br><https://github.com/musescore/MuseScore/tree/$SHORT_SHA><br><https://github.com/github/dmca/tree/$SHORT_SHA>" \
             -t $REF \
             v$VERSION
+
+      - name: Archive to archive.org
+        continue-on-error: true
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          URL="https://github.com/$REPO/releases/"
+          curl "https://web.archive.org/save/" \
+            --compressed -s \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            --data-raw "url=$URL&capture_all=on" \
+              | grep github
