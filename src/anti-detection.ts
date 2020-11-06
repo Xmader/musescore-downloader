@@ -51,13 +51,15 @@ export function hookNative<T extends object, M extends (keyof T)> (
 export const hideFromArrFilter = (() => {
   const l = new Set()
 
-  hookNative(Array.prototype, 'filter', (_filter) => {
+  const qsaHook = (_fn) => {
     return function (...args) {
-      const arr = _filter.apply(this, args)
+      const arr = _fn.apply(this, args)
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return _filter.call(arr, (e) => !l.has(e))
+      return Array.prototype.filter.call(arr, (e) => !l.has(e))
     }
-  })
+  }
+  hookNative(Element.prototype, 'querySelectorAll', qsaHook)
+  hookNative(document, 'querySelectorAll', qsaHook)
 
   return (item: any) => {
     l.add(item)
