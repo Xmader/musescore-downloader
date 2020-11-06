@@ -53,13 +53,21 @@ export const hideFromArrFilter = (() => {
 
   const qsaHook = (_fn) => {
     return function (...args) {
-      const arr = _fn.apply(this, args)
+      const nodes = _fn.apply(this, args)
+      const results = Array.prototype.filter.call(nodes, (e) => !l.has(e))
+
+      // convert back to a NodeList/HTMLCollection instead of an Array
+      Object.setPrototypeOf(results, Object.getPrototypeOf(nodes))
+
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return Array.prototype.filter.call(arr, (e) => !l.has(e))
+      return results
     }
   }
   hookNative(Element.prototype, 'querySelectorAll', qsaHook)
   hookNative(document, 'querySelectorAll', qsaHook)
+
+  hookNative(Element.prototype, 'getElementsByClassName', qsaHook)
+  hookNative(document, 'getElementsByClassName', qsaHook)
 
   return (item: any) => {
     l.add(item)
