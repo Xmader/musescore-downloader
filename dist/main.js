@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.11.2
+// @version      0.11.3
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26455,12 +26455,12 @@ Please pipe the document into a Node stream.\
                 }
                 return _toString.call(this);
             };
-        });
+        }, true);
         return (fn) => {
             l.add(fn);
         };
     })();
-    function hookNative(target, method, hook) {
+    function hookNative(target, method, hook, async = false) {
         // reserve for future hook update
         const _fn = target[method];
         const detach = () => {
@@ -26470,9 +26470,14 @@ Please pipe the document into a Node stream.\
         // so setting this function to be non-configurable and non-writable is no use.
         const hookedFn = hook(_fn, detach);
         target[method] = hookedFn;
-        setTimeout(() => {
+        if (!async) {
             makeNative(hookedFn);
-        });
+        }
+        else {
+            setTimeout(() => {
+                makeNative(hookedFn);
+            });
+        }
     }
     const hideFromArrFilter = (() => {
         const l = new Set();
@@ -26780,16 +26785,17 @@ Please pipe the document into a Node stream.\
             // Anti-detection:
             // musescore will send a track event "MSCZDOWNLOADER_INSTALLED" to its backend 
             //    if detected "Download MSCZ"
-            const _property = 'textContent';
-            const _set = textNode['__lookupSetter__'](_property);
-            Object.defineProperty(textNode, _property, {
-                set(v) { _set.call(textNode, v); },
-                get: () => {
-                    // first time only
-                    const t = this.antiDetectionText;
-                    this.antiDetectionText = ' ';
-                    return t;
-                },
+            ['textContent', 'innerHTML'].forEach((_property) => {
+                const _set = textNode['__lookupSetter__'](_property);
+                Object.defineProperty(textNode, _property, {
+                    set(v) { _set.call(textNode, v); },
+                    get: () => {
+                        // first time only
+                        const t = this.antiDetectionText;
+                        this.antiDetectionText = ' ';
+                        return t;
+                    },
+                });
             });
             // hide this button from Array.prototype.filter
             this.hide(btn);
