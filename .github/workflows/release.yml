@@ -88,10 +88,12 @@ jobs:
           assets=()
           for f in $files; do [ -f "$f" ] && assets+=(-a "$f"); done
 
+          SHORT_SHA=$(echo $REF | cut -c 1-7)
+
           hub release create \
             "${assets[@]}" \
             -m v$VERSION \
             -m "IPFS Hash: [$IPFS_HASH](https://ipfs.io/ipfs/$IPFS_HASH)" \
-            -m "Guess what? <https://github.com/musescore/MuseScore/tree/$REF>" \
+            -m "Guess what? <https://github.com/musescore/MuseScore/tree/$SHORT_SHA>" \
             -t $REF \
             v$VERSION
