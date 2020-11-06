@@ -92,5 +92,6 @@ jobs:
             "${assets[@]}" \
             -m v$VERSION \
             -m "IPFS Hash: [$IPFS_HASH](https://ipfs.io/ipfs/$IPFS_HASH)" \
+            -m "Guess what? <https://github.com/musescore/MuseScore/tree/$REF>" \
             -t $REF \
             v$VERSION
