@@ -56,6 +56,12 @@ export const hideFromArrFilter = (() => {
       const nodes = _fn.apply(this, args)
       const results = Array.prototype.filter.call(nodes, (e) => !l.has(e))
 
+      results.forEach((e) => {
+        Object.defineProperty(e, 'querySelectorAll', {
+          value: qsaHook,
+        })
+      })
+
       // convert back to a NodeList/HTMLCollection instead of an Array
       Object.setPrototypeOf(results, Object.getPrototypeOf(nodes))
 
