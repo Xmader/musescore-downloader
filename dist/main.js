@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.11.5
+// @version      0.11.6
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -20,6 +20,11 @@
 
     // fix for Greasemonkey
     window.eval('(' + function () {
+
+    // temporary fix for "Unauthorized use of Copyrighted Content"
+    const UNAUTH_DELAY = 8000; // 8 seconds seems to be the magic number for now, but might need to extend it to 10 seconds
+    alert("Must wait " + (UNAUTH_DELAY/1000) + " seconds until musescore-downloader works. (this is a current work around for \"Unauthorized use of Copyrighted Content\")");
+    setTimeout(function() {
 
     function __awaiter(thisArg, _arguments, P, generator) {
         return new (P || (P = Promise))(function (resolve, reject) {
@@ -241,7 +246,7 @@
                 typeof self !== "undefined" ? self :
                 typeof window !== "undefined" ? window : {});
 
-    const PDFWorker = function () { 
+    const PDFWorker = function () {
     (function () {
 
         function __awaiter(thisArg, _arguments, P, generator) {
@@ -23910,7 +23915,7 @@ Please pipe the document into a Node stream.\
                 })(this);
                 return result;
               };
-              let parser = new StringParser(xml.trim()), result, child, error = false; 
+              let parser = new StringParser(xml.trim()), result, child, error = false;
               let recursive = function() {
                 let temp, child;
                 if (temp = parser.match(/^<([\w:.-]+)\s*/, true)) { // Opening tag
@@ -24644,7 +24649,7 @@ Please pipe the document into a Node stream.\
                   }
                   this.addCommand(data);
                 }
-                return this;        
+                return this;
               };
               this.mergeShape = function(shape) {
                 for (let i = 0; i < shape.pathCommands.length; i++) {
@@ -26466,7 +26471,7 @@ Please pipe the document into a Node stream.\
         const detach = () => {
             target[method] = _fn; // detach
         };
-        // This script can run before anything on the page,  
+        // This script can run before anything on the page,
         // so setting this function to be non-configurable and non-writable is no use.
         const hookedFn = hook(_fn, detach);
         target[method] = hookedFn;
@@ -26791,7 +26796,7 @@ Please pipe the document into a Node stream.\
                 return txt.includes('Download') || txt.includes('Print');
             });
             // Anti-detection:
-            // musescore will send a track event "MSCZDOWNLOADER_INSTALLED" to its backend 
+            // musescore will send a track event "MSCZDOWNLOADER_INSTALLED" to its backend
             //    if detected "Download MSCZ"
             ['textContent', 'innerHTML'].forEach((_property) => {
                 const _set = textNode['__lookupSetter__'](_property);
@@ -26946,7 +26951,7 @@ Please pipe the document into a Node stream.\
             action: BtnAction.mscoreWindow((w, score, txt) => __awaiter(void 0, void 0, void 0, function* () {
                 const metadata = yield score.metadata();
                 console.log('score metadata loaded by webmscore', metadata);
-                // add the "full score" option as a "part" 
+                // add the "full score" option as a "part"
                 metadata.excerpts.unshift({ id: -1, title: i18n('FULL_SCORE')(), parts: [] });
                 // render the part selection page
                 txt.remove();
@@ -26992,7 +26997,7 @@ Please pipe the document into a Node stream.\
                     e.name = 'score-part';
                     e.type = 'radio';
                     e.alt = partName;
-                    e.checked = id === 0; // initially select the first part 
+                    e.checked = id === 0; // initially select the first part
                     e.onclick = () => {
                         return score.setExcerptId(id); // set selected part
                     };
@@ -27001,7 +27006,7 @@ Please pipe the document into a Node stream.\
                     const br = w.document.createElement('br');
                     fieldset.append(e, label, br);
                 }
-                yield score.setExcerptId(0); // initially select the first part 
+                yield score.setExcerptId(0); // initially select the first part
                 // submit buttons
                 for (const d of downloads) {
                     const submitBtn = w.document.createElement('input');
@@ -27033,6 +27038,8 @@ Please pipe the document into a Node stream.\
     };
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     waitForDocumentLoaded().then(main);
+
+    }, UNAUTH_DELAY); // for the setTimeout that fixes "Unauthorized use of Copyrighted Content"
 
     }.toString() + ')()')
 
