@@ -21,6 +21,11 @@
     // fix for Greasemonkey
     window.eval('(' + function () {
 
+    // temporary fix for "Unauthorized use of Copyrighted Content"
+    const UNAUTH_DELAY = 8000; // 8 seconds seems to be the magic number for now, but might need to extend it to 10 seconds
+    alert("Must wait " + (UNAUTH_DELAY/1000) + " seconds until musescore-downloader works. (this is a current work around for \"Unauthorized use of Copyrighted Content\")");
+    setTimeout(function() {
+
     function __awaiter(thisArg, _arguments, P, generator) {
         return new (P || (P = Promise))(function (resolve, reject) {
             function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -27033,6 +27038,8 @@ Please pipe the document into a Node stream.\
     };
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     waitForDocumentLoaded().then(main);
+
+    }, UNAUTH_DELAY); // for the setTimeout that fixes "Unauthorized use of Copyrighted Content"
 
     }.toString() + ')()')
 
