@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.11.6
+// @version      0.12.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26446,18 +26446,18 @@ Please pipe the document into a Node stream.\
      * make hooked methods "native"
      */
     const makeNative = (() => {
-        const l = new Set();
+        const l = new Map();
         hookNative(Function.prototype, 'toString', (_toString) => {
             return function () {
                 if (l.has(this)) {
-                    // "function () {\n    [native code]\n}"
-                    return _toString.call(parseInt);
+                    const _fn = l.get(this) || parseInt; // "function () {\n    [native code]\n}"
+                    return _toString.call(_fn);
                 }
                 return _toString.call(this);
             };
         }, true);
-        return (fn) => {
-            l.add(fn);
+        return (fn, original) => {
+            l.set(fn, original);
         };
     })();
     function hookNative(target, method, hook, async = false) {
@@ -26471,39 +26471,14 @@ Please pipe the document into a Node stream.\
         const hookedFn = hook(_fn, detach);
         target[method] = hookedFn;
         if (!async) {
-            makeNative(hookedFn);
+            makeNative(hookedFn, _fn);
         }
         else {
             setTimeout(() => {
-                makeNative(hookedFn);
+                makeNative(hookedFn, _fn);
             });
         }
     }
-    const hideFromArrFilter = (() => {
-        const l = new Set();
-        const qsaHook = (_fn) => {
-            return function (...args) {
-                const nodes = _fn.apply(this, args);
-                const results = Array.prototype.filter.call(nodes, (e) => !l.has(e));
-                results.forEach((e) => {
-                    Object.defineProperty(e, 'querySelectorAll', {
-                        value: qsaHook,
-                    });
-                });
-                // convert back to a NodeList/HTMLCollection instead of an Array
-                Object.setPrototypeOf(results, Object.getPrototypeOf(nodes));
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                return results;
-            };
-        };
-        hookNative(Element.prototype, 'querySelectorAll', qsaHook);
-        hookNative(document, 'querySelectorAll', qsaHook);
-        hookNative(Element.prototype, 'getElementsByClassName', qsaHook);
-        hookNative(document, 'getElementsByClassName', qsaHook);
-        return (item) => {
-            l.add(item);
-        };
-    })();
 
     /* eslint-disable no-extend-native */
     const FILE_URL_MODULE_ID = 'iNJA';
@@ -26784,10 +26759,6 @@ Please pipe the document into a Node stream.\
             this.templateBtn = templateBtn;
             this.list = [];
             this.antiDetectionText = 'Download';
-            this.firstBtn = true;
-        }
-        hide(el) {
-            hideFromArrFilter(el);
         }
         add(options) {
             const btn = this.templateBtn.cloneNode(true);
@@ -26810,14 +26781,6 @@ Please pipe the document into a Node stream.\
                     },
                 });
             });
-            // hide this button from Array.prototype.filter
-            if (this.firstBtn) {
-                this.firstBtn = false;
-            }
-            else {
-                this.hide(btn);
-                this.hide(textNode);
-            }
             const setText = (str) => {
                 textNode.textContent = str;
             };
@@ -26838,7 +26801,16 @@ Please pipe the document into a Node stream.\
          * replace the template button with the list of new buttons
          */
         commit() {
-            this.templateBtn.replaceWith(...this.list);
+            const parent = this.templateBtn.parentElement;
+            const shadow = parent.attachShadow({ mode: 'closed' });
+            // style the shadow DOM from outside css
+            document.head.querySelectorAll('style').forEach(s => {
+                shadow.append(s.cloneNode(true));
+            });
+            // hide buttons using the shadow DOM
+            const newParent = parent.cloneNode(false);
+            newParent.append(...this.list);
+            shadow.append(newParent);
         }
     }
     // eslint-disable-next-line @typescript-eslint/no-namespace
