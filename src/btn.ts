@@ -93,7 +93,18 @@ export class BtnList {
    * replace the template button with the list of new buttons
    */
   commit (): void {
-    this.templateBtn.replaceWith(...this.list)
+    const parent = this.templateBtn.parentElement as HTMLDivElement
+    const shadow = parent.attachShadow({ mode: 'closed' })
+
+    // style the shadow DOM from outside css
+    document.head.querySelectorAll('style').forEach(s => {
+      shadow.append(s.cloneNode(true))
+    })
+
+    // hide buttons using the shadow DOM
+    const newParent = parent.cloneNode(false) as HTMLDivElement
+    newParent.append(...this.list)
+    shadow.append(newParent)
   }
 }
 
