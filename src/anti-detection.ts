@@ -11,7 +11,11 @@ export const makeNative = (() => {
     return function () {
       if (l.has(this)) {
         const _fn = l.get(this) || parseInt // "function () {\n    [native code]\n}"
-        return _toString.call(_fn) as string
+        if (l.has(_fn)) { // nested
+          return _fn.toString()
+        } else {
+          return _toString.call(_fn) as string
+        }
       }
       return _toString.call(this) as string
     }
