@@ -5,20 +5,20 @@
  * make hooked methods "native"
  */
 export const makeNative = (() => {
-  const l = new Set<Function>()
+  const l = new Map<Function, Function>()
 
   hookNative(Function.prototype, 'toString', (_toString) => {
     return function () {
       if (l.has(this)) {
-        // "function () {\n    [native code]\n}"
-        return _toString.call(parseInt) as string
+        const _fn = l.get(this) || parseInt // "function () {\n    [native code]\n}"
+        return _toString.call(_fn) as string
       }
       return _toString.call(this) as string
     }
   }, true)
 
-  return (fn: Function) => {
-    l.add(fn)
+  return (fn: Function, original: Function) => {
+    l.set(fn, original)
   }
 })()
 
@@ -40,10 +40,10 @@ export function hookNative<T extends object, M extends (keyof T)> (
   target[method] = hookedFn
 
   if (!async) {
-    makeNative(hookedFn as any)
+    makeNative(hookedFn as any, _fn as any)
   } else {
     setTimeout(() => {
-      makeNative(hookedFn as any)
+      makeNative(hookedFn as any, _fn as any)
     })
   }
 }
