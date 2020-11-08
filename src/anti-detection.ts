@@ -47,35 +47,3 @@ export function hookNative<T extends object, M extends (keyof T)> (
     })
   }
 }
-
-export const hideFromArrFilter = (() => {
-  const l = new Set()
-
-  const qsaHook = (_fn) => {
-    return function (...args) {
-      const nodes = _fn.apply(this, args)
-      const results = Array.prototype.filter.call(nodes, (e) => !l.has(e))
-
-      results.forEach((e) => {
-        Object.defineProperty(e, 'querySelectorAll', {
-          value: qsaHook,
-        })
-      })
-
-      // convert back to a NodeList/HTMLCollection instead of an Array
-      Object.setPrototypeOf(results, Object.getPrototypeOf(nodes))
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return results
-    }
-  }
-  hookNative(Element.prototype, 'querySelectorAll', qsaHook)
-  hookNative(document, 'querySelectorAll', qsaHook)
-
-  hookNative(Element.prototype, 'getElementsByClassName', qsaHook)
-  hookNative(document, 'getElementsByClassName', qsaHook)
-
-  return (item: any) => {
-    l.add(item)
-  }
-})()
