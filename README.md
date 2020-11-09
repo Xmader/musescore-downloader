@@ -7,7 +7,7 @@
 
 **Star this project on [Github](https://github.com/Xmader/musescore-downloader) and [Gitlab](https://gitlab.com/Xmader/musescore-downloader)** (Mirror)   
 
-[![Discord](https://img.shields.io/discord/774491656643674122?label=Discord)](https://discord.gg/DKu7cUZ4XQ)
+[![Discord](https://img.shields.io/discord/774491656643674122?color=7289da&label=Discord&logo=discord)](https://discord.gg/DKu7cUZ4XQ)
 
 Need dataset of musescore.com for analysis / machine learning? try [musescore-dataset](https://github.com/Xmader/musescore-dataset).
 
@@ -113,7 +113,7 @@ No, the API document is on https://developers.musescore.com/.
 
 **在 [Github](https://github.com/Xmader/musescore-downloader) 和 [Gitlab](https://gitlab.com/Xmader/musescore-downloader)** (镜像) **上给项目打星**  
 
-[![Discord](https://img.shields.io/discord/774491656643674122?label=Discord)](https://discord.gg/DKu7cUZ4XQ)
+[![Discord](https://img.shields.io/discord/774491656643674122?color=7289da&label=Discord&logo=discord)](https://discord.gg/DKu7cUZ4XQ)
 
 ![](https://cdn.statically.io/gh/Xmader/musescore-downloader/master/screenshot.png?env=dev)
 
@@ -145,7 +145,7 @@ MIT
 
 **Dale una estrella a este proyecto en [Github](https://github.com/Xmader/musescore-downloader) y [Gitlab](https://gitlab.com/Xmader/musescore-downloader)** (Respaldo)   
 
-[![Discord](https://img.shields.io/discord/774491656643674122?label=Discord)](https://discord.gg/DKu7cUZ4XQ)
+[![Discord](https://img.shields.io/discord/774491656643674122?color=7289da&label=Discord&logo=discord)](https://discord.gg/DKu7cUZ4XQ)
 
 ¿Necesita un conjunto de datos de musescore.com para análisis / Machine Learning? prueba [musescore-dataset](https://github.com/Xmader/musescore-dataset).
 
