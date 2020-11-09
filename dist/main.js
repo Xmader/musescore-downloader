@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.12.0
+// @version      0.12.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26399,8 +26399,52 @@ Please pipe the document into a Node stream.\
         },
     };
 
+    /* eslint-disable no-extend-native */
+    /* eslint-disable @typescript-eslint/ban-types */
+    /**
+     * make hooked methods "native"
+     */
+    const makeNative = (() => {
+        const l = new Map();
+        hookNative(Function.prototype, 'toString', (_toString) => {
+            return function () {
+                if (l.has(this)) {
+                    const _fn = l.get(this) || parseInt; // "function () {\n    [native code]\n}"
+                    if (l.has(_fn)) { // nested
+                        return _fn.toString();
+                    }
+                    else {
+                        return _toString.call(_fn);
+                    }
+                }
+                return _toString.call(this);
+            };
+        }, true);
+        return (fn, original) => {
+            l.set(fn, original);
+        };
+    })();
+    function hookNative(target, method, hook, async = false) {
+        // reserve for future hook update
+        const _fn = target[method];
+        const detach = () => {
+            target[method] = _fn; // detach
+        };
+        // This script can run before anything on the page,  
+        // so setting this function to be non-configurable and non-writable is no use.
+        const hookedFn = hook(_fn, detach);
+        target[method] = hookedFn;
+        if (!async) {
+            makeNative(hookedFn, _fn);
+        }
+        else {
+            setTimeout(() => {
+                makeNative(hookedFn, _fn);
+            });
+        }
+    }
+
     /* eslint-disable @typescript-eslint/no-unsafe-return */
-    /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
     const moduleLookup = (id, globalWebpackJson) => {
         const pack = globalWebpackJson.find(x => x[1][id]);
         return pack[1][id];
@@ -26439,50 +26483,49 @@ Please pipe the document into a Node stream.\
         });
         return t(moduleId);
     };
-
-    /* eslint-disable no-extend-native */
-    /* eslint-disable @typescript-eslint/ban-types */
-    /**
-     * make hooked methods "native"
-     */
-    const makeNative = (() => {
-        const l = new Map();
-        hookNative(Function.prototype, 'toString', (_toString) => {
-            return function () {
-                if (l.has(this)) {
-                    const _fn = l.get(this) || parseInt; // "function () {\n    [native code]\n}"
-                    return _toString.call(_fn);
+    const webpackGlobalOverride = (() => {
+        const moduleOverrides = {};
+        function applyOverride(pack) {
+            Object.entries(moduleOverrides).forEach(([id, override]) => {
+                const mod = pack[1][id];
+                if (mod) {
+                    pack[1][id] = function (n, r, t) {
+                        // make exports configurable
+                        t = Object.assign(t, {
+                            d(exp, name, fn) {
+                                return Object.defineProperty(exp, name, { enumerable: true, get: fn, configurable: true });
+                            },
+                        });
+                        mod(n, r, t);
+                        override(n, r, t);
+                    };
                 }
-                return _toString.call(this);
-            };
-        }, true);
-        return (fn, original) => {
-            l.set(fn, original);
-        };
-    })();
-    function hookNative(target, method, hook, async = false) {
-        // reserve for future hook update
-        const _fn = target[method];
-        const detach = () => {
-            target[method] = _fn; // detach
-        };
-        // This script can run before anything on the page,  
-        // so setting this function to be non-configurable and non-writable is no use.
-        const hookedFn = hook(_fn, detach);
-        target[method] = hookedFn;
-        if (!async) {
-            makeNative(hookedFn, _fn);
-        }
-        else {
-            setTimeout(() => {
-                makeNative(hookedFn, _fn);
             });
         }
-    }
+        // hook `webpackJsonpmusescore.push` as soon as `webpackJsonpmusescore` is available
+        let jsonp;
+        Object.defineProperty(window, 'webpackJsonpmusescore', {
+            get() { return jsonp; },
+            set(v) {
+                jsonp = v;
+                hookNative(v, 'push', (_fn) => {
+                    return function (pack) {
+                        applyOverride(pack);
+                        return _fn.call(this, pack);
+                    };
+                });
+            },
+        });
+        // set overrides
+        return (moduleId, override) => {
+            moduleOverrides[moduleId] = override;
+        };
+    })();
 
     /* eslint-disable no-extend-native */
     const FILE_URL_MODULE_ID = 'iNJA';
-    const MAGIC_REG = /^\d+(img|mp3|midi)\d(.+)$/;
+    const AUTH_MODULE_ID = 'FNf8';
+    const MAGIC_ARG_INDEX = 3;
     const getApiUrl = (id, type, index) => {
         // proxy
         return `https://musescore.now.sh/api/jmuse?id=${id}&type=${type}&index=${index}`;
@@ -26491,16 +26534,17 @@ Please pipe the document into a Node stream.\
      * I know this is super hacky.
      */
     let magic = new Promise((resolve) => {
-        hookNative(String.prototype, 'charCodeAt', (_fn, detach) => {
-            return function (i) {
-                const m = this.match(MAGIC_REG);
-                if (m) {
-                    resolve(m[2]);
-                    magic = m[2];
-                    detach();
-                }
-                return _fn.call(this, i);
-            };
+        webpackGlobalOverride(AUTH_MODULE_ID, (_, r, t) => {
+            const fn = r.a;
+            t.d(r, 'a', () => {
+                return (...args) => {
+                    if (magic instanceof Promise) {
+                        magic = args[MAGIC_ARG_INDEX];
+                        resolve(magic);
+                    }
+                    return fn(...args);
+                };
+            });
         });
     });
     const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
@@ -26517,7 +26561,7 @@ Please pipe the document into a Node stream.\
             },
         });
         const fn = fileUrlModule.a;
-        if (typeof magic !== 'string') {
+        if (magic instanceof Promise) {
             // force to retrieve the MAGIC
             const el = document.querySelectorAll('.SD7H- > button')[3];
             el.click();
@@ -26898,7 +26942,7 @@ Please pipe the document into a Node stream.\
         });
         btnList.add({
             name: i18n('DOWNLOAD')('PDF'),
-            action: BtnAction.deprecate(BtnAction.process(downloadPDF)),
+            action: BtnAction.process(downloadPDF),
         });
         btnList.add({
             name: i18n('DOWNLOAD')('MusicXML'),
@@ -26911,7 +26955,7 @@ Please pipe the document into a Node stream.\
         });
         btnList.add({
             name: i18n('DOWNLOAD')('MIDI'),
-            action: BtnAction.deprecate(BtnAction.download(() => getFileUrl('midi'))),
+            action: BtnAction.download(() => getFileUrl('midi')),
         });
         btnList.add({
             name: i18n('DOWNLOAD')('MP3'),
@@ -26962,6 +27006,7 @@ Please pipe the document into a Node stream.\
                     },
                 ];
                 // part selection
+                const DEFAULT_PART = -1; // initially select "full score"
                 for (const excerpt of metadata.excerpts) {
                     const id = excerpt.id;
                     const partName = excerpt.title;
@@ -26969,7 +27014,7 @@ Please pipe the document into a Node stream.\
                     e.name = 'score-part';
                     e.type = 'radio';
                     e.alt = partName;
-                    e.checked = id === 0; // initially select the first part 
+                    e.checked = id === DEFAULT_PART;
                     e.onclick = () => {
                         return score.setExcerptId(id); // set selected part
                     };
@@ -26978,7 +27023,7 @@ Please pipe the document into a Node stream.\
                     const br = w.document.createElement('br');
                     fieldset.append(e, label, br);
                 }
-                yield score.setExcerptId(0); // initially select the first part 
+                yield score.setExcerptId(DEFAULT_PART);
                 // submit buttons
                 for (const d of downloads) {
                     const submitBtn = w.document.createElement('input');
