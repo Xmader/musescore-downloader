@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.12.1
+// @version      0.12.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26445,6 +26445,7 @@ Please pipe the document into a Node stream.\
     }
 
     /* eslint-disable @typescript-eslint/no-unsafe-return */
+    const CHUNK_PUSH_FN = 'function a(a){';
     const moduleLookup = (id, globalWebpackJson) => {
         const pack = globalWebpackJson.find(x => x[1][id]);
         return pack[1][id];
@@ -26504,16 +26505,20 @@ Please pipe the document into a Node stream.\
         }
         // hook `webpackJsonpmusescore.push` as soon as `webpackJsonpmusescore` is available
         let jsonp;
+        let hooked = false;
         Object.defineProperty(window, 'webpackJsonpmusescore', {
             get() { return jsonp; },
             set(v) {
                 jsonp = v;
-                hookNative(v, 'push', (_fn) => {
-                    return function (pack) {
-                        applyOverride(pack);
-                        return _fn.call(this, pack);
-                    };
-                });
+                if (!hooked && v.push.toString().includes(CHUNK_PUSH_FN)) {
+                    hooked = true;
+                    hookNative(v, 'push', (_fn) => {
+                        return function (pack) {
+                            applyOverride(pack);
+                            return _fn.call(this, pack);
+                        };
+                    });
+                }
             },
         });
         // set overrides
