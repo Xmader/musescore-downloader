@@ -73,7 +73,7 @@ export const webpackGlobalOverride = (() => {
   }
 
   // hook `webpackJsonpmusescore.push` as soon as `webpackJsonpmusescore` is available
-  let jsonp
+  let jsonp = window['webpackJsonpmusescore']
   let hooked = false
   Object.defineProperty(window, 'webpackJsonpmusescore', {
     get () { return jsonp },
