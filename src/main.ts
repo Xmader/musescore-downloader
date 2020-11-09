@@ -25,9 +25,7 @@ const main = (): void => {
 
   btnList.add({
     name: i18n('DOWNLOAD')('PDF'),
-    action: BtnAction.deprecate(
-      BtnAction.process(downloadPDF),
-    ),
+    action: BtnAction.process(downloadPDF),
   })
 
   btnList.add({
@@ -42,9 +40,7 @@ const main = (): void => {
 
   btnList.add({
     name: i18n('DOWNLOAD')('MIDI'),
-    action: BtnAction.deprecate(
-      BtnAction.download(() => getFileUrl('midi')),
-    ),
+    action: BtnAction.download(() => getFileUrl('midi')),
   })
 
   btnList.add({
