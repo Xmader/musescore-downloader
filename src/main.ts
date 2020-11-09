@@ -103,6 +103,7 @@ const main = (): void => {
       ]
 
       // part selection
+      const DEFAULT_PART = -1 // initially select "full score"
       for (const excerpt of metadata.excerpts) {
         const id = excerpt.id
         const partName = excerpt.title
@@ -111,7 +112,7 @@ const main = (): void => {
         e.name = 'score-part'
         e.type = 'radio'
         e.alt = partName
-        e.checked = id === 0 // initially select the first part 
+        e.checked = id === DEFAULT_PART
         e.onclick = () => {
           return score.setExcerptId(id) // set selected part
         }
@@ -123,7 +124,7 @@ const main = (): void => {
         fieldset.append(e, label, br)
       }
 
-      await score.setExcerptId(0) // initially select the first part 
+      await score.setExcerptId(DEFAULT_PART)
 
       // submit buttons
       for (const d of downloads) {
