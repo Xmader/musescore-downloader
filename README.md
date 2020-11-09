@@ -6,7 +6,8 @@
 > download sheet music from musescore.com for free, no login or Musescore Pro required
 
 **Star this project on [Github](https://github.com/Xmader/musescore-downloader) and [Gitlab](https://gitlab.com/Xmader/musescore-downloader)** (Mirror)   
-**Rate this on [Greasy Fork](https://greasyfork.org/scripts/391931)**
+
+**[Discord](https://discord.gg/DKu7cUZ4XQ)**
 
 Need dataset of musescore.com for analysis / machine learning? try [musescore-dataset](https://github.com/Xmader/musescore-dataset).
 
@@ -111,7 +112,8 @@ No, the API document is on https://developers.musescore.com/.
 > 免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
 
 **在 [Github](https://github.com/Xmader/musescore-downloader) 和 [Gitlab](https://gitlab.com/Xmader/musescore-downloader)** (镜像) **上给项目打星**  
-**在 [Greasy Fork](https://greasyfork.org/scripts/391931) 上给项目评分**  
+
+**[Discord](https://discord.gg/DKu7cUZ4XQ)**
 
 ![](https://cdn.statically.io/gh/Xmader/musescore-downloader/master/screenshot.png?env=dev)
 
@@ -126,8 +128,6 @@ No, the API document is on https://developers.musescore.com/.
 ## 安装、更新、讨论
 
 脚本以 [Userscript](https://en.wikipedia.org/wiki/Userscript) 的形式提供，需要事先安装一个 [用户脚本管理器](https://greasyfork.org/zh-CN/help/installing-user-scripts)，例如 Tampermonkey
-
-在 [Greasy Fork](https://greasyfork.org/scripts/391931) 上查看、安装
 
 在 [Github](https://github.com/Xmader/musescore-downloader) 上查看、讨论、更新
 
@@ -144,7 +144,8 @@ MIT
 > descarga partituras de musescore.com de forma gratuita, no se requiere iniciar sesión o Musescore Pro
 
 **Dale una estrella a este proyecto en [Github](https://github.com/Xmader/musescore-downloader) y [Gitlab](https://gitlab.com/Xmader/musescore-downloader)** (Respaldo)   
-**Calificalo en [Greasy Fork](https://greasyfork.org/scripts/391931)**
+
+**[Discord](https://discord.gg/DKu7cUZ4XQ)**
 
 ¿Necesita un conjunto de datos de musescore.com para análisis / Machine Learning? prueba [musescore-dataset](https://github.com/Xmader/musescore-dataset).
 
