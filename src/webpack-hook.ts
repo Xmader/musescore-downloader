@@ -3,6 +3,8 @@
 
 import { hookNative } from './anti-detection'
 
+const CHUNK_PUSH_FN = 'function a(a){'
+
 interface Module {
   (module, exports, __webpack_require__): void;
 }
@@ -72,16 +74,20 @@ export const webpackGlobalOverride = (() => {
 
   // hook `webpackJsonpmusescore.push` as soon as `webpackJsonpmusescore` is available
   let jsonp
+  let hooked = false
   Object.defineProperty(window, 'webpackJsonpmusescore', {
     get () { return jsonp },
     set (v: WebpackJson) {
       jsonp = v
-      hookNative(v, 'push', (_fn) => {
-        return function (pack) {
-          applyOverride(pack)
-          return _fn.call(this, pack)
-        }
-      })
+      if (!hooked && v.push.toString().includes(CHUNK_PUSH_FN)) {
+        hooked = true
+        hookNative(v, 'push', (_fn) => {
+          return function (pack) {
+            applyOverride(pack)
+            return _fn.call(this, pack)
+          }
+        })
+      }
     },
   })
 
