@@ -1,11 +1,11 @@
 /* eslint-disable no-extend-native */
 
 import scoreinfo from './scoreinfo'
-import { webpackHook } from './webpack-hook'
-import { hookNative } from './anti-detection'
+import { webpackHook, webpackGlobalOverride } from './webpack-hook'
 
 const FILE_URL_MODULE_ID = 'iNJA'
-const MAGIC_REG = /^\d+(img|mp3|midi)\d(.+)$/
+const AUTH_MODULE_ID = 'FNf8'
+const MAGIC_ARG_INDEX = 3
 
 type FileType = 'img' | 'mp3' | 'midi'
 
@@ -18,16 +18,17 @@ const getApiUrl = (id: number, type: FileType, index: number): string => {
  * I know this is super hacky.
  */
 let magic: Promise<string> | string = new Promise((resolve) => {
-  hookNative(String.prototype, 'charCodeAt', (_fn, detach) => {
-    return function (i: number) {
-      const m = this.match(MAGIC_REG)
-      if (m) {
-        resolve(m[2])
-        magic = m[2]
-        detach()
+  webpackGlobalOverride(AUTH_MODULE_ID, (_, r, t) => { // override
+    const fn = r.a
+    t.d(r, 'a', () => {
+      return (...args) => {
+        if (typeof magic !== 'string') {
+          magic = args[MAGIC_ARG_INDEX]
+          resolve(magic)
+        }
+        return fn(...args) as string
       }
-      return _fn.call(this, i) as number
-    }
+    })
   })
 })
 
