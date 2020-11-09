@@ -22,7 +22,7 @@ let magic: Promise<string> | string = new Promise((resolve) => {
     const fn = r.a
     t.d(r, 'a', () => {
       return (...args) => {
-        if (typeof magic !== 'string') {
+        if (magic instanceof Promise) {
           magic = args[MAGIC_ARG_INDEX]
           resolve(magic)
         }
@@ -48,7 +48,7 @@ export const getFileUrl = async (type: FileType, index = 0): Promise<string> => 
 
   const fn: (id: number, index: number, cb: (url: string) => any, magic: string) => string = fileUrlModule.a
 
-  if (typeof magic !== 'string') {
+  if (magic instanceof Promise) {
     // force to retrieve the MAGIC
     const el = document.querySelectorAll('.SD7H- > button')[3] as HTMLButtonElement
     el.click()
