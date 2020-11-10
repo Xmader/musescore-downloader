@@ -15,7 +15,7 @@ const main = (): void => {
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
   recaptcha.init()
 
-  const btnList = new BtnList(getDownloadBtn())
+  const btnList = new BtnList(getDownloadBtn)
   const filename = scoreinfo.fileName
 
   btnList.add({

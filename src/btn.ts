@@ -1,6 +1,5 @@
 
 import { loadMscore, WebMscore } from './mscore'
-import { webpackGlobalOverride } from './webpack-hook'
 import i18n from './i18n'
 
 type BtnElement = HTMLButtonElement
@@ -9,7 +8,7 @@ type BtnElement = HTMLButtonElement
  * Select the original Download Button
  */
 export const getDownloadBtn = (): BtnElement => {
-  const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside > section > section > div')[3]
+  const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside>section>section')[0].children[3]
   const btn = btnsDiv.querySelector('button, .button') as BtnElement
   btn.onclick = null
 
@@ -36,33 +35,15 @@ interface BtnOptions {
   readonly tooltip?: string;
 }
 
-const SCORE_BTN_MODULE_ID = 'WYqd'
-webpackGlobalOverride(SCORE_BTN_MODULE_ID, (_, r, t) => { // override
-  const fn = r.a
-  let firstTime = true
-  // the root container of btns refreshes every 1s
-  t.d(r, 'a', () => {
-    return function () {
-      if (!firstTime) {
-        // force state update
-        this.__H.__[0].__[0] = 0
-      } else {
-        firstTime = false
-      }
-      return fn() as void
-    }
-  })
-})
-
 export class BtnList {
   private readonly list: BtnElement[] = [];
 
-  constructor (private templateBtn: BtnElement) { }
+  constructor (private getTemplateBtn: () => BtnElement) { }
 
   private antiDetectionText = 'Download'
 
   add (options: BtnOptions): BtnElement {
-    const btn = this.templateBtn.cloneNode(true) as HTMLButtonElement
+    const btn = this.getTemplateBtn().cloneNode(true) as HTMLButtonElement
 
     const textNode = [...btn.childNodes].find((x) => {
       const txt = x.textContent as string
@@ -108,11 +89,8 @@ export class BtnList {
     return btn
   }
 
-  /**
-   * replace the template button with the list of new buttons
-   */
-  commit (): void {
-    const parent = this.templateBtn.parentElement as HTMLDivElement
+  private _commit (): Element {
+    const parent = this.getTemplateBtn().parentElement as HTMLDivElement
     const shadow = parent.attachShadow({ mode: 'closed' })
 
     // style the shadow DOM from outside css
@@ -124,6 +102,21 @@ export class BtnList {
     const newParent = parent.cloneNode(false) as HTMLDivElement
     newParent.append(...this.list)
     shadow.append(newParent)
+
+    return parent
+  }
+
+  /**
+   * replace the template button with the list of new buttons
+   */
+  commit (): void {
+    let el = this._commit()
+    const observer = new MutationObserver(() => {
+      if (!document.contains(el)) {
+        el = this._commit()
+      }
+    })
+    observer.observe(document, { childList: true, subtree: true })
   }
 }
 
