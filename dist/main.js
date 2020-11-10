@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.12.4
+// @version      0.12.5
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26815,21 +26815,6 @@ Please pipe the document into a Node stream.\
                 const txt = x.textContent;
                 return txt.includes('Download') || txt.includes('Print');
             });
-            // Anti-detection:
-            // musescore will send a track event "MSCZDOWNLOADER_INSTALLED" to its backend 
-            //    if detected "Download MSCZ"
-            ['textContent', 'innerHTML'].forEach((_property) => {
-                const _set = textNode['__lookupSetter__'](_property);
-                Object.defineProperty(textNode, _property, {
-                    set(v) { _set.call(textNode, v); },
-                    get: () => {
-                        // first time only
-                        const t = this.antiDetectionText;
-                        this.antiDetectionText = ' ';
-                        return t;
-                    },
-                });
-            });
             const setText = (str) => {
                 textNode.textContent = str;
             };
@@ -26865,7 +26850,10 @@ Please pipe the document into a Node stream.\
         commit() {
             let el = this._commit();
             const observer = new MutationObserver(() => {
+                // check if the buttons are still in document when dom updates 
                 if (!document.contains(el)) {
+                    // re-commit
+                    // performance issue?
                     el = this._commit();
                 }
             });
