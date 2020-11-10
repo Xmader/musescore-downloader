@@ -73,7 +73,7 @@ export class BtnList {
     return btn
   }
 
-  private _commit (): Element {
+  private _commit () {
     const parent = this.getTemplateBtn().parentElement as HTMLDivElement
     const shadow = parent.attachShadow({ mode: 'closed' })
 
@@ -87,20 +87,23 @@ export class BtnList {
     newParent.append(...this.list)
     shadow.append(newParent)
 
-    return parent
+    return {
+      parent,
+      shadowRoot: shadow,
+    }
   }
 
   /**
    * replace the template button with the list of new buttons
    */
   commit (): void {
-    let el = this._commit()
+    let el: Element = this._commit().parent
     const observer = new MutationObserver(() => {
       // check if the buttons are still in document when dom updates 
       if (!document.contains(el)) {
         // re-commit
         // performance issue?
-        el = this._commit()
+        el = this._commit().parent
       }
     })
     observer.observe(document, { childList: true, subtree: true })
