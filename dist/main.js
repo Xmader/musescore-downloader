@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.12.5
+// @version      0.13.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26803,11 +26803,15 @@ Please pipe the document into a Node stream.\
         }
         return btn;
     };
+    var BtnListMode;
+    (function (BtnListMode) {
+        BtnListMode[BtnListMode["InPage"] = 0] = "InPage";
+        BtnListMode[BtnListMode["ExtWindow"] = 1] = "ExtWindow";
+    })(BtnListMode || (BtnListMode = {}));
     class BtnList {
         constructor(getTemplateBtn) {
             this.getTemplateBtn = getTemplateBtn;
             this.list = [];
-            this.antiDetectionText = 'Download';
         }
         add(options) {
             const btn = this.getTemplateBtn().cloneNode(true);
@@ -26831,15 +26835,18 @@ Please pipe the document into a Node stream.\
             }
             return btn;
         }
-        _commit() {
-            const parent = this.getTemplateBtn().parentElement;
+        _commit(mode) {
+            const btnParent = this.getTemplateBtn().parentElement;
+            const parent = mode === BtnListMode.InPage
+                ? btnParent
+                : document.createElement('div');
             const shadow = parent.attachShadow({ mode: 'closed' });
             // style the shadow DOM from outside css
             document.head.querySelectorAll('style').forEach(s => {
                 shadow.append(s.cloneNode(true));
             });
             // hide buttons using the shadow DOM
-            const newParent = parent.cloneNode(false);
+            const newParent = btnParent.cloneNode(false);
             newParent.append(...this.list);
             shadow.append(newParent);
             return parent;
@@ -26847,17 +26854,32 @@ Please pipe the document into a Node stream.\
         /**
          * replace the template button with the list of new buttons
          */
-        commit() {
-            let el = this._commit();
-            const observer = new MutationObserver(() => {
-                // check if the buttons are still in document when dom updates 
-                if (!document.contains(el)) {
-                    // re-commit
-                    // performance issue?
-                    el = this._commit();
+        commit(mode = BtnListMode.InPage) {
+            switch (mode) {
+                case BtnListMode.InPage: {
+                    let el = this._commit(mode);
+                    const observer = new MutationObserver(() => {
+                        // check if the buttons are still in document when dom updates 
+                        if (!document.contains(el)) {
+                            // re-commit
+                            // performance issue?
+                            el = this._commit(mode);
+                        }
+                    });
+                    observer.observe(document, { childList: true, subtree: true });
+                    break;
                 }
-            });
-            observer.observe(document, { childList: true, subtree: true });
+                case BtnListMode.ExtWindow: {
+                    const div = this._commit(mode);
+                    const w = window.open('', undefined, 'resizable,width=230,height=270');
+                    // eslint-disable-next-line no-unused-expressions
+                    w === null || w === void 0 ? void 0 : w.document.body.append(div);
+                    window.addEventListener('unload', () => w === null || w === void 0 ? void 0 : w.close());
+                    break;
+                }
+                default:
+                    throw new Error('unknown BtnListMode');
+            }
         }
     }
     // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -27054,7 +27076,7 @@ Please pipe the document into a Node stream.\
                 }
             })),
         });
-        btnList.commit();
+        btnList.commit(BtnListMode.InPage);
     };
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     waitForDocumentLoaded().then(main);
