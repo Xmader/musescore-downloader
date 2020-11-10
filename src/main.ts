@@ -5,7 +5,7 @@ import { downloadPDF } from './pdf'
 import { downloadMscz } from './mscz'
 import { getFileUrl } from './file'
 import { WebMscore, loadSoundFont } from './mscore'
-import { getDownloadBtn, BtnList, BtnAction } from './btn'
+import { getDownloadBtn, BtnList, BtnAction, BtnListMode } from './btn'
 import * as recaptcha from './recaptcha'
 import scoreinfo from './scoreinfo'
 import i18n from './i18n'
@@ -160,7 +160,7 @@ const main = (): void => {
     }),
   })
 
-  btnList.commit()
+  btnList.commit(BtnListMode.InPage)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises

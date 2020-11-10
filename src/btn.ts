@@ -35,12 +35,15 @@ interface BtnOptions {
   readonly tooltip?: string;
 }
 
+export enum BtnListMode {
+  InPage,
+  ExtWindow,
+}
+
 export class BtnList {
   private readonly list: BtnElement[] = [];
 
   constructor (private getTemplateBtn: () => BtnElement) { }
-
-  private antiDetectionText = 'Download'
 
   add (options: BtnOptions): BtnElement {
     const btn = this.getTemplateBtn().cloneNode(true) as HTMLButtonElement
@@ -73,8 +76,11 @@ export class BtnList {
     return btn
   }
 
-  private _commit () {
-    const parent = this.getTemplateBtn().parentElement as HTMLDivElement
+  private _commit (mode: BtnListMode) {
+    const btnParent = this.getTemplateBtn().parentElement as HTMLDivElement
+    const parent = mode === BtnListMode.InPage
+      ? btnParent
+      : document.createElement('div')
     const shadow = parent.attachShadow({ mode: 'closed' })
 
     // style the shadow DOM from outside css
@@ -83,30 +89,44 @@ export class BtnList {
     })
 
     // hide buttons using the shadow DOM
-    const newParent = parent.cloneNode(false) as HTMLDivElement
+    const newParent = btnParent.cloneNode(false) as HTMLDivElement
     newParent.append(...this.list)
     shadow.append(newParent)
 
-    return {
-      parent,
-      shadowRoot: shadow,
-    }
+    return parent
   }
 
   /**
    * replace the template button with the list of new buttons
    */
-  commit (): void {
-    let el: Element = this._commit().parent
-    const observer = new MutationObserver(() => {
-      // check if the buttons are still in document when dom updates 
-      if (!document.contains(el)) {
-        // re-commit
-        // performance issue?
-        el = this._commit().parent
+  commit (mode: BtnListMode = BtnListMode.InPage): void {
+    switch (mode) {
+      case BtnListMode.InPage: {
+        let el: Element = this._commit(mode)
+        const observer = new MutationObserver(() => {
+          // check if the buttons are still in document when dom updates 
+          if (!document.contains(el)) {
+            // re-commit
+            // performance issue?
+            el = this._commit(mode)
+          }
+        })
+        observer.observe(document, { childList: true, subtree: true })
+        break
       }
-    })
-    observer.observe(document, { childList: true, subtree: true })
+
+      case BtnListMode.ExtWindow: {
+        const div = this._commit(mode)
+        const w = window.open('', undefined, 'resizable,width=230,height=270')
+        // eslint-disable-next-line no-unused-expressions
+        w?.document.body.append(div)
+        window.addEventListener('unload', () => w?.close())
+        break
+      }
+
+      default:
+        throw new Error('unknown BtnListMode')
+    }
   }
 }
 
