@@ -26786,7 +26786,7 @@ Please pipe the document into a Node stream.\
      * Select the original Download Button
      */
     const getDownloadBtn = () => {
-        const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside > section > section > div')[3];
+        const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside>section>section')[0].children[3];
         const btn = btnsDiv.querySelector('button, .button');
         btn.onclick = null;
         // fix the icon of the download btn
@@ -26803,32 +26803,14 @@ Please pipe the document into a Node stream.\
         }
         return btn;
     };
-    const SCORE_BTN_MODULE_ID = 'WYqd';
-    webpackGlobalOverride(SCORE_BTN_MODULE_ID, (_, r, t) => {
-        const fn = r.a;
-        let firstTime = true;
-        // the root container of btns refreshes every 1s
-        t.d(r, 'a', () => {
-            return function () {
-                if (!firstTime) {
-                    // force state update
-                    this.__H.__[0].__[0] = 0;
-                }
-                else {
-                    firstTime = false;
-                }
-                return fn();
-            };
-        });
-    });
     class BtnList {
-        constructor(templateBtn) {
-            this.templateBtn = templateBtn;
+        constructor(getTemplateBtn) {
+            this.getTemplateBtn = getTemplateBtn;
             this.list = [];
             this.antiDetectionText = 'Download';
         }
         add(options) {
-            const btn = this.templateBtn.cloneNode(true);
+            const btn = this.getTemplateBtn().cloneNode(true);
             const textNode = [...btn.childNodes].find((x) => {
                 const txt = x.textContent;
                 return txt.includes('Download') || txt.includes('Print');
@@ -26864,11 +26846,8 @@ Please pipe the document into a Node stream.\
             }
             return btn;
         }
-        /**
-         * replace the template button with the list of new buttons
-         */
-        commit() {
-            const parent = this.templateBtn.parentElement;
+        _commit() {
+            const parent = this.getTemplateBtn().parentElement;
             const shadow = parent.attachShadow({ mode: 'closed' });
             // style the shadow DOM from outside css
             document.head.querySelectorAll('style').forEach(s => {
@@ -26878,6 +26857,19 @@ Please pipe the document into a Node stream.\
             const newParent = parent.cloneNode(false);
             newParent.append(...this.list);
             shadow.append(newParent);
+            return parent;
+        }
+        /**
+         * replace the template button with the list of new buttons
+         */
+        commit() {
+            let el = this._commit();
+            const observer = new MutationObserver(() => {
+                if (!document.contains(el)) {
+                    el = this._commit();
+                }
+            });
+            observer.observe(document, { childList: true, subtree: true });
         }
     }
     // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -26957,7 +26949,7 @@ Please pipe the document into a Node stream.\
         // init recaptcha
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
         init();
-        const btnList = new BtnList(getDownloadBtn());
+        const btnList = new BtnList(getDownloadBtn);
         const filename = scoreinfo.fileName;
         btnList.add({
             name: i18n('DOWNLOAD')('MSCZ'),
