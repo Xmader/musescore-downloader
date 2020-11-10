@@ -1,5 +1,6 @@
 
 import { loadMscore, WebMscore } from './mscore'
+import { webpackGlobalOverride } from './webpack-hook'
 import i18n from './i18n'
 
 type BtnElement = HTMLButtonElement
@@ -34,6 +35,24 @@ interface BtnOptions {
   readonly disabled?: boolean;
   readonly tooltip?: string;
 }
+
+const SCORE_BTN_MODULE_ID = 'WYqd'
+webpackGlobalOverride(SCORE_BTN_MODULE_ID, (_, r, t) => { // override
+  const fn = r.a
+  let firstTime = true
+  // the root container of btns refreshes every 1s
+  t.d(r, 'a', () => {
+    return function () {
+      if (!firstTime) {
+        // force state update
+        this.__H.__[0].__[0] = 0
+      } else {
+        firstTime = false
+      }
+      return fn() as void
+    }
+  })
+})
 
 export class BtnList {
   private readonly list: BtnElement[] = [];
