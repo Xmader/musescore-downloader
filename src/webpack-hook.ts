@@ -51,11 +51,20 @@ export const webpackHook = (moduleId: string, moduleOverrides: { [id: string]: M
   return t(moduleId)
 }
 
+export const ALL = '*'
+
 export const webpackGlobalOverride = (() => {
   const moduleOverrides: { [id: string]: Module } = {}
 
   function applyOverride (pack: WebpackJson[0]) {
-    Object.entries(moduleOverrides).forEach(([id, override]) => {
+    let entries = Object.entries(moduleOverrides)
+    // apply to all
+    const all = moduleOverrides[ALL]
+    if (all) {
+      entries = Object.keys(pack[1]).map(id => [id, all])
+    }
+
+    entries.forEach(([id, override]) => {
       const mod = pack[1][id]
       if (mod) {
         pack[1][id] = function (n, r, t) {
