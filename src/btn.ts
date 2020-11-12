@@ -8,8 +8,13 @@ type BtnElement = HTMLButtonElement
  * Select the original Download Button
  */
 export const getDownloadBtn = (): BtnElement => {
-  const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside>section>section')[0].children[3]
+  const container = document.querySelectorAll('aside>section>section')[0]
+  const btnsDiv = [...container.children].find((div) => {
+    const b = div.querySelector('button, .button')
+    return b && b.outerHTML.replace(/\s/g, '').includes('Download')
+  }) as HTMLDivElement
   const btn = btnsDiv.querySelector('button, .button') as BtnElement
+
   btn.onclick = null
 
   // fix the icon of the download btn
