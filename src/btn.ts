@@ -49,7 +49,7 @@ export class BtnList {
     const btn = this.getTemplateBtn().cloneNode(true) as HTMLButtonElement
 
     const textNode = [...btn.childNodes].find((x) => {
-      const txt = x.textContent as string
+      const txt = (x.textContent as string).replace(/\s/g, '')
       return txt.includes('Download') || txt.includes('Print')
     }) as HTMLSpanElement
 
