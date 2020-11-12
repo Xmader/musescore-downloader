@@ -4,6 +4,7 @@ import commonjs from "rollup-plugin-commonjs"
 import builtins from "rollup-plugin-node-builtins"
 import nodeGlobals from "rollup-plugin-node-globals"
 import json from "@rollup/plugin-json"
+import { string } from "rollup-plugin-string"
 import fs from "fs"
 
 const getBannerText = () => {
@@ -33,6 +34,9 @@ const plugins = [
         extensions: [".js", ".ts"]
     }),
     json(),
+    string({
+        include: "**/*.css",
+    }),
     builtins(),
     nodeGlobals({
         dirname: false,
@@ -45,7 +49,7 @@ const plugins = [
          * @param {string} code 
          * @param {string} id 
          */
-        transform(code, id) {
+        transform (code, id) {
             if (id.includes("tslib")) {
                 code = code.split(/\r?\n/g).slice(15).join("\n")
             }
