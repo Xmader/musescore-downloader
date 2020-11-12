@@ -9,11 +9,6 @@ const MAGIC_ARG_INDEX = 3
 
 type FileType = 'img' | 'mp3' | 'midi'
 
-const getApiUrl = (id: number, type: FileType, index: number): string => {
-  // proxy
-  return `https://musescore.now.sh/api/jmuse?id=${id}&type=${type}&index=${index}`
-}
-
 /**
  * I know this is super hacky.
  */
@@ -37,11 +32,6 @@ export const getFileUrl = async (type: FileType, index = 0): Promise<string> => 
     '6Ulw' (_, r, t) { // override
       t.d(r, 'a', () => {
         return type
-      })
-    },
-    'VSrV' (_, r, t) { // override
-      t.d(r, 'b', () => {
-        return getApiUrl
       })
     },
   })
