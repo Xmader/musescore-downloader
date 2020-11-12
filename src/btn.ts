@@ -48,10 +48,7 @@ export class BtnList {
   add (options: BtnOptions): BtnElement {
     const btn = this.getTemplateBtn().cloneNode(true) as HTMLButtonElement
 
-    const textNode = [...btn.childNodes].find((x) => {
-      const txt = (x.textContent as string).replace(/\s/g, '')
-      return txt.includes('Download') || txt.includes('Print')
-    }) as HTMLSpanElement
+    const textNode = [...btn.children].find(x => x.nodeName === 'SPAN') as HTMLSpanElement
 
     const setText = (str: string): void => {
       textNode.textContent = str
