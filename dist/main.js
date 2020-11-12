@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.14.1
+// @version      0.14.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26744,7 +26744,11 @@ Please pipe the document into a Node stream.\
      * Select the original Download Button
      */
     const getDownloadBtn = () => {
-        const btnsDiv = document.querySelector('.score-right .buttons-wrapper') || document.querySelectorAll('aside>section>section')[0].children[3];
+        const container = document.querySelectorAll('aside>section>section')[0];
+        const btnsDiv = [...container.children].find((div) => {
+            const b = div.querySelector('button, .button');
+            return b && b.outerHTML.replace(/\s/g, '').includes('Download');
+        });
         const btn = btnsDiv.querySelector('button, .button');
         btn.onclick = null;
         // fix the icon of the download btn
