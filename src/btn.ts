@@ -1,6 +1,8 @@
 
 import { loadMscore, WebMscore } from './mscore'
 import i18n from './i18n'
+// @ts-ignore
+import btnListCss from './btn.css'
 
 type BtnElement = HTMLButtonElement
 
@@ -85,10 +87,10 @@ export class BtnList {
       : document.createElement('div')
     const shadow = parent.attachShadow({ mode: 'closed' })
 
-    // style the shadow DOM from outside css
-    document.head.querySelectorAll('style').forEach(s => {
-      shadow.append(s.cloneNode(true))
-    })
+    // style the shadow DOM
+    const style = document.createElement('style')
+    style.innerText = btnListCss
+    shadow.append(style)
 
     // hide buttons using the shadow DOM
     const newParent = btnParent.cloneNode(false) as HTMLDivElement
