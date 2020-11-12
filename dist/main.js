@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.14.3
+// @version      0.14.4
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26487,10 +26487,17 @@ Please pipe the document into a Node stream.\
         });
         return t(moduleId);
     };
+    const ALL = '*';
     const webpackGlobalOverride = (() => {
         const moduleOverrides = {};
         function applyOverride(pack) {
-            Object.entries(moduleOverrides).forEach(([id, override]) => {
+            let entries = Object.entries(moduleOverrides);
+            // apply to all
+            const all = moduleOverrides[ALL];
+            if (all) {
+                entries = Object.keys(pack[1]).map(id => [id, all]);
+            }
+            entries.forEach(([id, override]) => {
                 const mod = pack[1][id];
                 if (mod) {
                     pack[1][id] = function (n, r, t) {
@@ -26532,24 +26539,26 @@ Please pipe the document into a Node stream.\
 
     /* eslint-disable no-extend-native */
     const FILE_URL_MODULE_ID = 'iNJA';
-    const AUTH_MODULE_ID = 'F08J';
+    const ARG_NUMBER = 4;
     const MAGIC_ARG_INDEX = 3;
     /**
      * I know this is super hacky.
      */
     let magic = new Promise((resolve) => {
         // todo: hook module by what it does, not what it is called
-        webpackGlobalOverride(AUTH_MODULE_ID, (_, r, t) => {
+        webpackGlobalOverride(ALL, (_, r, t) => {
             const fn = r.a;
-            t.d(r, 'a', () => {
-                return (...args) => {
-                    if (magic instanceof Promise) {
-                        magic = args[MAGIC_ARG_INDEX];
-                        resolve(magic);
-                    }
-                    return fn(...args);
-                };
-            });
+            if (typeof fn === 'function' && fn.length === ARG_NUMBER) {
+                t.d(r, 'a', () => {
+                    return (...args) => {
+                        if (magic instanceof Promise) {
+                            magic = args[MAGIC_ARG_INDEX];
+                            resolve(magic);
+                        }
+                        return fn(...args);
+                    };
+                });
+            }
         });
     });
     const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
