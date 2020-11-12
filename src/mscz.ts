@@ -1,5 +1,4 @@
 
-import * as recaptcha from './recaptcha'
 import { saveAs } from './utils'
 import scoreinfo from './scoreinfo'
 
@@ -9,8 +8,7 @@ export const fetchMscz = async (): Promise<ArrayBuffer> => {
   if (!msczBufferP) {
     const url = scoreinfo.msczUrl
     msczBufferP = (async (): Promise<ArrayBuffer> => {
-      const token = await recaptcha.execute()
-      const r = await fetch(url + token)
+      const r = await fetch(url)
       const data = await r.arrayBuffer()
       return data
     })()

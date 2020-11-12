@@ -13,6 +13,8 @@ export const ugappJsStore: Record<string, any> | null = (() => {
   }
 })()
 
+const IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP'
+
 export const scoreinfo = {
 
   get playerdata (): any {
@@ -65,9 +67,12 @@ export const scoreinfo = {
     return origin + pathname.split('/').slice(0, -1).join('/') + '/'
   },
 
+  get msczIpfsRef (this: typeof scoreinfo): string {
+    return `/ipns/${IPNS_KEY}/${this.id}.mscz`
+  },
+
   get msczUrl (this: typeof scoreinfo): string {
-    // https://github.com/Xmader/cloudflare-worker-musescore-mscz
-    return `https://musescore.now.sh/api/mscz?id=${this.id}&token=`
+    return `https://ipfs.infura.io:5001/api/v0/cat?arg=${this.msczIpfsRef}`
   },
 
   get sheetImgType (): 'svg' | 'png' {
