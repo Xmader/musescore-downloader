@@ -35,6 +35,27 @@ export const getDownloadBtn = (): BtnElement => {
   return btn
 }
 
+const buildDownloadBtn = () => {
+  const btn = document.createElement('button')
+  btn.type = 'button'
+
+  // build icon svg element
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('viewBox', '0 0 24 24')
+  const svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  svgPath.setAttribute('d', 'M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z')
+  svgPath.setAttribute('fill', '#fff')
+  svg.append(svgPath)
+
+  const textNode = document.createElement('span')
+  btn.append(svg, textNode)
+
+  return {
+    btn,
+    textNode,
+  }
+}
+
 interface BtnOptions {
   readonly name: string;
   readonly action: BtnAction;
@@ -53,10 +74,7 @@ export class BtnList {
   constructor (private getTemplateBtn: () => BtnElement) { }
 
   add (options: BtnOptions): BtnElement {
-    const btn = this.getTemplateBtn().cloneNode(true) as HTMLButtonElement
-
-    const textNode = [...btn.children].find(x => x.nodeName === 'SPAN') as HTMLSpanElement
-
+    const { btn, textNode } = buildDownloadBtn()
     const setText = (str: string): void => {
       textNode.textContent = str
     }
