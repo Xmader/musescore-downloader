@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.13.0
+// @version      0.13.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26531,10 +26531,6 @@ Please pipe the document into a Node stream.\
     const FILE_URL_MODULE_ID = 'iNJA';
     const AUTH_MODULE_ID = 'FNf8';
     const MAGIC_ARG_INDEX = 3;
-    const getApiUrl = (id, type, index) => {
-        // proxy
-        return `https://musescore.now.sh/api/jmuse?id=${id}&type=${type}&index=${index}`;
-    };
     /**
      * I know this is super hacky.
      */
@@ -26557,11 +26553,6 @@ Please pipe the document into a Node stream.\
             '6Ulw'(_, r, t) {
                 t.d(r, 'a', () => {
                     return type;
-                });
-            },
-            'VSrV'(_, r, t) {
-                t.d(r, 'b', () => {
-                    return getApiUrl;
                 });
             },
         });
