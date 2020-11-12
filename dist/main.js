@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.13.1
+// @version      0.14.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26332,6 +26332,7 @@ Please pipe the document into a Node stream.\
             return null;
         }
     })();
+    const IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP';
     const scoreinfo = {
         get playerdata() {
             // @ts-ignore
@@ -26380,9 +26381,11 @@ Please pipe the document into a Node stream.\
             // remove the last part
             return origin + pathname.split('/').slice(0, -1).join('/') + '/';
         },
+        get msczIpfsRef() {
+            return `/ipns/${IPNS_KEY}/${this.id}.mscz`;
+        },
         get msczUrl() {
-            // https://github.com/Xmader/cloudflare-worker-musescore-mscz
-            return `https://musescore.now.sh/api/mscz?id=${this.id}&token=`;
+            return `https://ipfs.infura.io:5001/api/v0/cat?arg=${this.msczIpfsRef}`;
         },
         get sheetImgType() {
             try {
@@ -26596,49 +26599,12 @@ Please pipe the document into a Node stream.\
         return _downloadPDF(sheetImgURLs, imgType, scoreinfo.fileName);
     });
 
-    /**
-     * the site key for Google reCAPTCHA v3
-     */
-    const SITE_KEY = '6Ldxtt8UAAAAALvcRqWTlVOVIB7MmEWwN-zw_9fM';
-    let gr;
-    /**
-     * load reCAPTCHA
-     */
-    const load = () => {
-        // load script
-        const script = document.createElement('script');
-        script.src = `https://www.recaptcha.net/recaptcha/api.js?render=${SITE_KEY}`;
-        script.async = true;
-        document.body.appendChild(script);
-        // add css
-        const style = document.createElement('style');
-        style.innerHTML = '.grecaptcha-badge { display: none !important; }';
-        document.head.appendChild(style);
-        return new Promise((resolve) => {
-            script.onload = () => {
-                const grecaptcha = window['grecaptcha'];
-                grecaptcha.ready(() => resolve(grecaptcha));
-            };
-        });
-    };
-    const init = () => {
-        if (!gr) {
-            gr = load();
-        }
-        return gr;
-    };
-    const execute = () => __awaiter(void 0, void 0, void 0, function* () {
-        const captcha = yield init();
-        return captcha.execute(SITE_KEY, { action: 'downloadmscz' });
-    });
-
     let msczBufferP;
     const fetchMscz = () => __awaiter(void 0, void 0, void 0, function* () {
         if (!msczBufferP) {
             const url = scoreinfo.msczUrl;
             msczBufferP = (() => __awaiter(void 0, void 0, void 0, function* () {
-                const token = yield execute();
-                const r = yield fetch(url + token);
+                const r = yield fetch(url);
                 const data = yield r.arrayBuffer();
                 return data;
             }))();
@@ -26947,9 +26913,6 @@ Please pipe the document into a Node stream.\
     })(BtnAction || (BtnAction = {}));
 
     const main = () => {
-        // init recaptcha
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        init();
         const btnList = new BtnList(getDownloadBtn);
         const filename = scoreinfo.fileName;
         btnList.add({
