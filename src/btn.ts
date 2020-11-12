@@ -6,33 +6,12 @@ import btnListCss from './btn.css'
 
 type BtnElement = HTMLButtonElement
 
-/**
- * Select the original Download Button
- */
-export const getDownloadBtn = (): BtnElement => {
+const getBtnContainer = (): HTMLDivElement => {
   const container = document.querySelectorAll('aside>section>section')[0]
-  const btnsDiv = [...container.children].find((div) => {
+  return [...container.children].find((div) => {
     const b = div.querySelector('button, .button')
     return b && b.outerHTML.replace(/\s/g, '').includes('Download')
   }) as HTMLDivElement
-  const btn = btnsDiv.querySelector('button, .button') as BtnElement
-
-  btn.onclick = null
-
-  // fix the icon of the download btn
-  // if the `btn` seleted was a `Print` btn, replace the `print` icon with the `download` icon
-  const svgPath: SVGPathElement | null = btn.querySelector('svg > path')
-  if (svgPath) {
-    svgPath.setAttribute('d', 'M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z')
-  }
-
-  if (btn.nodeName.toLowerCase() === 'button') {
-    btn.setAttribute('style', 'width: 205px !important')
-  } else {
-    btn.dataset.target = ''
-  }
-
-  return btn
 }
 
 const buildDownloadBtn = () => {
@@ -71,7 +50,7 @@ export enum BtnListMode {
 export class BtnList {
   private readonly list: BtnElement[] = [];
 
-  constructor (private getTemplateBtn: () => BtnElement) { }
+  constructor (private getBtnParent: () => HTMLDivElement = getBtnContainer) { }
 
   add (options: BtnOptions): BtnElement {
     const { btn, textNode } = buildDownloadBtn()
@@ -98,12 +77,14 @@ export class BtnList {
     return btn
   }
 
-  private _commit (mode: BtnListMode) {
-    const btnParent = this.getTemplateBtn().parentElement as HTMLDivElement
-    const parent = mode === BtnListMode.InPage
-      ? btnParent
-      : document.createElement('div')
-    const shadow = parent.attachShadow({ mode: 'closed' })
+  private _commit () {
+    let btnParent: HTMLDivElement = document.createElement('div')
+    try {
+      btnParent = this.getBtnParent()
+    } catch (err) {
+      console.error(err)
+    }
+    const shadow = btnParent.attachShadow({ mode: 'closed' })
 
     // style the shadow DOM
     const style = document.createElement('style')
@@ -115,7 +96,7 @@ export class BtnList {
     newParent.append(...this.list)
     shadow.append(newParent)
 
-    return parent
+    return btnParent
   }
 
   /**
@@ -124,13 +105,20 @@ export class BtnList {
   commit (mode: BtnListMode = BtnListMode.InPage): void {
     switch (mode) {
       case BtnListMode.InPage: {
-        let el: Element = this._commit(mode)
+        // fallback to BtnListMode.ExtWindow
+        try {
+          this.getBtnParent()
+        } catch {
+          return this.commit(BtnListMode.ExtWindow)
+        }
+
+        let el: Element = this._commit()
         const observer = new MutationObserver(() => {
           // check if the buttons are still in document when dom updates 
           if (!document.contains(el)) {
             // re-commit
             // performance issue?
-            el = this._commit(mode)
+            el = this._commit()
           }
         })
         observer.observe(document, { childList: true, subtree: true })
@@ -138,7 +126,7 @@ export class BtnList {
       }
 
       case BtnListMode.ExtWindow: {
-        const div = this._commit(mode)
+        const div = this._commit()
         const w = window.open('', undefined, 'resizable,width=230,height=270')
         // eslint-disable-next-line no-unused-expressions
         w?.document.body.append(div)

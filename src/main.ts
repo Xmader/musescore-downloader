@@ -5,12 +5,12 @@ import { downloadPDF } from './pdf'
 import { downloadMscz } from './mscz'
 import { getFileUrl } from './file'
 import { WebMscore, loadSoundFont } from './mscore'
-import { getDownloadBtn, BtnList, BtnAction, BtnListMode } from './btn'
+import { BtnList, BtnAction, BtnListMode } from './btn'
 import scoreinfo from './scoreinfo'
 import i18n from './i18n'
 
 const main = (): void => {
-  const btnList = new BtnList(getDownloadBtn)
+  const btnList = new BtnList()
   const filename = scoreinfo.fileName
 
   btnList.add({
