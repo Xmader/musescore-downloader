@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.14.2
+// @version      0.14.3
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26740,30 +26740,31 @@ Please pipe the document into a Node stream.\
         return locale[key];
     }
 
-    /**
-     * Select the original Download Button
-     */
-    const getDownloadBtn = () => {
+    var btnListCss = "div {\n  flex-wrap: wrap;\n  display: flex;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n}\n\nbutton {\n  width: 205px !important;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
+
+    const getBtnContainer = () => {
         const container = document.querySelectorAll('aside>section>section')[0];
-        const btnsDiv = [...container.children].find((div) => {
+        return [...container.children].find((div) => {
             const b = div.querySelector('button, .button');
             return b && b.outerHTML.replace(/\s/g, '').includes('Download');
         });
-        const btn = btnsDiv.querySelector('button, .button');
-        btn.onclick = null;
-        // fix the icon of the download btn
-        // if the `btn` seleted was a `Print` btn, replace the `print` icon with the `download` icon
-        const svgPath = btn.querySelector('svg > path');
-        if (svgPath) {
-            svgPath.setAttribute('d', 'M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z');
-        }
-        if (btn.nodeName.toLowerCase() === 'button') {
-            btn.setAttribute('style', 'width: 205px !important');
-        }
-        else {
-            btn.dataset.target = '';
-        }
-        return btn;
+    };
+    const buildDownloadBtn = () => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        // build icon svg element
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        const svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        svgPath.setAttribute('d', 'M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z');
+        svgPath.setAttribute('fill', '#fff');
+        svg.append(svgPath);
+        const textNode = document.createElement('span');
+        btn.append(svg, textNode);
+        return {
+            btn,
+            textNode,
+        };
     };
     var BtnListMode;
     (function (BtnListMode) {
@@ -26771,13 +26772,12 @@ Please pipe the document into a Node stream.\
         BtnListMode[BtnListMode["ExtWindow"] = 1] = "ExtWindow";
     })(BtnListMode || (BtnListMode = {}));
     class BtnList {
-        constructor(getTemplateBtn) {
-            this.getTemplateBtn = getTemplateBtn;
+        constructor(getBtnParent = getBtnContainer) {
+            this.getBtnParent = getBtnParent;
             this.list = [];
         }
         add(options) {
-            const btn = this.getTemplateBtn().cloneNode(true);
-            const textNode = [...btn.children].find(x => x.nodeName === 'SPAN');
+            const { btn, textNode } = buildDownloadBtn();
             const setText = (str) => {
                 textNode.textContent = str;
             };
@@ -26794,21 +26794,24 @@ Please pipe the document into a Node stream.\
             }
             return btn;
         }
-        _commit(mode) {
-            const btnParent = this.getTemplateBtn().parentElement;
-            const parent = mode === BtnListMode.InPage
-                ? btnParent
-                : document.createElement('div');
-            const shadow = parent.attachShadow({ mode: 'closed' });
-            // style the shadow DOM from outside css
-            document.head.querySelectorAll('style').forEach(s => {
-                shadow.append(s.cloneNode(true));
-            });
+        _commit() {
+            let btnParent = document.createElement('div');
+            try {
+                btnParent = this.getBtnParent();
+            }
+            catch (err) {
+                console.error(err);
+            }
+            const shadow = btnParent.attachShadow({ mode: 'closed' });
+            // style the shadow DOM
+            const style = document.createElement('style');
+            style.innerText = btnListCss;
+            shadow.append(style);
             // hide buttons using the shadow DOM
             const newParent = btnParent.cloneNode(false);
             newParent.append(...this.list);
             shadow.append(newParent);
-            return parent;
+            return btnParent;
         }
         /**
          * replace the template button with the list of new buttons
@@ -26816,20 +26819,27 @@ Please pipe the document into a Node stream.\
         commit(mode = BtnListMode.InPage) {
             switch (mode) {
                 case BtnListMode.InPage: {
-                    let el = this._commit(mode);
+                    // fallback to BtnListMode.ExtWindow
+                    try {
+                        this.getBtnParent();
+                    }
+                    catch (_a) {
+                        return this.commit(BtnListMode.ExtWindow);
+                    }
+                    let el = this._commit();
                     const observer = new MutationObserver(() => {
                         // check if the buttons are still in document when dom updates 
                         if (!document.contains(el)) {
                             // re-commit
                             // performance issue?
-                            el = this._commit(mode);
+                            el = this._commit();
                         }
                     });
                     observer.observe(document, { childList: true, subtree: true });
                     break;
                 }
                 case BtnListMode.ExtWindow: {
-                    const div = this._commit(mode);
+                    const div = this._commit();
                     const w = window.open('', undefined, 'resizable,width=230,height=270');
                     // eslint-disable-next-line no-unused-expressions
                     w === null || w === void 0 ? void 0 : w.document.body.append(div);
@@ -26915,7 +26925,7 @@ Please pipe the document into a Node stream.\
     })(BtnAction || (BtnAction = {}));
 
     const main = () => {
-        const btnList = new BtnList(getDownloadBtn);
+        const btnList = new BtnList();
         const filename = scoreinfo.fileName;
         btnList.add({
             name: i18n('DOWNLOAD')('MSCZ'),
