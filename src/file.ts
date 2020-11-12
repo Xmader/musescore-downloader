@@ -4,7 +4,7 @@ import scoreinfo from './scoreinfo'
 import { webpackHook, webpackGlobalOverride } from './webpack-hook'
 
 const FILE_URL_MODULE_ID = 'iNJA'
-const AUTH_MODULE_ID = 'FNf8'
+const AUTH_MODULE_ID = 'F08J'
 const MAGIC_ARG_INDEX = 3
 
 type FileType = 'img' | 'mp3' | 'midi'
@@ -13,6 +13,7 @@ type FileType = 'img' | 'mp3' | 'midi'
  * I know this is super hacky.
  */
 let magic: Promise<string> | string = new Promise((resolve) => {
+  // todo: hook module by what it does, not what it is called
   webpackGlobalOverride(AUTH_MODULE_ID, (_, r, t) => { // override
     const fn = r.a
     t.d(r, 'a', () => {
