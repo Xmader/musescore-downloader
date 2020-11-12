@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.14.0
+// @version      0.14.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26532,12 +26532,13 @@ Please pipe the document into a Node stream.\
 
     /* eslint-disable no-extend-native */
     const FILE_URL_MODULE_ID = 'iNJA';
-    const AUTH_MODULE_ID = 'FNf8';
+    const AUTH_MODULE_ID = 'F08J';
     const MAGIC_ARG_INDEX = 3;
     /**
      * I know this is super hacky.
      */
     let magic = new Promise((resolve) => {
+        // todo: hook module by what it does, not what it is called
         webpackGlobalOverride(AUTH_MODULE_ID, (_, r, t) => {
             const fn = r.a;
             t.d(r, 'a', () => {
@@ -26772,10 +26773,7 @@ Please pipe the document into a Node stream.\
         }
         add(options) {
             const btn = this.getTemplateBtn().cloneNode(true);
-            const textNode = [...btn.childNodes].find((x) => {
-                const txt = x.textContent;
-                return txt.includes('Download') || txt.includes('Print');
-            });
+            const textNode = [...btn.children].find(x => x.nodeName === 'SPAN');
             const setText = (str) => {
                 textNode.textContent = str;
             };
