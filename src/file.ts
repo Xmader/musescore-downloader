@@ -20,8 +20,10 @@ let magic: Promise<string> | string = new Promise((resolve) => {
       t.d(r, 'a', () => {
         return (...args) => {
           if (magic instanceof Promise) {
-            magic = args[MAGIC_ARG_INDEX]
-            resolve(magic)
+            if (args.every(a => typeof a === 'number' || typeof a === 'string')) {
+              magic = args[MAGIC_ARG_INDEX]
+              resolve(magic)
+            }
           }
           return fn(...args) as string
         }
