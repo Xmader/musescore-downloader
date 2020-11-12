@@ -1,10 +1,10 @@
 /* eslint-disable no-extend-native */
 
 import scoreinfo from './scoreinfo'
-import { webpackHook, webpackGlobalOverride } from './webpack-hook'
+import { webpackHook, webpackGlobalOverride, ALL } from './webpack-hook'
 
 const FILE_URL_MODULE_ID = 'iNJA'
-const AUTH_MODULE_ID = 'F08J'
+const ARG_NUMBER = 4
 const MAGIC_ARG_INDEX = 3
 
 type FileType = 'img' | 'mp3' | 'midi'
@@ -14,17 +14,19 @@ type FileType = 'img' | 'mp3' | 'midi'
  */
 let magic: Promise<string> | string = new Promise((resolve) => {
   // todo: hook module by what it does, not what it is called
-  webpackGlobalOverride(AUTH_MODULE_ID, (_, r, t) => { // override
+  webpackGlobalOverride(ALL, (_, r, t) => { // override
     const fn = r.a
-    t.d(r, 'a', () => {
-      return (...args) => {
-        if (magic instanceof Promise) {
-          magic = args[MAGIC_ARG_INDEX]
-          resolve(magic)
+    if (typeof fn === 'function' && fn.length === ARG_NUMBER) {
+      t.d(r, 'a', () => {
+        return (...args) => {
+          if (magic instanceof Promise) {
+            magic = args[MAGIC_ARG_INDEX]
+            resolve(magic)
+          }
+          return fn(...args) as string
         }
-        return fn(...args) as string
-      }
-    })
+      })
+    }
   })
 })
 
