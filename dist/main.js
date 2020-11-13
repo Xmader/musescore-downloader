@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.2
+// @version      0.15.3
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26930,7 +26930,7 @@ Please pipe the document into a Node stream.\
                 fn(w, score, txt);
             });
         };
-        BtnAction.process = (fn, fallback, timeout = Infinity) => {
+        BtnAction.process = (fn, fallback, timeout = 10 * 60 * 1000 /* 10min */) => {
             return (name, btn, setText) => __awaiter(this, void 0, void 0, function* () {
                 const _onclick = btn.onclick;
                 btn.onclick = null;
