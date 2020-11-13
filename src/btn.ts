@@ -1,5 +1,6 @@
 
 import { loadMscore, WebMscore } from './mscore'
+import { useTimeout } from './utils'
 import i18n from './i18n'
 // @ts-ignore
 import btnListCss from './btn.css'
@@ -159,12 +160,18 @@ export namespace BtnAction {
     })
   }
 
-  export const download = (url: UrlInput): BtnAction => {
-    return process(async (): Promise<any> => {
-      const _url = await normalizeUrlInput(url)
-      const a = document.createElement('a')
-      a.href = _url
-      a.dispatchEvent(new MouseEvent('click'))
+  export const download = (url: UrlInput, fallback?: () => Promisable<void>, timeout = 30 * 1000): BtnAction => {
+    return process(async (): Promise<void> => {
+      try {
+        const _url = await useTimeout(normalizeUrlInput(url), timeout)
+        const a = document.createElement('a')
+        a.href = _url
+        a.dispatchEvent(new MouseEvent('click'))
+      } catch (err) {
+        // use fallback
+        console.error(err)
+        return fallback?.()
+      }
     })
   }
 

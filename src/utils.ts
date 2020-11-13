@@ -19,6 +19,19 @@ export const fetchData = async (url: string, init?: RequestInit): Promise<Uint8A
   return new Uint8Array(data)
 }
 
+export const useTimeout = async <T> (promise: T | Promise<T>, ms: number): Promise<T> => {
+  if (!(promise instanceof Promise)) {
+    return promise
+  }
+
+  return new Promise((resolve, reject) => {
+    const i = setTimeout(() => {
+      reject(new Error('timeout'))
+    }, ms)
+    promise.then(resolve, reject).finally(() => clearTimeout(i))
+  })
+}
+
 export const waitForDocumentLoaded = (): Promise<void> => {
   if (document.readyState !== 'complete') {
     return new Promise(resolve => {

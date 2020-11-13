@@ -13,6 +13,8 @@ const main = (): void => {
   const btnList = new BtnList()
   const filename = scoreinfo.fileName
 
+  let indvPartBtn: HTMLButtonElement | null = null
+
   btnList.add({
     name: i18n('DOWNLOAD')('MSCZ'),
     action: BtnAction.process(downloadMscz),
@@ -35,15 +37,15 @@ const main = (): void => {
 
   btnList.add({
     name: i18n('DOWNLOAD')('MIDI'),
-    action: BtnAction.download(() => getFileUrl('midi')),
+    action: BtnAction.download(() => getFileUrl('midi'), () => indvPartBtn?.click()),
   })
 
   btnList.add({
     name: i18n('DOWNLOAD')('MP3'),
-    action: BtnAction.download(() => getFileUrl('mp3')),
+    action: BtnAction.download(() => getFileUrl('mp3'), () => indvPartBtn?.click()),
   })
 
-  btnList.add({
+  indvPartBtn = btnList.add({
     name: i18n('IND_PARTS')(),
     tooltip: i18n('IND_PARTS_TOOLTIP')(),
     action: BtnAction.mscoreWindow(async (w, score, txt) => {
