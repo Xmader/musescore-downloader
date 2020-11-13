@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.1
+// @version      0.15.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26469,7 +26469,7 @@ Please pipe the document into a Node stream.\
     }
 
     /* eslint-disable @typescript-eslint/no-unsafe-return */
-    const CHUNK_PUSH_FN = 'function a(a){';
+    const CHUNK_PUSH_FN = /^function [^r]\(\w\){/;
     const moduleLookup = (id, globalWebpackJson) => {
         const pack = globalWebpackJson.find(x => x[1][id]);
         return pack[1][id];
@@ -26541,7 +26541,7 @@ Please pipe the document into a Node stream.\
             get() { return jsonp; },
             set(v) {
                 jsonp = v;
-                if (!hooked && v.push.toString().includes(CHUNK_PUSH_FN)) {
+                if (!hooked && v.push.toString().match(CHUNK_PUSH_FN)) {
                     hooked = true;
                     hookNative(v, 'push', (_fn) => {
                         return function (pack) {
@@ -26559,49 +26559,48 @@ Please pipe the document into a Node stream.\
     })();
 
     /* eslint-disable no-extend-native */
-    const FILE_URL_MODULE_ID = 'iNJA';
-    const ARG_NUMBER = 4;
-    const MAGIC_ARG_INDEX = 3;
+    const AUTH_MODULE_ID = 'UeBv';
+    const MAGIC_ARG_INDEX = 1;
     /**
      * I know this is super hacky.
      */
     let magic = new Promise((resolve) => {
         // todo: hook module by what it does, not what it is called
-        webpackGlobalOverride(ALL, (_, r, t) => {
-            const fn = r.a;
-            if (typeof fn === 'function' && fn.length === ARG_NUMBER) {
-                t.d(r, 'a', () => {
-                    return (...args) => {
-                        if (magic instanceof Promise) {
-                            if (args.every(a => typeof a === 'number' || typeof a === 'string')) {
-                                magic = args[MAGIC_ARG_INDEX];
-                                resolve(magic);
-                            }
-                        }
-                        return fn(...args);
-                    };
-                });
-            }
+        webpackGlobalOverride(AUTH_MODULE_ID, (n, r, t) => {
+            const fn = n.exports;
+            n.exports = (...args) => {
+                if (magic instanceof Promise) {
+                    magic = args[MAGIC_ARG_INDEX];
+                    resolve(magic);
+                }
+                return fn(...args);
+            };
         });
     });
-    const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
-        const fileUrlModule = webpackHook(FILE_URL_MODULE_ID, {
-            '6Ulw'(_, r, t) {
-                t.d(r, 'a', () => {
-                    return type;
-                });
-            },
-        });
-        const fn = fileUrlModule.a;
+    const getApiUrl = (type, index) => {
+        return `/api/jmuse?id=${scoreinfo.id}&type=${type}&index=${index}`;
+    };
+    const getApiAuth = (type, index) => __awaiter(void 0, void 0, void 0, function* () {
         if (magic instanceof Promise) {
             // force to retrieve the MAGIC
             const el = document.querySelectorAll('.SD7H- > button')[3];
             el.click();
             magic = yield magic;
         }
-        return new Promise((resolve) => {
-            return fn(undefined, scoreinfo.id, index, resolve, magic);
+        const str = String(scoreinfo.id) + type + String(index);
+        const fn = webpackHook(AUTH_MODULE_ID);
+        return fn(str, magic);
+    });
+    const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
+        const url = getApiUrl(type, index);
+        const auth = yield getApiAuth(type, index);
+        const r = yield fetch(url, {
+            headers: {
+                Authorization: auth,
+            },
         });
+        const { info } = yield r.json();
+        return info.url;
     });
 
     let pdfBlob;
