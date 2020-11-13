@@ -200,7 +200,7 @@ export namespace BtnAction {
     }
   }
 
-  export const process = (fn: () => any, fallback?: () => Promisable<void>, timeout = Infinity): BtnAction => {
+  export const process = (fn: () => any, fallback?: () => Promisable<void>, timeout = 10 * 60 * 1000 /* 10min */): BtnAction => {
     return async (name, btn, setText): Promise<void> => {
       const _onclick = btn.onclick
 
