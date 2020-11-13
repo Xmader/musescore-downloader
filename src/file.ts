@@ -41,7 +41,7 @@ export const getFileUrl = async (type: FileType, index = 0): Promise<string> => 
     },
   })
 
-  const fn: (id: number, index: number, cb: (url: string) => any, magic: string) => string = fileUrlModule.a
+  const fn: (_, id: number, index: number, cb: (url: string) => any, magic: string) => string = fileUrlModule.a
 
   if (magic instanceof Promise) {
     // force to retrieve the MAGIC
@@ -51,6 +51,6 @@ export const getFileUrl = async (type: FileType, index = 0): Promise<string> => 
   }
 
   return new Promise((resolve) => {
-    return fn(scoreinfo.id, index, resolve, magic as string)
+    return fn(undefined, scoreinfo.id, index, resolve, magic as string)
   })
 }
