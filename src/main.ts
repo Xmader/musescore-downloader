@@ -13,6 +13,12 @@ const main = (): void => {
   const btnList = new BtnList()
   const filename = scoreinfo.fileName
 
+  let indvPartBtn: HTMLButtonElement | null = null
+  const fallback = () => {
+    // btns fallback to load from MSCZ file (`Individual Parts`)
+    return indvPartBtn?.click()
+  }
+
   btnList.add({
     name: i18n('DOWNLOAD')('MSCZ'),
     action: BtnAction.process(downloadMscz),
@@ -20,7 +26,7 @@ const main = (): void => {
 
   btnList.add({
     name: i18n('DOWNLOAD')('PDF'),
-    action: BtnAction.process(downloadPDF),
+    action: BtnAction.process(downloadPDF, fallback, 3 * 60 * 1000 /* 3min */),
   })
 
   btnList.add({
@@ -35,15 +41,15 @@ const main = (): void => {
 
   btnList.add({
     name: i18n('DOWNLOAD')('MIDI'),
-    action: BtnAction.download(() => getFileUrl('midi')),
+    action: BtnAction.download(() => getFileUrl('midi'), fallback, 30 * 1000 /* 30s */),
   })
 
   btnList.add({
     name: i18n('DOWNLOAD')('MP3'),
-    action: BtnAction.download(() => getFileUrl('mp3')),
+    action: BtnAction.download(() => getFileUrl('mp3'), fallback, 30 * 1000 /* 30s */),
   })
 
-  btnList.add({
+  indvPartBtn = btnList.add({
     name: i18n('IND_PARTS')(),
     tooltip: i18n('IND_PARTS_TOOLTIP')(),
     action: BtnAction.mscoreWindow(async (w, score, txt) => {

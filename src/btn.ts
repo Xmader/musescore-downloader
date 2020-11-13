@@ -1,5 +1,6 @@
 
 import { loadMscore, WebMscore } from './mscore'
+import { useTimeout } from './utils'
 import i18n from './i18n'
 // @ts-ignore
 import btnListCss from './btn.css'
@@ -159,13 +160,13 @@ export namespace BtnAction {
     })
   }
 
-  export const download = (url: UrlInput): BtnAction => {
-    return process(async (): Promise<any> => {
+  export const download = (url: UrlInput, fallback?: () => Promisable<void>, timeout?: number): BtnAction => {
+    return process(async (): Promise<void> => {
       const _url = await normalizeUrlInput(url)
       const a = document.createElement('a')
       a.href = _url
       a.dispatchEvent(new MouseEvent('click'))
-    })
+    }, fallback, timeout)
   }
 
   export const mscoreWindow = (fn: (w: Window, score: WebMscore, processingTextEl: ChildNode) => any): BtnAction => {
@@ -199,7 +200,7 @@ export namespace BtnAction {
     }
   }
 
-  export const process = (fn: () => any): BtnAction => {
+  export const process = (fn: () => any, fallback?: () => Promisable<void>, timeout = Infinity): BtnAction => {
     return async (name, btn, setText): Promise<void> => {
       const _onclick = btn.onclick
 
@@ -207,11 +208,17 @@ export namespace BtnAction {
       setText(i18n('PROCESSING')())
 
       try {
-        await fn()
+        await useTimeout(fn(), timeout)
         setText(name)
       } catch (err) {
-        setText(i18n('BTN_ERROR')())
         console.error(err)
+        if (fallback) {
+          // use fallback
+          await fallback()
+          setText(name)
+        } else {
+          setText(i18n('BTN_ERROR')())
+        }
       }
 
       btn.onclick = _onclick
