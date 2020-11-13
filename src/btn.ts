@@ -160,7 +160,7 @@ export namespace BtnAction {
     })
   }
 
-  export const download = (url: UrlInput, fallback?: () => Promisable<void>, timeout = 30 * 1000): BtnAction => {
+  export const download = (url: UrlInput, fallback?: () => Promisable<void>, timeout = Infinity): BtnAction => {
     return process(async (): Promise<void> => {
       try {
         const _url = await useTimeout(normalizeUrlInput(url), timeout)

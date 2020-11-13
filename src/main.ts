@@ -14,6 +14,11 @@ const main = (): void => {
   const filename = scoreinfo.fileName
 
   let indvPartBtn: HTMLButtonElement | null = null
+  const timeout = 30 * 1000 // 30s
+  const fallback = () => {
+    // btns fallback to load from MSCZ file (`Individual Parts`)
+    return indvPartBtn?.click()
+  }
 
   btnList.add({
     name: i18n('DOWNLOAD')('MSCZ'),
@@ -37,12 +42,12 @@ const main = (): void => {
 
   btnList.add({
     name: i18n('DOWNLOAD')('MIDI'),
-    action: BtnAction.download(() => getFileUrl('midi'), () => indvPartBtn?.click()),
+    action: BtnAction.download(() => getFileUrl('midi'), fallback, timeout),
   })
 
   btnList.add({
     name: i18n('DOWNLOAD')('MP3'),
-    action: BtnAction.download(() => getFileUrl('mp3'), () => indvPartBtn?.click()),
+    action: BtnAction.download(() => getFileUrl('mp3'), fallback, timeout),
   })
 
   indvPartBtn = btnList.add({
