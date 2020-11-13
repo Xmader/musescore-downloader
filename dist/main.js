@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.14.6
+// @version      0.15.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -219,6 +219,17 @@
         const r = yield fetch(url, init);
         const data = yield r.arrayBuffer();
         return new Uint8Array(data);
+    });
+    const useTimeout = (promise, ms) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!(promise instanceof Promise)) {
+            return promise;
+        }
+        return new Promise((resolve, reject) => {
+            const i = setTimeout(() => {
+                reject(new Error('timeout'));
+            }, ms);
+            promise.then(resolve, reject).finally(() => clearTimeout(i));
+        });
     });
     const waitForDocumentLoaded = () => {
         if (document.readyState !== 'complete') {
@@ -26876,13 +26887,13 @@ Please pipe the document into a Node stream.\
                 window.open(yield normalizeUrlInput(url));
             }));
         };
-        BtnAction.download = (url) => {
+        BtnAction.download = (url, fallback, timeout) => {
             return BtnAction.process(() => __awaiter(this, void 0, void 0, function* () {
                 const _url = yield normalizeUrlInput(url);
                 const a = document.createElement('a');
                 a.href = _url;
                 a.dispatchEvent(new MouseEvent('click'));
-            }));
+            }), fallback, timeout);
         };
         BtnAction.mscoreWindow = (fn) => {
             return (btnName, btn, setText) => __awaiter(this, void 0, void 0, function* () {
@@ -26910,18 +26921,25 @@ Please pipe the document into a Node stream.\
                 fn(w, score, txt);
             });
         };
-        BtnAction.process = (fn) => {
+        BtnAction.process = (fn, fallback, timeout = Infinity) => {
             return (name, btn, setText) => __awaiter(this, void 0, void 0, function* () {
                 const _onclick = btn.onclick;
                 btn.onclick = null;
                 setText(i18n('PROCESSING')());
                 try {
-                    yield fn();
+                    yield useTimeout(fn(), timeout);
                     setText(name);
                 }
                 catch (err) {
-                    setText(i18n('BTN_ERROR')());
                     console.error(err);
+                    if (fallback) {
+                        // use fallback
+                        yield fallback();
+                        setText(name);
+                    }
+                    else {
+                        setText(i18n('BTN_ERROR')());
+                    }
                 }
                 btn.onclick = _onclick;
             });
@@ -26938,13 +26956,18 @@ Please pipe the document into a Node stream.\
     const main = () => {
         const btnList = new BtnList();
         const filename = scoreinfo.fileName;
+        let indvPartBtn = null;
+        const fallback = () => {
+            // btns fallback to load from MSCZ file (`Individual Parts`)
+            return indvPartBtn === null || indvPartBtn === void 0 ? void 0 : indvPartBtn.click();
+        };
         btnList.add({
             name: i18n('DOWNLOAD')('MSCZ'),
             action: BtnAction.process(downloadMscz),
         });
         btnList.add({
             name: i18n('DOWNLOAD')('PDF'),
-            action: BtnAction.process(downloadPDF),
+            action: BtnAction.process(downloadPDF, fallback, 3 * 60 * 1000 /* 3min */),
         });
         btnList.add({
             name: i18n('DOWNLOAD')('MusicXML'),
@@ -26957,13 +26980,13 @@ Please pipe the document into a Node stream.\
         });
         btnList.add({
             name: i18n('DOWNLOAD')('MIDI'),
-            action: BtnAction.download(() => getFileUrl('midi')),
+            action: BtnAction.download(() => getFileUrl('midi'), fallback, 30 * 1000 /* 30s */),
         });
         btnList.add({
             name: i18n('DOWNLOAD')('MP3'),
-            action: BtnAction.download(() => getFileUrl('mp3')),
+            action: BtnAction.download(() => getFileUrl('mp3'), fallback, 30 * 1000 /* 30s */),
         });
-        btnList.add({
+        indvPartBtn = btnList.add({
             name: i18n('IND_PARTS')(),
             tooltip: i18n('IND_PARTS_TOOLTIP')(),
             action: BtnAction.mscoreWindow((w, score, txt) => __awaiter(void 0, void 0, void 0, function* () {
