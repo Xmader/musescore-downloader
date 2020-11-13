@@ -32,6 +32,18 @@ export const useTimeout = async <T> (promise: T | Promise<T>, ms: number): Promi
   })
 }
 
+export const getSandboxWindow = (): Window => {
+  const iframe = document.createElement('iframe')
+  iframe.style.display = 'none'
+  document.body.append(iframe)
+  const w = iframe.contentWindow
+  return w as Window
+}
+
+export const windowOpen: Window['open'] = (...args): Window | null => {
+  return getSandboxWindow().open(...args)
+}
+
 export const waitForDocumentLoaded = (): Promise<void> => {
   if (document.readyState !== 'complete') {
     return new Promise(resolve => {
