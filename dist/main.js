@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.0
+// @version      0.15.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -231,6 +231,16 @@
             promise.then(resolve, reject).finally(() => clearTimeout(i));
         });
     });
+    const getSandboxWindow = () => {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.append(iframe);
+        const w = iframe.contentWindow;
+        return w;
+    };
+    const windowOpen = (...args) => {
+        return getSandboxWindow().open(...args);
+    };
     const waitForDocumentLoaded = () => {
         if (document.readyState !== 'complete') {
             return new Promise(resolve => {
@@ -26862,7 +26872,7 @@ Please pipe the document into a Node stream.\
                 }
                 case BtnListMode.ExtWindow: {
                     const div = this._commit();
-                    const w = window.open('', undefined, 'resizable,width=230,height=270');
+                    const w = windowOpen('', undefined, 'resizable,width=230,height=270');
                     // eslint-disable-next-line no-unused-expressions
                     w === null || w === void 0 ? void 0 : w.document.body.append(div);
                     window.addEventListener('unload', () => w === null || w === void 0 ? void 0 : w.close());
@@ -26884,7 +26894,7 @@ Please pipe the document into a Node stream.\
         };
         BtnAction.openUrl = (url) => {
             return BtnAction.process(() => __awaiter(this, void 0, void 0, function* () {
-                window.open(yield normalizeUrlInput(url));
+                windowOpen(yield normalizeUrlInput(url));
             }));
         };
         BtnAction.download = (url, fallback, timeout) => {
@@ -26900,7 +26910,7 @@ Please pipe the document into a Node stream.\
                 const _onclick = btn.onclick;
                 btn.onclick = null;
                 setText(i18n('PROCESSING')());
-                const w = window.open('');
+                const w = windowOpen('');
                 const txt = document.createTextNode(i18n('PROCESSING')());
                 w.document.body.append(txt);
                 // set page hooks
