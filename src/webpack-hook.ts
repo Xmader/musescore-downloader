@@ -3,7 +3,7 @@
 
 import { hookNative } from './anti-detection'
 
-const CHUNK_PUSH_FN = 'function a(a){'
+const CHUNK_PUSH_FN = /^function [^r]\(\w\){/
 
 interface Module {
   (module, exports, __webpack_require__): void;
@@ -88,7 +88,7 @@ export const webpackGlobalOverride = (() => {
     get () { return jsonp },
     set (v: WebpackJson) {
       jsonp = v
-      if (!hooked && v.push.toString().includes(CHUNK_PUSH_FN)) {
+      if (!hooked && v.push.toString().match(CHUNK_PUSH_FN)) {
         hooked = true
         hookNative(v, 'push', (_fn) => {
           return function (pack) {
