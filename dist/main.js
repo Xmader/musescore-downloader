@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.4
+// @version      0.15.5
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26354,6 +26354,7 @@ Please pipe the document into a Node stream.\
         }
     })();
     const IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP';
+    const RADIX = 20;
     const scoreinfo = {
         get playerdata() {
             // @ts-ignore
@@ -26368,6 +26369,10 @@ Please pipe the document into a Node stream.\
                 const m = el.content.match(/(\d+)$/);
                 return +m[1];
             }
+        },
+        get idLastDigit() {
+            const idStr = (+this.id).toString(RADIX);
+            return parseInt(idStr[idStr.length - 1], RADIX);
         },
         get title() {
             try {
@@ -26403,7 +26408,7 @@ Please pipe the document into a Node stream.\
             return origin + pathname.split('/').slice(0, -1).join('/') + '/';
         },
         get msczIpfsRef() {
-            return `/ipns/${IPNS_KEY}/${this.id}.mscz`;
+            return `/ipns/${IPNS_KEY}/${this.idLastDigit}/${this.id}.mscz`;
         },
         get msczCidUrl() {
             return `https://ipfs.infura.io:5001/api/v0/dag/resolve?arg=${this.msczIpfsRef}`;
@@ -26559,7 +26564,7 @@ Please pipe the document into a Node stream.\
     })();
 
     /* eslint-disable no-extend-native */
-    let AUTH_MODULE_ID;
+    let authModuleId;
     const AUTH_FN = '+3],22,-1044525330)';
     const MAGIC_ARG_INDEX = 1;
     /**
@@ -26570,14 +26575,16 @@ Please pipe the document into a Node stream.\
         webpackGlobalOverride(ALL, (n, r, t) => {
             const fn = n.exports;
             if (typeof fn === 'function' && fn.toString().includes(AUTH_FN)) {
-                AUTH_MODULE_ID = n.i;
-                n.exports = (...args) => {
-                    if (magic instanceof Promise) {
-                        magic = args[MAGIC_ARG_INDEX];
-                        resolve(magic);
-                    }
-                    return fn(...args);
-                };
+                if (!authModuleId && n.i) {
+                    authModuleId = n.i;
+                    n.exports = (...args) => {
+                        if (magic instanceof Promise) {
+                            magic = args[MAGIC_ARG_INDEX];
+                            resolve(magic);
+                        }
+                        return fn(...args);
+                    };
+                }
             }
         });
     });
@@ -26592,7 +26599,7 @@ Please pipe the document into a Node stream.\
             magic = yield magic;
         }
         const str = String(scoreinfo.id) + type + String(index);
-        const fn = webpackHook(AUTH_MODULE_ID);
+        const fn = webpackHook(authModuleId);
         return fn(str, magic);
     });
     const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
