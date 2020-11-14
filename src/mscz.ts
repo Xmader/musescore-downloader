@@ -6,9 +6,11 @@ let msczBufferP: Promise<ArrayBuffer> | undefined
 
 export const fetchMscz = async (): Promise<ArrayBuffer> => {
   if (!msczBufferP) {
-    const url = scoreinfo.msczUrl
+    const url = scoreinfo.msczCidUrl
     msczBufferP = (async (): Promise<ArrayBuffer> => {
-      const r = await fetch(url)
+      const r0 = await fetch(url)
+      const { Cid: { '/': cid } } = await r0.json()
+      const r = await fetch(`https://ipfs.infura.io/ipfs/${cid as string}`)
       const data = await r.arrayBuffer()
       return data
     })()

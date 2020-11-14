@@ -71,8 +71,8 @@ export const scoreinfo = {
     return `/ipns/${IPNS_KEY}/${this.id}.mscz`
   },
 
-  get msczUrl (this: typeof scoreinfo): string {
-    return `https://ipfs.infura.io:5001/api/v0/cat?arg=${this.msczIpfsRef}`
+  get msczCidUrl (this: typeof scoreinfo): string {
+    return `https://ipfs.infura.io:5001/api/v0/dag/resolve?arg=${this.msczIpfsRef}`
   },
 
   get sheetImgType (): 'svg' | 'png' {
