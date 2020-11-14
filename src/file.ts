@@ -1,9 +1,10 @@
 /* eslint-disable no-extend-native */
 
 import scoreinfo from './scoreinfo'
-import { webpackHook, webpackGlobalOverride } from './webpack-hook'
+import { webpackHook, webpackGlobalOverride, ALL } from './webpack-hook'
 
-const AUTH_MODULE_ID = 'UeBv'
+let AUTH_MODULE_ID: string
+const AUTH_FN = '+3],22,-1044525330)'
 const MAGIC_ARG_INDEX = 1
 
 type FileType = 'img' | 'mp3' | 'midi'
@@ -13,14 +14,17 @@ type FileType = 'img' | 'mp3' | 'midi'
  */
 let magic: Promise<string> | string = new Promise((resolve) => {
   // todo: hook module by what it does, not what it is called
-  webpackGlobalOverride(AUTH_MODULE_ID, (n, r, t) => { // override
+  webpackGlobalOverride(ALL, (n, r, t) => { // override
     const fn = n.exports
-    n.exports = (...args) => {
-      if (magic instanceof Promise) {
-        magic = args[MAGIC_ARG_INDEX]
-        resolve(magic)
+    if (typeof fn === 'function' && fn.toString().includes(AUTH_FN)) {
+      AUTH_MODULE_ID = n.i
+      n.exports = (...args) => {
+        if (magic instanceof Promise) {
+          magic = args[MAGIC_ARG_INDEX]
+          resolve(magic)
+        }
+        return fn(...args) as string
       }
-      return fn(...args) as string
     }
   })
 })
