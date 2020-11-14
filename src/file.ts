@@ -3,7 +3,7 @@
 import scoreinfo from './scoreinfo'
 import { webpackHook, webpackGlobalOverride, ALL } from './webpack-hook'
 
-let AUTH_MODULE_ID: string
+let authModuleId: string
 const AUTH_FN = '+3],22,-1044525330)'
 const MAGIC_ARG_INDEX = 1
 
@@ -17,13 +17,15 @@ let magic: Promise<string> | string = new Promise((resolve) => {
   webpackGlobalOverride(ALL, (n, r, t) => { // override
     const fn = n.exports
     if (typeof fn === 'function' && fn.toString().includes(AUTH_FN)) {
-      AUTH_MODULE_ID = n.i
-      n.exports = (...args) => {
-        if (magic instanceof Promise) {
-          magic = args[MAGIC_ARG_INDEX]
-          resolve(magic)
+      if (!authModuleId && n.i) {
+        authModuleId = n.i
+        n.exports = (...args) => {
+          if (magic instanceof Promise) {
+            magic = args[MAGIC_ARG_INDEX]
+            resolve(magic)
+          }
+          return fn(...args) as string
         }
-        return fn(...args) as string
       }
     }
   })
@@ -43,7 +45,7 @@ const getApiAuth = async (type: FileType, index: number): Promise<string> => {
 
   const str = String(scoreinfo.id) + type + String(index)
 
-  const fn: (str: string, magic: string) => string = webpackHook(AUTH_MODULE_ID)
+  const fn: (str: string, magic: string) => string = webpackHook(authModuleId)
 
   return fn(str, magic)
 }
