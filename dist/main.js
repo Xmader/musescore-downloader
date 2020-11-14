@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.3
+// @version      0.15.4
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26405,8 +26405,8 @@ Please pipe the document into a Node stream.\
         get msczIpfsRef() {
             return `/ipns/${IPNS_KEY}/${this.id}.mscz`;
         },
-        get msczUrl() {
-            return `https://ipfs.infura.io:5001/api/v0/cat?arg=${this.msczIpfsRef}`;
+        get msczCidUrl() {
+            return `https://ipfs.infura.io:5001/api/v0/dag/resolve?arg=${this.msczIpfsRef}`;
         },
         get sheetImgType() {
             try {
@@ -26559,22 +26559,26 @@ Please pipe the document into a Node stream.\
     })();
 
     /* eslint-disable no-extend-native */
-    const AUTH_MODULE_ID = 'UeBv';
+    let AUTH_MODULE_ID;
+    const AUTH_FN = '+3],22,-1044525330)';
     const MAGIC_ARG_INDEX = 1;
     /**
      * I know this is super hacky.
      */
     let magic = new Promise((resolve) => {
         // todo: hook module by what it does, not what it is called
-        webpackGlobalOverride(AUTH_MODULE_ID, (n, r, t) => {
+        webpackGlobalOverride(ALL, (n, r, t) => {
             const fn = n.exports;
-            n.exports = (...args) => {
-                if (magic instanceof Promise) {
-                    magic = args[MAGIC_ARG_INDEX];
-                    resolve(magic);
-                }
-                return fn(...args);
-            };
+            if (typeof fn === 'function' && fn.toString().includes(AUTH_FN)) {
+                AUTH_MODULE_ID = n.i;
+                n.exports = (...args) => {
+                    if (magic instanceof Promise) {
+                        magic = args[MAGIC_ARG_INDEX];
+                        resolve(magic);
+                    }
+                    return fn(...args);
+                };
+            }
         });
     });
     const getApiUrl = (type, index) => {
@@ -26634,9 +26638,11 @@ Please pipe the document into a Node stream.\
     let msczBufferP;
     const fetchMscz = () => __awaiter(void 0, void 0, void 0, function* () {
         if (!msczBufferP) {
-            const url = scoreinfo.msczUrl;
+            const url = scoreinfo.msczCidUrl;
             msczBufferP = (() => __awaiter(void 0, void 0, void 0, function* () {
-                const r = yield fetch(url);
+                const r0 = yield fetch(url);
+                const { Cid: { '/': cid } } = yield r0.json();
+                const r = yield fetch(`https://ipfs.infura.io/ipfs/${cid}`);
                 const data = yield r.arrayBuffer();
                 return data;
             }))();
