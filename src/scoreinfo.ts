@@ -14,6 +14,7 @@ export const ugappJsStore: Record<string, any> | null = (() => {
 })()
 
 const IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP'
+const RADIX = 20
 
 export const scoreinfo = {
 
@@ -30,6 +31,11 @@ export const scoreinfo = {
       const m = el.content.match(/(\d+)$/) as RegExpMatchArray
       return +m[1]
     }
+  },
+
+  get idLastDigit (this: typeof scoreinfo): number {
+    const idStr = (+this.id).toString(RADIX)
+    return parseInt(idStr[idStr.length - 1], RADIX)
   },
 
   get title (this: typeof scoreinfo): string {
@@ -68,7 +74,7 @@ export const scoreinfo = {
   },
 
   get msczIpfsRef (this: typeof scoreinfo): string {
-    return `/ipns/${IPNS_KEY}/${this.id}.mscz`
+    return `/ipns/${IPNS_KEY}/${this.idLastDigit}/${this.id}.mscz`
   },
 
   get msczCidUrl (this: typeof scoreinfo): string {
