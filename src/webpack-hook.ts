@@ -53,8 +53,11 @@ export const webpackHook = (moduleId: string, moduleOverrides: { [id: string]: M
 
 export const ALL = '*'
 
-export const webpackGlobalOverride = (() => {
+export const [webpackGlobalOverride, onPackLoad] = (() => {
+  type OnPackLoadFn = (pack: WebpackJson[0]) => any
+
   const moduleOverrides: { [id: string]: Module } = {}
+  const onPackLoadFns: OnPackLoadFn[] = []
 
   function applyOverride (pack: WebpackJson[0]) {
     let entries = Object.entries(moduleOverrides)
@@ -92,6 +95,7 @@ export const webpackGlobalOverride = (() => {
         hooked = true
         hookNative(v, 'push', (_fn) => {
           return function (pack) {
+            onPackLoadFns.forEach(fn => fn(pack))
             applyOverride(pack)
             return _fn.call(this, pack)
           }
@@ -100,10 +104,16 @@ export const webpackGlobalOverride = (() => {
     },
   })
 
-  // set overrides
-  return (moduleId: string, override: Module) => {
-    moduleOverrides[moduleId] = override
-  }
+  return [
+    // set overrides
+    (moduleId: string, override: Module) => {
+      moduleOverrides[moduleId] = override
+    },
+    // set onPackLoad listeners
+    (fn: OnPackLoadFn) => {
+      onPackLoadFns.push(fn)
+    },
+  ] as const
 })()
 
 export default webpackHook
