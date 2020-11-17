@@ -78,7 +78,7 @@ export const scoreinfo = {
   },
 
   get msczCidUrl (this: typeof scoreinfo): string {
-    return `https://ipfs.infura.io:5001/api/v0/dag/resolve?arg=${this.msczIpfsRef}`
+    return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`
   },
 
   get sheetImgType (): 'svg' | 'png' {
