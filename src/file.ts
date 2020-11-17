@@ -1,53 +1,51 @@
 /* eslint-disable no-extend-native */
 
 import scoreinfo from './scoreinfo'
-import { webpackHook, webpackGlobalOverride, ALL } from './webpack-hook'
-
-let authModuleId: string
-const AUTH_FN = '+3],22,-1044525330)'
-const MAGIC_ARG_INDEX = 1
+import { onPackLoad, webpackContext } from './webpack-hook'
 
 type FileType = 'img' | 'mp3' | 'midi'
+
+const AUTH_REG = /[0-9a-f]{40}/
+enum PACK_ID {
+  img = 9,
+  midi = 118,
+  mp3 = 74,
+}
 
 /**
  * I know this is super hacky.
  */
-let magic: Promise<string> | string = new Promise((resolve) => {
-  // todo: hook module by what it does, not what it is called
-  webpackGlobalOverride(ALL, (n, r, t) => { // override
-    const fn = n.exports
-    if (typeof fn === 'function' && fn.toString().includes(AUTH_FN)) {
-      if (!authModuleId && n.i) {
-        authModuleId = n.i
-        n.exports = (...args) => {
-          if (magic instanceof Promise) {
-            magic = args[MAGIC_ARG_INDEX]
-            resolve(magic)
-          }
-          return fn(...args) as string
-        }
+const magicHookConstr = (type: FileType) => {
+  // request pack
+  // eslint-disable-next-line no-void, @typescript-eslint/no-unsafe-return
+  void webpackContext.then((ctx) => ctx.e(PACK_ID[type])).then(console.log)
+
+  return new Promise<string>((resolve) => {
+    onPackLoad((pack) => {
+      if (pack[0].includes(PACK_ID[type])) {
+        Object.values(pack[1]).forEach((mod) => {
+          const m = mod.toString().match(AUTH_REG)
+          if (m && m[0]) resolve(m[0])
+        })
       }
-    }
+    })
   })
-})
+}
+
+const magics: Record<FileType, Promise<string>> = {
+  img: magicHookConstr('img'),
+  midi: magicHookConstr('midi'),
+  mp3: magicHookConstr('mp3'),
+}
 
 const getApiUrl = (type: FileType, index: number): string => {
-  return `/api/jmuse?id=${scoreinfo.id}&type=${type}&index=${index}`
+  return `/api/jmuse?id=${scoreinfo.id}&type=${type}&index=${index}&v2=1`
 }
 
 const getApiAuth = async (type: FileType, index: number): Promise<string> => {
-  if (magic instanceof Promise) {
-    // force to retrieve the MAGIC
-    const el = document.querySelectorAll('.SD7H- > button')[3] as HTMLButtonElement
-    el.click()
-    magic = await magic
-  }
-
-  const str = String(scoreinfo.id) + type + String(index)
-
-  const fn: (str: string, magic: string) => string = webpackHook(authModuleId)
-
-  return fn(str, magic)
+  // eslint-disable-next-line no-void
+  void index
+  return magics[type]
 }
 
 export const getFileUrl = async (type: FileType, index = 0): Promise<string> => {
