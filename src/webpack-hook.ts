@@ -9,7 +9,7 @@ interface Module {
   (module, exports, __webpack_require__): void;
 }
 
-type WebpackJson = [number[], { [id: string]: Module }][]
+type WebpackJson = [number[], { [id: string]: Module }, any[]?][]
 
 const moduleLookup = (id: string, globalWebpackJson: WebpackJson) => {
   const pack = globalWebpackJson.find(x => x[1][id])!
@@ -115,5 +115,11 @@ export const [webpackGlobalOverride, onPackLoad] = (() => {
     },
   ] as const
 })()
+
+export const webpackContext = new Promise<any>((resolve) => {
+  webpackGlobalOverride(ALL, (n, r, t) => {
+    resolve(t)
+  })
+})
 
 export default webpackHook
