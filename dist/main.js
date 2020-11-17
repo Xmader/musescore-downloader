@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.5
+// @version      0.15.6
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26411,7 +26411,7 @@ Please pipe the document into a Node stream.\
             return `/ipns/${IPNS_KEY}/${this.idLastDigit}/${this.id}.mscz`;
         },
         get msczCidUrl() {
-            return `https://ipfs.infura.io:5001/api/v0/dag/resolve?arg=${this.msczIpfsRef}`;
+            return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`;
         },
         get sheetImgType() {
             try {
@@ -26475,47 +26475,10 @@ Please pipe the document into a Node stream.\
 
     /* eslint-disable @typescript-eslint/no-unsafe-return */
     const CHUNK_PUSH_FN = /^function [^r]\(\w\){/;
-    const moduleLookup = (id, globalWebpackJson) => {
-        const pack = globalWebpackJson.find(x => x[1][id]);
-        return pack[1][id];
-    };
-    /**
-     * Retrieve (webpack_require) a module from the page's webpack package
-     *
-     * I know this is super hacky.
-     */
-    const webpackHook = (moduleId, moduleOverrides = {}, globalWebpackJson = window['webpackJsonpmusescore']) => {
-        const t = Object.assign((id, override = true) => {
-            const r = {};
-            const m = (override && moduleOverrides[id])
-                ? moduleOverrides[id]
-                : moduleLookup(id, globalWebpackJson);
-            m(r, r, t);
-            if (r.exports)
-                return r.exports;
-            return r;
-        }, {
-            d(exp, name, fn) {
-                return Object.prototype.hasOwnProperty.call(exp, name) ||
-                    Object.defineProperty(exp, name, { enumerable: true, get: fn });
-            },
-            n(e) {
-                const m = e.__esModule ? () => e.default : () => e;
-                t.d(m, 'a', m);
-                return m;
-            },
-            r(r) {
-                Object.defineProperty(r, '__esModule', { value: true });
-            },
-            e() {
-                return Promise.resolve();
-            },
-        });
-        return t(moduleId);
-    };
     const ALL = '*';
-    const webpackGlobalOverride = (() => {
+    const [webpackGlobalOverride, onPackLoad] = (() => {
         const moduleOverrides = {};
+        const onPackLoadFns = [];
         function applyOverride(pack) {
             let entries = Object.entries(moduleOverrides);
             // apply to all
@@ -26550,6 +26513,7 @@ Please pipe the document into a Node stream.\
                     hooked = true;
                     hookNative(v, 'push', (_fn) => {
                         return function (pack) {
+                            onPackLoadFns.forEach(fn => fn(pack));
                             applyOverride(pack);
                             return _fn.call(this, pack);
                         };
@@ -26557,54 +26521,64 @@ Please pipe the document into a Node stream.\
                 }
             },
         });
-        // set overrides
-        return (moduleId, override) => {
-            moduleOverrides[moduleId] = override;
-        };
+        return [
+            // set overrides
+            (moduleId, override) => {
+                moduleOverrides[moduleId] = override;
+            },
+            // set onPackLoad listeners
+            (fn) => {
+                onPackLoadFns.push(fn);
+            },
+        ];
     })();
+    const webpackContext = new Promise((resolve) => {
+        webpackGlobalOverride(ALL, (n, r, t) => {
+            resolve(t);
+        });
+    });
 
     /* eslint-disable no-extend-native */
-    let authModuleId;
-    const AUTH_FN = '+3],22,-1044525330)';
-    const MAGIC_ARG_INDEX = 1;
+    const AUTH_REG = /[0-9a-f]{40}/;
+    var PACK_ID;
+    (function (PACK_ID) {
+        PACK_ID[PACK_ID["img"] = 9] = "img";
+        PACK_ID[PACK_ID["midi"] = 118] = "midi";
+        PACK_ID[PACK_ID["mp3"] = 74] = "mp3";
+    })(PACK_ID || (PACK_ID = {}));
     /**
      * I know this is super hacky.
      */
-    let magic = new Promise((resolve) => {
-        // todo: hook module by what it does, not what it is called
-        webpackGlobalOverride(ALL, (n, r, t) => {
-            const fn = n.exports;
-            if (typeof fn === 'function' && fn.toString().includes(AUTH_FN)) {
-                if (!authModuleId && n.i) {
-                    authModuleId = n.i;
-                    n.exports = (...args) => {
-                        if (magic instanceof Promise) {
-                            magic = args[MAGIC_ARG_INDEX];
-                            resolve(magic);
-                        }
-                        return fn(...args);
-                    };
+    const magicHookConstr = (type) => {
+        // request pack
+        // eslint-disable-next-line no-void, @typescript-eslint/no-unsafe-return
+        void webpackContext.then((ctx) => ctx.e(PACK_ID[type])).then(console.log);
+        return new Promise((resolve) => {
+            onPackLoad((pack) => {
+                if (pack[0].includes(PACK_ID[type])) {
+                    Object.values(pack[1]).forEach((mod) => {
+                        const m = mod.toString().match(AUTH_REG);
+                        if (m && m[0])
+                            resolve(m[0]);
+                    });
                 }
-            }
+            });
         });
-    });
+    };
+    const magics = {
+        img: magicHookConstr('img'),
+        midi: magicHookConstr('midi'),
+        mp3: magicHookConstr('mp3'),
+    };
     const getApiUrl = (type, index) => {
-        return `/api/jmuse?id=${scoreinfo.id}&type=${type}&index=${index}`;
+        return `/api/jmuse?id=${scoreinfo.id}&type=${type}&index=${index}&v2=1`;
     };
     const getApiAuth = (type, index) => __awaiter(void 0, void 0, void 0, function* () {
-        if (magic instanceof Promise) {
-            // force to retrieve the MAGIC
-            const el = document.querySelectorAll('.SD7H- > button')[3];
-            el.click();
-            magic = yield magic;
-        }
-        const str = String(scoreinfo.id) + type + String(index);
-        const fn = webpackHook(authModuleId);
-        return fn(str, magic);
+        return magics[type];
     });
     const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
         const url = getApiUrl(type, index);
-        const auth = yield getApiAuth(type, index);
+        const auth = yield getApiAuth(type);
         const r = yield fetch(url, {
             headers: {
                 Authorization: auth,
@@ -26648,8 +26622,8 @@ Please pipe the document into a Node stream.\
             const url = scoreinfo.msczCidUrl;
             msczBufferP = (() => __awaiter(void 0, void 0, void 0, function* () {
                 const r0 = yield fetch(url);
-                const { Cid: { '/': cid } } = yield r0.json();
-                const r = yield fetch(`https://ipfs.infura.io/ipfs/${cid}`);
+                const { Key } = yield r0.json();
+                const r = yield fetch(`https://ipfs.infura.io/ipfs/${Key}`);
                 const data = yield r.arrayBuffer();
                 return data;
             }))();
