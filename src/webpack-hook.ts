@@ -9,7 +9,7 @@ interface Module {
   (module, exports, __webpack_require__): void;
 }
 
-type WebpackJson = [number[], { [id: string]: Module }, any[]?][]
+type WebpackJson = [(number | string)[], { [id: string]: Module }, any[]?][]
 
 const moduleLookup = (id: string, globalWebpackJson: WebpackJson) => {
   const pack = globalWebpackJson.find(x => x[1][id])!

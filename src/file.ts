@@ -5,11 +5,11 @@ import { onPackLoad, webpackContext } from './webpack-hook'
 
 type FileType = 'img' | 'mp3' | 'midi'
 
-const AUTH_REG = /[0-9a-f]{40}/
+const AUTH_REG = /,(function\(\)\{var \w=Array.prototype.slice.*?)\)\[/
 enum PACK_ID {
-  img = 9,
-  midi = 118,
-  mp3 = 74,
+  img = 'F/w+',
+  midi = 'yihj',
+  mp3 = '2oYV',
 }
 
 /**
@@ -18,14 +18,19 @@ enum PACK_ID {
 const magicHookConstr = (type: FileType) => {
   // request pack
   // eslint-disable-next-line no-void, @typescript-eslint/no-unsafe-return
-  void webpackContext.then((ctx) => ctx.e(PACK_ID[type])).then(console.log)
+  void webpackContext.then((ctx) => ctx.e(PACK_ID[type]))
 
   return new Promise<string>((resolve) => {
     onPackLoad((pack) => {
       if (pack[0].includes(PACK_ID[type])) {
         Object.values(pack[1]).forEach((mod) => {
           const m = mod.toString().match(AUTH_REG)
-          if (m && m[0]) resolve(m[0])
+          if (m) {
+            const code = m[1]
+            // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
+            const magic = Function(`return (${code})`)()
+            resolve(magic)
+          }
         })
       }
     })
@@ -33,9 +38,9 @@ const magicHookConstr = (type: FileType) => {
 }
 
 const magics: Record<FileType, Promise<string>> = {
-  img: Promise.resolve('8c022bdef45341074ce876ae57a48f64b86cdcf5'),
-  midi: Promise.resolve('38fb9efaae51b0c83b5bb5791a698b48292129e7'),
-  mp3: Promise.resolve('63794e5461e4cfa046edfbdddfccc1ac16daffd2'),
+  img: magicHookConstr('img'),
+  midi: magicHookConstr('midi'),
+  mp3: magicHookConstr('mp3'),
 }
 
 const getApiUrl = (type: FileType, index: number): string => {
