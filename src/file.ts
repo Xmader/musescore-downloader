@@ -27,9 +27,13 @@ const magicHookConstr = (type: FileType) => {
           const m = mod.toString().match(AUTH_REG)
           if (m) {
             const code = m[1]
-            // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-            const magic = Function(`return (${code})`)()
-            resolve(magic)
+            try {
+              // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
+              const magic = Function(`return (${code})`)()
+              resolve(magic)
+            } catch (err) {
+              console.error(err)
+            }
           }
         })
       }
