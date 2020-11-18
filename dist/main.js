@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.6
+// @version      0.15.7
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26539,12 +26539,12 @@ Please pipe the document into a Node stream.\
     });
 
     /* eslint-disable no-extend-native */
-    const AUTH_REG = /[0-9a-f]{40}/;
+    const AUTH_REG = /,(function\(\)\{var \w=Array.prototype.slice.*?)\)\[/;
     var PACK_ID;
     (function (PACK_ID) {
-        PACK_ID[PACK_ID["img"] = 9] = "img";
-        PACK_ID[PACK_ID["midi"] = 118] = "midi";
-        PACK_ID[PACK_ID["mp3"] = 74] = "mp3";
+        PACK_ID["img"] = "F/w+";
+        PACK_ID["midi"] = "yihj";
+        PACK_ID["mp3"] = "2oYV";
     })(PACK_ID || (PACK_ID = {}));
     /**
      * I know this is super hacky.
@@ -26552,14 +26552,18 @@ Please pipe the document into a Node stream.\
     const magicHookConstr = (type) => {
         // request pack
         // eslint-disable-next-line no-void, @typescript-eslint/no-unsafe-return
-        void webpackContext.then((ctx) => ctx.e(PACK_ID[type])).then(console.log);
+        void webpackContext.then((ctx) => ctx.e(PACK_ID[type]));
         return new Promise((resolve) => {
             onPackLoad((pack) => {
                 if (pack[0].includes(PACK_ID[type])) {
                     Object.values(pack[1]).forEach((mod) => {
                         const m = mod.toString().match(AUTH_REG);
-                        if (m && m[0])
-                            resolve(m[0]);
+                        if (m) {
+                            const code = m[1];
+                            // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
+                            const magic = Function(`return (${code})`)();
+                            resolve(magic);
+                        }
                     });
                 }
             });
