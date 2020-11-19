@@ -122,4 +122,23 @@ export const webpackContext = new Promise<any>((resolve) => {
   })
 })
 
+const PACK_ID_REG = /\+(\{.*?"\})\[\w\]\+/
+
+export const loadAllPacks = () => {
+  return webpackContext.then((ctx) => {
+    try {
+      const fn = ctx.e.toString()
+      const packsData = fn.match(PACK_ID_REG)[1] as string
+      // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
+      const packs = Function(`return (${packsData})`)() as { [id: string]: string }
+
+      Object.keys(packs).forEach((id) => {
+        ctx.e(id)
+      })
+    } catch (err) {
+      console.error(err)
+    }
+  })
+}
+
 export default webpackHook
