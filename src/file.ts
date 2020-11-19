@@ -35,8 +35,10 @@ const magicHookConstr = async (type: FileType) => {
             const deObf = getObfuscationCtx(mod)
             const authExp = m[1]
 
+            const reg = new RegExp(OBFUSCATED_REG)
             let magic = ''
-            for (const r of authExp.matchAll(OBFUSCATED_REG)) {
+            let r: RegExpMatchArray | null
+            while ((r = reg.exec(authExp)) !== null) {
               magic += deObf(+r[2], r[3])
             }
 
