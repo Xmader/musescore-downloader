@@ -1,11 +1,12 @@
 /* eslint-disable no-extend-native */
 
 import scoreinfo from './scoreinfo'
-import { onPackLoad, loadAllPacks } from './webpack-hook'
+import { onPackLoad, loadAllPacks, getObfuscationCtx, OBFUSCATED_REG } from './webpack-hook'
 
 type FileType = 'img' | 'mp3' | 'midi'
 
-const AUTH_REG = /,((\d+\.\..+?)?function\(\)\{var \w=Array.prototype.slice.*?)\)(\[|\.then)/
+const AUTH_REG = `(\\+?${OBFUSCATED_REG.source}?)+`
+const AUTH_CTX_REG = `,(${AUTH_REG})\\)(\\[|\\.then)`
 
 enum PACK_HINT {
   img = 'getImageRef',
@@ -28,12 +29,17 @@ const magicHookConstr = async (type: FileType) => {
           return
         }
 
-        const m = str.match(AUTH_REG)
+        const m = str.match(AUTH_CTX_REG)
         if (m) {
-          const code = m[1]
           try {
-            // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-            const magic = Function(`return (${code})`)()
+            const deObf = getObfuscationCtx(mod)
+            const authExp = m[1]
+
+            let magic = ''
+            for (const r of authExp.matchAll(OBFUSCATED_REG)) {
+              magic += deObf(+r[2], r[3])
+            }
+
             resolve(magic)
           } catch (err) {
             console.error(err)
