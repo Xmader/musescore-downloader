@@ -9,10 +9,13 @@ type BtnElement = HTMLButtonElement
 
 const getBtnContainer = (): HTMLDivElement => {
   const container = document.querySelectorAll('aside>section>section')[0]
-  return [...container.children].find((div) => {
+  const btnParent = [...container.children].find((div) => {
     const b = div.querySelector('button, .button')
-    return b && b.outerHTML.replace(/\s/g, '').includes('Download')
-  }) as HTMLDivElement
+    const text = b ? b.outerHTML.replace(/\s/g, '') : ''
+    return text.includes('Download') || text.includes('Print')
+  }) as HTMLDivElement | null
+  if (!btnParent) throw new Error('btn parent not found')
+  return btnParent
 }
 
 const buildDownloadBtn = () => {
