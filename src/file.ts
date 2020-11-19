@@ -1,63 +1,45 @@
 /* eslint-disable no-extend-native */
 
 import scoreinfo from './scoreinfo'
-import { onPackLoad, webpackContext } from './webpack-hook'
+import { onPackLoad, loadAllPacks } from './webpack-hook'
 
 type FileType = 'img' | 'mp3' | 'midi'
 
 const AUTH_REG = /,((\d+\.\..+?)?function\(\)\{var \w=Array.prototype.slice.*?)\)(\[|\.then)/
-const PACK_ID_REG = /\((\{.*?"\})\[\w\]\|\|\w\)/
-const packIdPromise: Promise<Record<FileType, (string | number)>> = webpackContext.then((ctx) => {
-  const ids = {
-    img: '9',
-    midi: '',
-    mp3: '',
-  }
 
-  try {
-    const fn = ctx.e.toString()
-    const packsData = fn.match(PACK_ID_REG)[1] as string
-    // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-    const packs = Function(`return (${packsData})`)() as { [id: string]: string }
-
-    Object.entries(packs).forEach(([id, name]) => {
-      if (name.includes('audio') && !ids['mp3']) ids['mp3'] = id
-      if (name.includes('piano_roll') && !ids['midi']) ids['midi'] = id
-    })
-  } catch (err) {
-    console.error(err)
-  }
-
-  return ids
-})
+enum PACK_HINT {
+  img = 'getImageRef',
+  midi = 'midi:',
+  mp3 = 'setVolume:',
+}
 
 /**
  * I know this is super hacky.
  */
 const magicHookConstr = async (type: FileType) => {
-  const packId = await packIdPromise
-
   // request pack
-  // eslint-disable-next-line no-void, @typescript-eslint/no-unsafe-return
-  void webpackContext.then((ctx) => ctx.e(packId[type]))
+  await loadAllPacks()
 
   return new Promise<string>((resolve) => {
     onPackLoad((pack) => {
-      if (pack[0].includes(packId[type]) || pack[0].includes(+packId[type])) {
-        Object.values(pack[1]).forEach((mod) => {
-          const m = mod.toString().match(AUTH_REG)
-          if (m) {
-            const code = m[1]
-            try {
-              // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-              const magic = Function(`return (${code})`)()
-              resolve(magic)
-            } catch (err) {
-              console.error(err)
-            }
+      Object.values(pack[1]).forEach((mod) => {
+        const str = mod.toString()
+        if (!str.includes(PACK_HINT[type])) {
+          return
+        }
+
+        const m = str.match(AUTH_REG)
+        if (m) {
+          const code = m[1]
+          try {
+            // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
+            const magic = Function(`return (${code})`)()
+            resolve(magic)
+          } catch (err) {
+            console.error(err)
           }
-        })
-      }
+        }
+      })
     })
   })
 }
