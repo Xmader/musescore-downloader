@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.10
+// @version      0.15.11
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26371,8 +26371,7 @@ Please pipe the document into a Node stream.\
             }
         },
         get idLastDigit() {
-            const idStr = (+this.id).toString(RADIX);
-            return parseInt(idStr[idStr.length - 1], RADIX);
+            return (+this.id) % RADIX;
         },
         get title() {
             try {
@@ -26554,9 +26553,34 @@ Please pipe the document into a Node stream.\
             }
         });
     };
+    const OBF_FN_REG = /\w\(".{4}"\),(\w)=(\[".+?\]);\w=\1,\w=(\d+).+?\);var (\w=.+?,\w\})/;
+    const OBFUSCATED_REG = /(\w)\((\d+),"(.{4})"\)/g;
+    const getObfuscationCtx = (mod) => {
+        const str = mod.toString();
+        const m = str.match(OBF_FN_REG);
+        if (!m)
+            return () => '';
+        try {
+            const arrVar = m[1];
+            const arr = JSON.parse(m[2]);
+            let n = +m[3] + 1;
+            for (; --n;)
+                arr.push(arr.shift());
+            const fnStr = m[4];
+            const ctxStr = `var ${arrVar}=${JSON.stringify(arr)};return (${fnStr})`;
+            // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
+            const fn = new Function(ctxStr)();
+            return fn;
+        }
+        catch (err) {
+            console.error(err);
+            return () => '';
+        }
+    };
 
     /* eslint-disable no-extend-native */
-    const AUTH_REG = /,((\d+\.\..+?)?function\(\)\{var \w=Array.prototype.slice.*?)\)(\[|\.then)/;
+    const AUTH_REG = `(\\+?${OBFUSCATED_REG.source}?)+`;
+    const AUTH_CTX_REG = `,(${AUTH_REG})\\)(\\[|\\.then)`;
     var PACK_HINT;
     (function (PACK_HINT) {
         PACK_HINT["img"] = "getImageRef";
@@ -26576,12 +26600,17 @@ Please pipe the document into a Node stream.\
                     if (!str.includes(PACK_HINT[type])) {
                         return;
                     }
-                    const m = str.match(AUTH_REG);
+                    const m = str.match(AUTH_CTX_REG);
                     if (m) {
-                        const code = m[1];
                         try {
-                            // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-                            const magic = Function(`return (${code})`)();
+                            const deObf = getObfuscationCtx(mod);
+                            const authExp = m[1];
+                            const reg = new RegExp(OBFUSCATED_REG);
+                            let magic = '';
+                            let r;
+                            while ((r = reg.exec(authExp)) !== null) {
+                                magic += deObf(+r[2], r[3]);
+                            }
                             resolve(magic);
                         }
                         catch (err) {
