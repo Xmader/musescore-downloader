@@ -34,8 +34,7 @@ export const scoreinfo = {
   },
 
   get idLastDigit (this: typeof scoreinfo): number {
-    const idStr = (+this.id).toString(RADIX)
-    return parseInt(idStr[idStr.length - 1], RADIX)
+    return (+this.id) % RADIX
   },
 
   get title (this: typeof scoreinfo): string {
