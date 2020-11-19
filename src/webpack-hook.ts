@@ -141,4 +141,31 @@ export const loadAllPacks = () => {
   })
 }
 
+const OBF_FN_REG = /\w\(".{4}"\),(\w)=(\[".+?\]);\w=\1,\w=(\d+).+?\);var (\w=.+?,\w\})/
+export const OBFUSCATED_REG = /(\w)\((\d+),"(.{4})"\)/g
+
+export const getObfuscationCtx = (mod: Module): (n: number, s: string) => string => {
+  const str = mod.toString()
+  const m = str.match(OBF_FN_REG)
+  if (!m) return () => ''
+
+  try {
+    const arrVar = m[1]
+    const arr = JSON.parse(m[2])
+
+    let n = +m[3] + 1
+    for (; --n;) arr.push(arr.shift())
+
+    const fnStr = m[4]
+    const ctxStr = `var ${arrVar}=${JSON.stringify(arr)};return (${fnStr})`
+    // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
+    const fn = new Function(ctxStr)()
+
+    return fn
+  } catch (err) {
+    console.error(err)
+    return () => ''
+  }
+}
+
 export default webpackHook
