@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.9
+// @version      0.15.10
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26537,59 +26537,58 @@ Please pipe the document into a Node stream.\
             resolve(t);
         });
     });
+    const PACK_ID_REG = /\+(\{.*?"\})\[\w\]\+/;
+    const loadAllPacks = () => {
+        return webpackContext.then((ctx) => {
+            try {
+                const fn = ctx.e.toString();
+                const packsData = fn.match(PACK_ID_REG)[1];
+                // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
+                const packs = Function(`return (${packsData})`)();
+                Object.keys(packs).forEach((id) => {
+                    ctx.e(id);
+                });
+            }
+            catch (err) {
+                console.error(err);
+            }
+        });
+    };
 
     /* eslint-disable no-extend-native */
     const AUTH_REG = /,((\d+\.\..+?)?function\(\)\{var \w=Array.prototype.slice.*?)\)(\[|\.then)/;
-    const PACK_ID_REG = /\((\{.*?"\})\[\w\]\|\|\w\)/;
-    const packIdPromise = webpackContext.then((ctx) => {
-        const ids = {
-            img: '9',
-            midi: '',
-            mp3: '',
-        };
-        try {
-            const fn = ctx.e.toString();
-            const packsData = fn.match(PACK_ID_REG)[1];
-            // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-            const packs = Function(`return (${packsData})`)();
-            Object.entries(packs).forEach(([id, name]) => {
-                if (name.includes('audio') && !ids['mp3'])
-                    ids['mp3'] = id;
-                if (name.includes('piano_roll') && !ids['midi'])
-                    ids['midi'] = id;
-            });
-        }
-        catch (err) {
-            console.error(err);
-        }
-        return ids;
-    });
+    var PACK_HINT;
+    (function (PACK_HINT) {
+        PACK_HINT["img"] = "getImageRef";
+        PACK_HINT["midi"] = "midi:";
+        PACK_HINT["mp3"] = "setVolume:";
+    })(PACK_HINT || (PACK_HINT = {}));
     /**
      * I know this is super hacky.
      */
     const magicHookConstr = (type) => __awaiter(void 0, void 0, void 0, function* () {
-        const packId = yield packIdPromise;
         // request pack
-        // eslint-disable-next-line no-void, @typescript-eslint/no-unsafe-return
-        void webpackContext.then((ctx) => ctx.e(packId[type]));
+        yield loadAllPacks();
         return new Promise((resolve) => {
             onPackLoad((pack) => {
-                if (pack[0].includes(packId[type]) || pack[0].includes(+packId[type])) {
-                    Object.values(pack[1]).forEach((mod) => {
-                        const m = mod.toString().match(AUTH_REG);
-                        if (m) {
-                            const code = m[1];
-                            try {
-                                // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-                                const magic = Function(`return (${code})`)();
-                                resolve(magic);
-                            }
-                            catch (err) {
-                                console.error(err);
-                            }
+                Object.values(pack[1]).forEach((mod) => {
+                    const str = mod.toString();
+                    if (!str.includes(PACK_HINT[type])) {
+                        return;
+                    }
+                    const m = str.match(AUTH_REG);
+                    if (m) {
+                        const code = m[1];
+                        try {
+                            // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
+                            const magic = Function(`return (${code})`)();
+                            resolve(magic);
                         }
-                    });
-                }
+                        catch (err) {
+                            console.error(err);
+                        }
+                    }
+                });
             });
         });
     });
