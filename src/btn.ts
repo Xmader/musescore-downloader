@@ -1,6 +1,6 @@
 
 import { loadMscore, WebMscore } from './mscore'
-import { useTimeout, windowOpen } from './utils'
+import { useTimeout, windowOpen, console } from './utils'
 import i18n from './i18n'
 // @ts-ignore
 import btnListCss from './btn.css'

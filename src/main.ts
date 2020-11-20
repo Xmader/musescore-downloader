@@ -1,6 +1,6 @@
 import './meta'
 
-import { waitForDocumentLoaded, saveAs } from './utils'
+import { waitForDocumentLoaded, saveAs, console } from './utils'
 import { downloadPDF } from './pdf'
 import { downloadMscz } from './mscz'
 import { getFileUrl } from './file'

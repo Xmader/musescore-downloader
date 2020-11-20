@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 
 import { hookNative } from './anti-detection'
+import { console } from './utils'
 
 const CHUNK_PUSH_FN = /^function [^r]\(\w\){/
 

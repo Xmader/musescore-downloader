@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
+import { console } from './utils'
+
 // run at document-start
 export const ugappJsStore: Record<string, any> | null = (() => {
   try {
