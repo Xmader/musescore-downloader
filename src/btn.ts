@@ -120,6 +120,13 @@ export class BtnList {
         const observer = new MutationObserver(() => {
           // check if the buttons are still in document when dom updates 
           if (!document.contains(el)) {
+            try {
+              this.getBtnParent()
+            } catch {
+              observer.disconnect()
+              this.commit(BtnListMode.ExtWindow)
+            }
+
             // re-commit
             // performance issue?
             el = this._commit()
