@@ -1,7 +1,7 @@
 /* eslint-disable no-extend-native */
 
 import scoreinfo from './scoreinfo'
-import { onPackLoad, loadAllPacks, getObfuscationCtx, OBFUSCATED_REG } from './webpack-hook'
+import { onPackLoad, getObfuscationCtx, OBFUSCATED_REG } from './webpack-hook'
 
 type FileType = 'img' | 'mp3' | 'midi'
 
@@ -19,7 +19,7 @@ enum PACK_HINT {
  */
 const magicHookConstr = async (type: FileType) => {
   // request pack
-  await loadAllPacks()
+  // await loadAllPacks()
 
   return new Promise<string>((resolve) => {
     onPackLoad((pack) => {
