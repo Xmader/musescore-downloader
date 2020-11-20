@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.12
+// @version      0.15.13
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26536,23 +26536,6 @@ Please pipe the document into a Node stream.\
             resolve(t);
         });
     });
-    const PACK_ID_REG = /\+(\{.*?"\})\[\w\]\+/;
-    const loadAllPacks = () => {
-        return webpackContext.then((ctx) => {
-            try {
-                const fn = ctx.e.toString();
-                const packsData = fn.match(PACK_ID_REG)[1];
-                // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-                const packs = Function(`return (${packsData})`)();
-                Object.keys(packs).forEach((id) => {
-                    ctx.e(id);
-                });
-            }
-            catch (err) {
-                console.error(err);
-            }
-        });
-    };
     const OBF_FN_REG = /\w\(".{4}"\),(\w)=(\[".+?\]);\w=\1,\w=(\d+).+?\);var (\w=.+?,\w\})/;
     const OBFUSCATED_REG = /(\w)\((\d+),"(.{4})"\)/g;
     const getObfuscationCtx = (mod) => {
@@ -26592,7 +26575,7 @@ Please pipe the document into a Node stream.\
      */
     const magicHookConstr = (type) => __awaiter(void 0, void 0, void 0, function* () {
         // request pack
-        yield loadAllPacks();
+        // await loadAllPacks()
         return new Promise((resolve) => {
             onPackLoad((pack) => {
                 Object.values(pack[1]).forEach((mod) => {
