@@ -19,6 +19,10 @@ export const fetchData = async (url: string, init?: RequestInit): Promise<Uint8A
   return new Uint8Array(data)
 }
 
+export const assertRes = (r: Response): void => {
+  if (!r.ok) throw new Error(`${r.url} ${r.status} ${r.statusText}`)
+}
+
 export const useTimeout = async <T> (promise: T | Promise<T>, ms: number): Promise<T> => {
   if (!(promise instanceof Promise)) {
     return promise
