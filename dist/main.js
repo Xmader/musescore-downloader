@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.15
+// @version      0.15.16
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26873,6 +26873,8 @@ Please pipe the document into a Node stream.\
             // hide buttons using the shadow DOM
             const newParent = btnParent.cloneNode(false);
             newParent.append(...this.list);
+            const slot = document.createElement('slot');
+            newParent.append(slot);
             shadow.append(newParent);
             return btnParent;
         }
