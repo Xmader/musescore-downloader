@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.14
+// @version      0.15.15
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -220,6 +220,10 @@
         const data = yield r.arrayBuffer();
         return new Uint8Array(data);
     });
+    const assertRes = (r) => {
+        if (!r.ok)
+            throw new Error(`${r.url} ${r.status} ${r.statusText}`);
+    };
     const useTimeout = (promise, ms) => __awaiter(void 0, void 0, void 0, function* () {
         if (!(promise instanceof Promise)) {
             return promise;
@@ -241,6 +245,7 @@
     const windowOpen = (...args) => {
         return getSandboxWindow().open(...args);
     };
+    const console$1 = getSandboxWindow()['console'];
     const waitForDocumentLoaded = () => {
         if (document.readyState !== 'complete') {
             return new Promise(resolve => {
@@ -26349,7 +26354,7 @@ Please pipe the document into a Node stream.\
             return JSON.parse(json);
         }
         catch (err) {
-            console.error(err);
+            console$1.error(err);
             return null;
         }
     })();
@@ -26536,74 +26541,45 @@ Please pipe the document into a Node stream.\
             resolve(t);
         });
     });
-    const OBF_FN_REG = /\w\(".{4}"\),(\w)=(\[".+?\]);\w=\1,\w=(\d+).+?\);var (\w=.+?,\w\})/;
-    const OBFUSCATED_REG = /(\w)\((\d+),"(.{4})"\)/g;
-    const getObfuscationCtx = (mod) => {
-        const str = mod.toString();
-        const m = str.match(OBF_FN_REG);
-        if (!m)
-            return () => '';
-        try {
-            const arrVar = m[1];
-            const arr = JSON.parse(m[2]);
-            let n = +m[3] + 1;
-            for (; --n;)
-                arr.push(arr.shift());
-            const fnStr = m[4];
-            const ctxStr = `var ${arrVar}=${JSON.stringify(arr)};return (${fnStr})`;
-            // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-            const fn = new Function(ctxStr)();
-            return fn;
-        }
-        catch (err) {
-            console.error(err);
-            return () => '';
-        }
-    };
 
     /* eslint-disable no-extend-native */
-    const AUTH_REG = `(\\+?${OBFUSCATED_REG.source}?)+`;
-    const AUTH_CTX_REG = `,(${AUTH_REG})\\)(\\[|\\.then)`;
-    var PACK_HINT;
-    (function (PACK_HINT) {
-        PACK_HINT["img"] = "getImageRef";
-        PACK_HINT["midi"] = "midi:";
-        PACK_HINT["mp3"] = "setVolume:";
-    })(PACK_HINT || (PACK_HINT = {}));
+    const TYPE_REG = /id=(\d+)&type=(img|mp3|midi)/;
     /**
      * I know this is super hacky.
      */
-    const magicHookConstr = (type) => __awaiter(void 0, void 0, void 0, function* () {
-        // request pack
-        // await loadAllPacks()
-        return new Promise((resolve) => {
-            onPackLoad((pack) => {
-                Object.values(pack[1]).forEach((mod) => {
-                    const str = mod.toString();
-                    if (!str.includes(PACK_HINT[type])) {
-                        return;
-                    }
-                    const m = str.match(AUTH_CTX_REG);
-                    if (m) {
-                        try {
-                            const deObf = getObfuscationCtx(mod);
-                            const authExp = m[1];
-                            const reg = new RegExp(OBFUSCATED_REG);
-                            let magic = '';
-                            let r;
-                            while ((r = reg.exec(authExp)) !== null) {
-                                magic += deObf(+r[2], r[3]);
+    const magicHookConstr = (() => {
+        const l = {};
+        webpackGlobalOverride(ALL, (n, r, t) => {
+            const e = n.exports;
+            if (typeof e === 'object' && e.fetch) {
+                const fn = e.fetch;
+                t.d(e, 'fetch', () => {
+                    return function (...args) {
+                        var _a, _b;
+                        const [url, init] = args;
+                        const token = (_a = init === null || init === void 0 ? void 0 : init.headers) === null || _a === void 0 ? void 0 : _a.Authorization;
+                        if (typeof url === 'string' && token) {
+                            const m = url.match(TYPE_REG);
+                            if (m) {
+                                const type = m[2];
+                                // eslint-disable-next-line no-unused-expressions
+                                (_b = l[type]) === null || _b === void 0 ? void 0 : _b.call(l, token);
                             }
-                            resolve(magic);
                         }
-                        catch (err) {
-                            console.error(err);
-                        }
-                    }
+                        return fn(...args);
+                    };
                 });
+            }
+        });
+        return (type) => __awaiter(void 0, void 0, void 0, function* () {
+            return new Promise((resolve) => {
+                l[type] = (token) => {
+                    resolve(token);
+                    magics[type] = token;
+                };
             });
         });
-    });
+    })();
     const magics = {
         img: magicHookConstr('img'),
         midi: magicHookConstr('midi'),
@@ -26613,7 +26589,31 @@ Please pipe the document into a Node stream.\
         return `/api/jmuse?id=${scoreinfo.id}&type=${type}&index=${index}&v2=1`;
     };
     const getApiAuth = (type, index) => __awaiter(void 0, void 0, void 0, function* () {
-        return magics[type];
+        var _a;
+        const magic = magics[type];
+        if (magic instanceof Promise) {
+            // force to retrieve the MAGIC
+            switch (type) {
+                case 'midi': {
+                    const el = document.querySelectorAll('.SD7H- > button')[3];
+                    el.click();
+                    break;
+                }
+                case 'mp3': {
+                    const el = document.querySelector('#playerBtnExprt');
+                    el.click();
+                    break;
+                }
+                case 'img': {
+                    const imgE = document.querySelector('img[src*=score_]');
+                    const nextE = (_a = imgE === null || imgE === void 0 ? void 0 : imgE.parentElement) === null || _a === void 0 ? void 0 : _a.nextElementSibling;
+                    if (nextE)
+                        nextE.scrollIntoView();
+                    break;
+                }
+            }
+        }
+        return magic;
     });
     const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
         const url = getApiUrl(type, index);
@@ -26661,8 +26661,10 @@ Please pipe the document into a Node stream.\
             const url = scoreinfo.msczCidUrl;
             msczBufferP = (() => __awaiter(void 0, void 0, void 0, function* () {
                 const r0 = yield fetch(url);
+                assertRes(r0);
                 const { Key } = yield r0.json();
                 const r = yield fetch(`https://ipfs.infura.io/ipfs/${Key}`);
+                assertRes(r);
                 const data = yield r.arrayBuffer();
                 return data;
             }))();
@@ -26861,7 +26863,7 @@ Please pipe the document into a Node stream.\
                 btnParent = this.getBtnParent();
             }
             catch (err) {
-                console.error(err);
+                console$1.error(err);
             }
             const shadow = btnParent.attachShadow({ mode: 'closed' });
             // style the shadow DOM
@@ -26977,7 +26979,7 @@ Please pipe the document into a Node stream.\
                     setText(name);
                 }
                 catch (err) {
-                    console.error(err);
+                    console$1.error(err);
                     if (fallback) {
                         // use fallback
                         yield fallback();
@@ -27037,7 +27039,7 @@ Please pipe the document into a Node stream.\
             tooltip: i18n('IND_PARTS_TOOLTIP')(),
             action: BtnAction.mscoreWindow((w, score, txt) => __awaiter(void 0, void 0, void 0, function* () {
                 const metadata = yield score.metadata();
-                console.log('score metadata loaded by webmscore', metadata);
+                console$1.log('score metadata loaded by webmscore', metadata);
                 // add the "full score" option as a "part" 
                 metadata.excerpts.unshift({ id: -1, title: i18n('FULL_SCORE')(), parts: [] });
                 // render the part selection page
