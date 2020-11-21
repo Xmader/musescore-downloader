@@ -1,56 +1,51 @@
 /* eslint-disable no-extend-native */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 
 import scoreinfo from './scoreinfo'
-import { onPackLoad, getObfuscationCtx, OBFUSCATED_REG } from './webpack-hook'
+import { ALL, webpackGlobalOverride } from './webpack-hook'
+import { console } from './utils'
 
 type FileType = 'img' | 'mp3' | 'midi'
 
-const AUTH_REG = `(\\+?${OBFUSCATED_REG.source}?)+`
-const AUTH_CTX_REG = `,(${AUTH_REG})\\)(\\[|\\.then)`
-
-enum PACK_HINT {
-  img = 'getImageRef',
-  midi = 'midi:',
-  mp3 = 'setVolume:',
-}
+const TYPE_REG = /id=(\d+)&type=(img|mp3|midi)/
 
 /**
  * I know this is super hacky.
  */
-const magicHookConstr = async (type: FileType) => {
-  // request pack
-  // await loadAllPacks()
+const magicHookConstr = (() => {
+  const l = {}
 
-  return new Promise<string>((resolve) => {
-    onPackLoad((pack) => {
-      Object.values(pack[1]).forEach((mod) => {
-        const str = mod.toString()
-        if (!str.includes(PACK_HINT[type])) {
-          return
-        }
-
-        const m = str.match(AUTH_CTX_REG)
-        if (m) {
-          try {
-            const deObf = getObfuscationCtx(mod)
-            const authExp = m[1]
-
-            const reg = new RegExp(OBFUSCATED_REG)
-            let magic = ''
-            let r: RegExpMatchArray | null
-            while ((r = reg.exec(authExp)) !== null) {
-              magic += deObf(+r[2], r[3])
+  webpackGlobalOverride(ALL, (n, r, t) => { // override
+    const e = n.exports
+    if (typeof e === 'object' && e.fetch) {
+      const fn = e.fetch
+      t.d(e, 'fetch', () => {
+        return function (...args) {
+          const [url, init] = args
+          const token = init?.headers?.Authorization
+          if (typeof url === 'string' && token) {
+            const m = url.match(TYPE_REG)
+            if (m) {
+              const type = m[2]
+              // eslint-disable-next-line no-unused-expressions
+              l[type]?.(token)
             }
-
-            resolve(magic)
-          } catch (err) {
-            console.error(err)
           }
+          return fn(...args)
         }
       })
-    })
+    }
   })
-}
+
+  return async (type: FileType) => {
+    return new Promise<string>((resolve) => {
+      l[type] = (token) => {
+        resolve(token)
+        magics[type] = token
+      }
+    })
+  }
+})()
 
 const magics: Record<FileType, Promise<string>> = {
   img: magicHookConstr('img'),
@@ -65,7 +60,31 @@ const getApiUrl = (type: FileType, index: number): string => {
 const getApiAuth = async (type: FileType, index: number): Promise<string> => {
   // eslint-disable-next-line no-void
   void index
-  return magics[type]
+
+  const magic = magics[type]
+  if (magic instanceof Promise) {
+    // force to retrieve the MAGIC
+    switch (type) {
+      case 'midi': {
+        const el = document.querySelectorAll('.SD7H- > button')[3] as HTMLButtonElement
+        el.click()
+        break
+      }
+      case 'mp3': {
+        const el = document.querySelector('#playerBtnExprt') as HTMLButtonElement
+        el.click()
+        break
+      }
+      case 'img': {
+        const imgE = document.querySelector('img[src*=score_]')
+        const nextE = imgE?.parentElement?.nextElementSibling
+        if (nextE) nextE.scrollIntoView()
+        break
+      }
+    }
+  }
+
+  return magic
 }
 
 export const getFileUrl = async (type: FileType, index = 0): Promise<string> => {
