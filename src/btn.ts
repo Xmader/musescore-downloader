@@ -97,7 +97,7 @@ export class BtnList {
 
     // hide buttons using the shadow DOM
     const newParent = btnParent.cloneNode(false) as HTMLDivElement
-    newParent.append(...this.list)
+    newParent.append(...this.list.map(e => e.cloneNode(true)))
     const slot = document.createElement('slot')
     newParent.append(slot)
     shadow.append(newParent)
