@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.18
+// @version      0.15.19
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -242,10 +242,12 @@
         const w = iframe.contentWindow;
         return w;
     };
+    const sandboxWindow = getSandboxWindow();
+    const console$1 = sandboxWindow['console'];
+    const _Element = sandboxWindow['Element'];
     const windowOpen = (...args) => {
-        return getSandboxWindow().open(...args);
+        return sandboxWindow.open(...args);
     };
-    const console$1 = getSandboxWindow()['console'];
     const waitForDocumentLoaded = () => {
         if (document.readyState !== 'complete') {
             return new Promise(resolve => {
@@ -26834,6 +26836,9 @@ Please pipe the document into a Node stream.\
         n.onclick = btn.onclick;
         return n;
     };
+    const attachShadow = (el) => {
+        return _Element.prototype.attachShadow.call(el, { mode: 'closed' });
+    };
     var BtnListMode;
     (function (BtnListMode) {
         BtnListMode[BtnListMode["InPage"] = 0] = "InPage";
@@ -26870,7 +26875,7 @@ Please pipe the document into a Node stream.\
             catch (err) {
                 console$1.error(err);
             }
-            const shadow = btnParent.attachShadow({ mode: 'closed' });
+            const shadow = attachShadow(btnParent);
             // style the shadow DOM
             const style = document.createElement('style');
             style.innerText = btnListCss;
