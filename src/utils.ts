@@ -49,6 +49,7 @@ export const windowOpen: Window['open'] = (...args): Window | null => {
 }
 
 export const console: Console = getSandboxWindow()['console']
+export const _Element: typeof Element = getSandboxWindow()['Element']
 
 export const waitForDocumentLoaded = (): Promise<void> => {
   if (document.readyState !== 'complete') {
