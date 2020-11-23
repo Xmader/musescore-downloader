@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.19
+// @version      0.15.20
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26826,10 +26826,7 @@ Please pipe the document into a Node stream.\
         svg.append(svgPath);
         const textNode = document.createElement('span');
         btn.append(svg, textNode);
-        return {
-            btn,
-            textNode,
-        };
+        return btn;
     };
     const cloneBtn = (btn) => {
         const n = btn.cloneNode(true);
@@ -26850,22 +26847,27 @@ Please pipe the document into a Node stream.\
             this.list = [];
         }
         add(options) {
-            const { btn, textNode } = buildDownloadBtn();
-            const setText = (str) => {
-                textNode.textContent = str;
+            const btnTpl = buildDownloadBtn();
+            const setText = (btn) => {
+                const textNode = btn.querySelector('span');
+                return (str) => {
+                    if (textNode)
+                        textNode.textContent = str;
+                };
             };
-            setText(options.name);
-            btn.onclick = () => {
-                options.action(options.name, btn, setText);
+            setText(btnTpl)(options.name);
+            btnTpl.onclick = function () {
+                const btn = this;
+                options.action(options.name, btn, setText(btn));
             };
-            this.list.push(btn);
+            this.list.push(btnTpl);
             if (options.disabled) {
-                btn.disabled = options.disabled;
+                btnTpl.disabled = options.disabled;
             }
             if (options.tooltip) {
-                btn.title = options.tooltip;
+                btnTpl.title = options.tooltip;
             }
-            return btn;
+            return btnTpl;
         }
         _commit() {
             let btnParent = document.createElement('div');
