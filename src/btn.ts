@@ -33,10 +33,7 @@ const buildDownloadBtn = () => {
   const textNode = document.createElement('span')
   btn.append(svg, textNode)
 
-  return {
-    btn,
-    textNode,
-  }
+  return btn
 }
 
 const cloneBtn = (btn: HTMLButtonElement) => {
@@ -67,28 +64,32 @@ export class BtnList {
   constructor (private getBtnParent: () => HTMLDivElement = getBtnContainer) { }
 
   add (options: BtnOptions): BtnElement {
-    const { btn, textNode } = buildDownloadBtn()
-    const setText = (str: string): void => {
-      textNode.textContent = str
+    const btnTpl = buildDownloadBtn()
+    const setText = (btn: BtnElement) => {
+      const textNode = btn.querySelector('span')
+      return (str: string): void => {
+        if (textNode) textNode.textContent = str
+      }
     }
 
-    setText(options.name)
+    setText(btnTpl)(options.name)
 
-    btn.onclick = (): void => {
-      options.action(options.name, btn, setText)
+    btnTpl.onclick = function () {
+      const btn = this as BtnElement
+      options.action(options.name, btn, setText(btn))
     }
 
-    this.list.push(btn)
+    this.list.push(btnTpl)
 
     if (options.disabled) {
-      btn.disabled = options.disabled
+      btnTpl.disabled = options.disabled
     }
 
     if (options.tooltip) {
-      btn.title = options.tooltip
+      btnTpl.title = options.tooltip
     }
 
-    return btn
+    return btnTpl
   }
 
   private _commit () {
