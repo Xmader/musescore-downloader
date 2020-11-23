@@ -44,12 +44,13 @@ export const getSandboxWindow = (): Window => {
   return w as Window
 }
 
-export const windowOpen: Window['open'] = (...args): Window | null => {
-  return getSandboxWindow().open(...args)
-}
+export const sandboxWindow = getSandboxWindow()
+export const console: Console = sandboxWindow['console']
+export const _Element: typeof Element = sandboxWindow['Element']
 
-export const console: Console = getSandboxWindow()['console']
-export const _Element: typeof Element = getSandboxWindow()['Element']
+export const windowOpen: Window['open'] = (...args): Window | null => {
+  return sandboxWindow.open(...args)
+}
 
 export const waitForDocumentLoaded = (): Promise<void> => {
   if (document.readyState !== 'complete') {
