@@ -39,6 +39,12 @@ const buildDownloadBtn = () => {
   }
 }
 
+const cloneBtn = (btn: HTMLButtonElement) => {
+  const n = btn.cloneNode(true) as HTMLButtonElement
+  n.onclick = btn.onclick
+  return n
+}
+
 interface BtnOptions {
   readonly name: string;
   readonly action: BtnAction;
@@ -97,7 +103,7 @@ export class BtnList {
 
     // hide buttons using the shadow DOM
     const newParent = btnParent.cloneNode(false) as HTMLDivElement
-    newParent.append(...this.list.map(e => e.cloneNode(true)))
+    newParent.append(...this.list.map(e => cloneBtn(e)))
     shadow.append(newParent)
     const slot = document.createElement('slot')
     shadow.append(slot)
