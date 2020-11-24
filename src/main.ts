@@ -6,7 +6,7 @@ import { downloadMscz } from './mscz'
 import { getFileUrl } from './file'
 import { WebMscore, loadSoundFont } from './mscore'
 import { BtnList, BtnAction, BtnListMode } from './btn'
-import { ScoreInfoInPage } from './scoreinfo'
+import { ScoreInfoInPage, SheetInfoInPage } from './scoreinfo'
 import i18n from './i18n'
 
 const main = (): void => {
@@ -27,7 +27,7 @@ const main = (): void => {
 
   btnList.add({
     name: i18n('DOWNLOAD')('PDF'),
-    action: BtnAction.process(() => downloadPDF(scoreinfo), fallback, 3 * 60 * 1000 /* 3min */),
+    action: BtnAction.process(() => downloadPDF(scoreinfo, new SheetInfoInPage(document)), fallback, 3 * 60 * 1000 /* 3min */),
   })
 
   btnList.add({

@@ -2,7 +2,7 @@
 import { PDFWorkerHelper } from './worker-helper'
 import { getFileUrl } from './file'
 import { saveAs } from './utils'
-import { ScoreInfo } from './scoreinfo'
+import { ScoreInfo, SheetInfo } from './scoreinfo'
 
 let pdfBlob: Blob
 
@@ -23,13 +23,13 @@ const _downloadPDF = async (imgURLs: string[], imgType: 'svg' | 'png', name = ''
   saveAs(pdfBlob, `${name}.pdf`)
 }
 
-export const downloadPDF = async (scoreinfo: ScoreInfo): Promise<void> => {
-  const imgType = scoreinfo.sheetImgType
-  const pageCount = scoreinfo.pageCount
+export const downloadPDF = async (scoreinfo: ScoreInfo, sheet: SheetInfo): Promise<void> => {
+  const imgType = sheet.imgType
+  const pageCount = sheet.pageCount
 
   const rs = Array.from({ length: pageCount }).map((_, i) => {
     if (i === 0) { // The url to the first page is static. We don't need to use API to obtain it.
-      return scoreinfo.thumbnailUrl
+      return sheet.thumbnailUrl
     } else { // obtain image urls using the API
       return getFileUrl(scoreinfo.id, 'img', i)
     }

@@ -7,9 +7,6 @@ export abstract class ScoreInfo {
   abstract id: number;
   abstract title: string;
 
-  abstract pageCount: number;
-  abstract thumbnailUrl: string;
-
   public store = new Map<symbol, any>();
 
   get idLastDigit (): number {
@@ -27,12 +24,6 @@ export abstract class ScoreInfo {
   get msczCidUrl (): string {
     return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`
   }
-
-  get sheetImgType (): 'svg' | 'png' {
-    const thumbnail = this.thumbnailUrl
-    const imgtype = thumbnail.match(/\.(\w+)$/)![1]
-    return imgtype as 'svg' | 'png'
-  }
 }
 
 export class ScoreInfoInPage extends ScoreInfo {
@@ -48,6 +39,21 @@ export class ScoreInfoInPage extends ScoreInfo {
     const el = this.document.querySelector("meta[property='og:title']") as HTMLMetaElement
     return el.content
   }
+}
+
+export abstract class SheetInfo {
+  abstract pageCount: number;
+  abstract thumbnailUrl: string;
+
+  get imgType (): 'svg' | 'png' {
+    const thumbnail = this.thumbnailUrl
+    const imgtype = thumbnail.match(/\.(\w+)$/)![1]
+    return imgtype as 'svg' | 'png'
+  }
+}
+
+export class SheetInfoInPage extends SheetInfo {
+  constructor (private document: Document) { super() }
 
   get pageCount (): number {
     return this.document.querySelectorAll('.gXB83').length
