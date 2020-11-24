@@ -1,4 +1,6 @@
 
+import { getFetch } from './utils'
+
 export abstract class ScoreInfo {
   private readonly IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP';
   private readonly RADIX = 20;
@@ -55,6 +57,33 @@ export class ScoreInfoInPage extends ScoreInfo {
   get title (): string {
     const el = this.document.querySelector("meta[property='og:title']") as HTMLMetaElement
     return el.content
+  }
+}
+
+export class ScoreInfoHtml extends ScoreInfo {
+  private readonly ID_REG = /<meta property="al:ios:url" content="musescore:\/\/score\/(\d+)">/
+  private readonly TITLE_REG = /<meta property="og:title" content="(.*)">/
+
+  constructor (private html: string) { super() }
+
+  get id (): number {
+    const m = this.html.match(this.ID_REG)
+    if (!m) return 0
+    return +m[1]
+  }
+
+  get title (): string {
+    const m = this.html.match(this.TITLE_REG)
+    if (!m) return ''
+    return m[1]
+  }
+
+  static async request (url: string, _fetch = getFetch()): Promise<ScoreInfoHtml> {
+    const r = await _fetch(url)
+    if (!r.ok) return new ScoreInfoHtml('')
+
+    const html = await r.text()
+    return new ScoreInfoHtml(html)
   }
 }
 
