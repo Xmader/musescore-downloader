@@ -1,10 +1,10 @@
 
 import { saveAs, assertRes } from './utils'
-import scoreinfo from './scoreinfo'
+import { ScoreInfo } from './scoreinfo'
 
 let msczBufferP: Promise<ArrayBuffer> | undefined
 
-export const fetchMscz = async (): Promise<ArrayBuffer> => {
+export const fetchMscz = async (scoreinfo: ScoreInfo): Promise<ArrayBuffer> => {
   if (!msczBufferP) {
     const url = scoreinfo.msczCidUrl
     msczBufferP = (async (): Promise<ArrayBuffer> => {
@@ -21,8 +21,8 @@ export const fetchMscz = async (): Promise<ArrayBuffer> => {
   return msczBufferP
 }
 
-export const downloadMscz = async (): Promise<void> => {
-  const data = new Blob([await fetchMscz()])
+export const downloadMscz = async (scoreinfo: ScoreInfo): Promise<void> => {
+  const data = new Blob([await fetchMscz(scoreinfo)])
   const filename = scoreinfo.fileName
   saveAs(data, `${filename}.mscz`)
 }

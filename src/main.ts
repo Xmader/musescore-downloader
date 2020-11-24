@@ -6,12 +6,13 @@ import { downloadMscz } from './mscz'
 import { getFileUrl } from './file'
 import { WebMscore, loadSoundFont } from './mscore'
 import { BtnList, BtnAction, BtnListMode } from './btn'
-import scoreinfo from './scoreinfo'
+import { ScoreInfoInPage } from './scoreinfo'
 import i18n from './i18n'
 
 const main = (): void => {
   const btnList = new BtnList()
-  const filename = scoreinfo.fileName
+  const scoreinfo = new ScoreInfoInPage(document)
+  const { fileName, id } = scoreinfo
 
   let indvPartBtn: HTMLButtonElement | null = null
   const fallback = () => {
@@ -21,12 +22,12 @@ const main = (): void => {
 
   btnList.add({
     name: i18n('DOWNLOAD')('MSCZ'),
-    action: BtnAction.process(downloadMscz),
+    action: BtnAction.process(() => downloadMscz(scoreinfo)),
   })
 
   btnList.add({
     name: i18n('DOWNLOAD')('PDF'),
-    action: BtnAction.process(downloadPDF, fallback, 3 * 60 * 1000 /* 3min */),
+    action: BtnAction.process(() => downloadPDF(scoreinfo), fallback, 3 * 60 * 1000 /* 3min */),
   })
 
   btnList.add({
@@ -34,19 +35,19 @@ const main = (): void => {
     action: BtnAction.mscoreWindow(async (w, score) => {
       const mxl = await score.saveMxl()
       const data = new Blob([mxl])
-      saveAs(data, `${filename}.mxl`)
+      saveAs(data, `${fileName}.mxl`)
       w.close()
     }),
   })
 
   btnList.add({
     name: i18n('DOWNLOAD')('MIDI'),
-    action: BtnAction.download(() => getFileUrl('midi'), fallback, 30 * 1000 /* 30s */),
+    action: BtnAction.download(() => getFileUrl(id, 'midi'), fallback, 30 * 1000 /* 30s */),
   })
 
   btnList.add({
     name: i18n('DOWNLOAD')('MP3'),
-    action: BtnAction.download(() => getFileUrl('mp3'), fallback, 30 * 1000 /* 30s */),
+    action: BtnAction.download(() => getFileUrl(id, 'mp3'), fallback, 30 * 1000 /* 30s */),
   })
 
   indvPartBtn = btnList.add({
@@ -150,7 +151,7 @@ const main = (): void => {
           const partName = checked.alt
 
           const data = new Blob([await d.action(score)])
-          saveAs(data, `${filename} - ${partName}.${d.fileExt}`)
+          saveAs(data, `${fileName} - ${partName}.${d.fileExt}`)
 
           // unlock button
           initBtn()

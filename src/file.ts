@@ -1,7 +1,6 @@
 /* eslint-disable no-extend-native */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
-import scoreinfo from './scoreinfo'
 import { ALL, webpackGlobalOverride } from './webpack-hook'
 import { console } from './utils'
 
@@ -53,8 +52,8 @@ const magics: Record<FileType, Promise<string>> = {
   mp3: magicHookConstr('mp3'),
 }
 
-const getApiUrl = (type: FileType, index: number): string => {
-  return `/api/jmuse?id=${scoreinfo.id}&type=${type}&index=${index}&v2=1`
+const getApiUrl = (id: number, type: FileType, index: number): string => {
+  return `/api/jmuse?id=${id}&type=${type}&index=${index}&v2=1`
 }
 
 const getApiAuth = async (type: FileType, index: number): Promise<string> => {
@@ -87,8 +86,8 @@ const getApiAuth = async (type: FileType, index: number): Promise<string> => {
   return magic
 }
 
-export const getFileUrl = async (type: FileType, index = 0): Promise<string> => {
-  const url = getApiUrl(type, index)
+export const getFileUrl = async (id: number, type: FileType, index = 0): Promise<string> => {
+  const url = getApiUrl(id, type, index)
   const auth = await getApiAuth(type, index)
 
   const r = await fetch(url, {

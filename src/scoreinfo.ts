@@ -58,7 +58,3 @@ export class ScoreInfoInPage extends ScoreInfo {
     return url.split('@')[0]
   }
 }
-
-export const scoreinfo = new ScoreInfoInPage(document)
-
-export default scoreinfo
