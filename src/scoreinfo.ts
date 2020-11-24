@@ -1,5 +1,5 @@
 
-import { getFetch } from './utils'
+import { getFetch, escapeFilename } from './utils'
 
 export abstract class ScoreInfo {
   private readonly IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP';
@@ -15,7 +15,7 @@ export abstract class ScoreInfo {
   }
 
   get fileName (): string {
-    return this.title.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_')
+    return escapeFilename(this.title)
   }
 
   get msczIpfsRef (): string {

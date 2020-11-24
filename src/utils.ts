@@ -1,6 +1,10 @@
 
 import isNodeJs from 'detect-node'
 
+export const escapeFilename = (s: string): string => {
+  return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_')
+}
+
 export const getIndexPath = (id: number): string => {
   const idStr = String(id)
   // 获取最后三位，倒序排列

@@ -7,6 +7,7 @@ import fs from 'fs'
 import { fetchMscz } from './mscz'
 import { loadMscore, INDV_DOWNLOADS, WebMscore } from './mscore'
 import { ScoreInfoHtml } from './scoreinfo'
+import { escapeFilename } from './utils'
 import i18n from './i18n'
 
 const SCORE_URL_PREFIX = 'https://musescore.com/'
@@ -99,7 +100,7 @@ void (async () => {
   await Promise.all(
     filetypes.map(async (d) => {
       const data = await d.action(score)
-      const f = `${fileName} - ${encodeURIComponent(partName)}.${d.fileExt}`
+      const f = `${fileName} - ${escapeFilename(partName)}.${d.fileExt}`
       await fs.promises.writeFile(f, data)
       spinner.info(`Saved ${chalk.underline(f)}`)
       spinner.start()
