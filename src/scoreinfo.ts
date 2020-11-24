@@ -9,7 +9,6 @@ export abstract class ScoreInfo {
 
   abstract pageCount: number;
   abstract thumbnailUrl: string;
-  abstract sheetImgType: 'svg' | 'png'
 
   get idLastDigit (): number {
     return (+this.id) % RADIX
@@ -25,6 +24,12 @@ export abstract class ScoreInfo {
 
   get msczCidUrl (): string {
     return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`
+  }
+
+  get sheetImgType (): 'svg' | 'png' {
+    const thumbnail = this.thumbnailUrl
+    const imgtype = thumbnail.match(/\.(\w+)$/)![1]
+    return imgtype as 'svg' | 'png'
   }
 }
 
@@ -48,22 +53,9 @@ export class ScoreInfoInPage extends ScoreInfo {
 
   get thumbnailUrl (): string {
     // url to the image of the first page
-    const el = this.document.querySelector("meta[property='og:image']") as HTMLMetaElement
-    const url = el.content
+    const el = this.document.querySelector('link[as=image]') as HTMLLinkElement
+    const url = el.href
     return url.split('@')[0]
-  }
-
-  get sheetImgType (): 'svg' | 'png' {
-    try {
-      const imgE = this.document.querySelector('img[src*=score_]') as HTMLImageElement
-      const { pathname } = new URL(imgE.src)
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const imgtype = pathname.match(/\.(\w+)$/)![1]
-      return imgtype as 'svg' | 'png'
-    } catch (_) {
-      // return null
-      return 'svg'
-    }
   }
 }
 
