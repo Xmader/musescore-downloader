@@ -1,4 +1,5 @@
 
+import { ScoreInfo } from './scoreinfo'
 import { loadMscore, WebMscore } from './mscore'
 import { useTimeout, windowOpen, console, _Element } from './utils'
 import i18n from './i18n'
@@ -192,7 +193,7 @@ export namespace BtnAction {
     }, fallback, timeout)
   }
 
-  export const mscoreWindow = (fn: (w: Window, score: WebMscore, processingTextEl: ChildNode) => any): BtnAction => {
+  export const mscoreWindow = (scoreinfo: ScoreInfo, fn: (w: Window, score: WebMscore, processingTextEl: ChildNode) => any): BtnAction => {
     return async (btnName, btn, setText) => {
       const _onclick = btn.onclick
       btn.onclick = null
@@ -217,7 +218,7 @@ export namespace BtnAction {
         btn.onclick = _onclick
       })
 
-      score = await loadMscore(w)
+      score = await loadMscore(scoreinfo, w)
 
       fn(w, score, txt)
     }

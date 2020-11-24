@@ -32,7 +32,7 @@ const main = (): void => {
 
   btnList.add({
     name: i18n('DOWNLOAD')('MusicXML'),
-    action: BtnAction.mscoreWindow(async (w, score) => {
+    action: BtnAction.mscoreWindow(scoreinfo, async (w, score) => {
       const mxl = await score.saveMxl()
       const data = new Blob([mxl])
       saveAs(data, `${fileName}.mxl`)
@@ -53,7 +53,7 @@ const main = (): void => {
   indvPartBtn = btnList.add({
     name: i18n('IND_PARTS')(),
     tooltip: i18n('IND_PARTS_TOOLTIP')(),
-    action: BtnAction.mscoreWindow(async (w, score, txt) => {
+    action: BtnAction.mscoreWindow(scoreinfo, async (w, score, txt) => {
       const metadata = await score.metadata()
       console.log('score metadata loaded by webmscore', metadata)
 
