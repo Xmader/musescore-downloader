@@ -4,7 +4,7 @@ import { waitForDocumentLoaded, saveAs, console } from './utils'
 import { downloadPDF } from './pdf'
 import { downloadMscz } from './mscz'
 import { getFileUrl } from './file'
-import { WebMscore, loadSoundFont } from './mscore'
+import { INDV_DOWNLOADS } from './mscore'
 import { BtnList, BtnAction, BtnListMode } from './btn'
 import { ScoreInfoInPage, SheetInfoInPage } from './scoreinfo'
 import i18n from './i18n'
@@ -65,44 +65,7 @@ const main = (): void => {
       const fieldset = w.document.createElement('fieldset')
       w.document.body.append(fieldset)
 
-      interface IndividualDownload {
-        name: string;
-        fileExt: string;
-        action (score: WebMscore): Promise<Uint8Array>;
-      }
-
-      const downloads: IndividualDownload[] = [
-        {
-          name: i18n('DOWNLOAD')('PDF'),
-          fileExt: 'pdf',
-          action: (score) => score.savePdf(),
-        },
-        {
-          name: i18n('DOWNLOAD')('MSCZ'),
-          fileExt: 'mscz',
-          action: (score) => score.saveMsc('mscz'),
-        },
-        {
-          name: i18n('DOWNLOAD')('MusicXML'),
-          fileExt: 'mxl',
-          action: (score) => score.saveMxl(),
-        },
-        {
-          name: i18n('DOWNLOAD')('MIDI'),
-          fileExt: 'mid',
-          action: (score) => score.saveMidi(true, true),
-        },
-        {
-          name: i18n('DOWNLOAD_AUDIO')('FLAC'),
-          fileExt: 'flac',
-          action: (score) => loadSoundFont(score).then(() => score.saveAudio('flac')),
-        },
-        {
-          name: i18n('DOWNLOAD_AUDIO')('OGG'),
-          fileExt: 'ogg',
-          action: (score) => loadSoundFont(score).then(() => score.saveAudio('ogg')),
-        },
-      ]
+      const downloads = INDV_DOWNLOADS
 
       // part selection
       const DEFAULT_PART = -1 // initially select "full score"

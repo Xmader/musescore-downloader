@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 
 import { fetchMscz } from './mscz'
 import { fetchData } from './utils'
 import { ScoreInfo } from './scoreinfo'
 import isNodeJs from 'detect-node'
+import i18n from './i18n'
 
 const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.10/webmscore.js'
 
@@ -88,3 +90,42 @@ export const loadMscore = async (scoreinfo: ScoreInfo, w?: Window): Promise<WebM
 
   return score
 }
+
+export interface IndividualDownload {
+  name: string;
+  fileExt: string;
+  action (score: WebMscore): Promise<Uint8Array>;
+}
+
+export const INDV_DOWNLOADS: IndividualDownload[] = [
+  {
+    name: i18n('DOWNLOAD')('PDF'),
+    fileExt: 'pdf',
+    action: (score) => score.savePdf(),
+  },
+  {
+    name: i18n('DOWNLOAD')('MSCZ'),
+    fileExt: 'mscz',
+    action: (score) => score.saveMsc('mscz'),
+  },
+  {
+    name: i18n('DOWNLOAD')('MusicXML'),
+    fileExt: 'mxl',
+    action: (score) => score.saveMxl(),
+  },
+  {
+    name: i18n('DOWNLOAD')('MIDI'),
+    fileExt: 'mid',
+    action: (score) => score.saveMidi(true, true),
+  },
+  {
+    name: i18n('DOWNLOAD_AUDIO')('FLAC'),
+    fileExt: 'flac',
+    action: (score) => loadSoundFont(score).then(() => score.saveAudio('flac')),
+  },
+  {
+    name: i18n('DOWNLOAD_AUDIO')('OGG'),
+    fileExt: 'ogg',
+    action: (score) => loadSoundFont(score).then(() => score.saveAudio('ogg')),
+  },
+]
