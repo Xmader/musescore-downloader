@@ -1,16 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-
-const IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP'
-const RADIX = 20
 
 export abstract class ScoreInfo {
+  private readonly IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP';
+  private readonly RADIX = 20;
+
   abstract id: number;
   abstract title: string;
 
   public store = new Map<symbol, any>();
 
   get idLastDigit (): number {
-    return (+this.id) % RADIX
+    return (+this.id) % this.RADIX
   }
 
   get fileName (): string {
@@ -18,11 +17,17 @@ export abstract class ScoreInfo {
   }
 
   get msczIpfsRef (): string {
-    return `/ipns/${IPNS_KEY}/${this.idLastDigit}/${this.id}.mscz`
+    return `/ipns/${this.IPNS_KEY}/${this.idLastDigit}/${this.id}.mscz`
   }
 
   get msczCidUrl (): string {
     return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`
+  }
+
+  getMsczUrl (cidRes: { Key: string }): string {
+    const cid = cidRes.Key
+    if (!cid) throw new Error('score not in dataset')
+    return `https://ipfs.infura.io/ipfs/${cid}`
   }
 }
 
