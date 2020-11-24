@@ -25,6 +25,7 @@ void (async () => {
     validate (input: string) {
       return input && input.startsWith(SCORE_URL_PREFIX)
     },
+    default: process.argv[2],
   })
 
   // request scoreinfo
