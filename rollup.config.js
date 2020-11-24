@@ -15,7 +15,7 @@ const getBannerText = () => {
     return bannerText
 }
 
-const plugins = [
+const basePlugins = [
     typescript({
         target: "ES6",
         sourceMap: false,
@@ -37,12 +37,6 @@ const plugins = [
     string({
         include: "**/*.css",
     }),
-    builtins(),
-    nodeGlobals({
-        dirname: false,
-        filename: false,
-        baseDir: false,
-    }),
     {
         /**
          * remove tslib license comments
@@ -58,6 +52,17 @@ const plugins = [
             }
         }
     },
+]
+
+const plugins = [
+    ...basePlugins,
+    builtins(),
+    nodeGlobals({
+        dirname: false,
+        filename: false,
+        baseDir: false,
+        process: false,
+    }),
 ]
 
 export default [
@@ -83,5 +88,14 @@ export default [
             outro: "}.toString() + ')()')"
         },
         plugins,
+    },
+    {
+        input: "src/cli.ts",
+        output: {
+            file: "dist/cli.js",
+            format: "cjs",
+            sourcemap: false,
+        },
+        plugins: basePlugins,
     },
 ]

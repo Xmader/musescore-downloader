@@ -3,6 +3,7 @@
   "version": "0.15.20",
   "description": "download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱",
   "main": "dist/main.js",
+  "bin": "dist/cli.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Xmader/musescore-downloader.git"
@@ -40,14 +41,13 @@
     "@librescore/sf3": "^0.3.0",
     "detect-node": "^2.0.4",
     "node-fetch": "^2.6.1",
-    "pdfkit": "git+https://github.com/Xmader/pdfkit.git",
-    "svg-to-pdfkit": "^0.1.8",
     "webmscore": "^0.10.4"
   },
   "devDependencies": {
     "@rollup/plugin-json": "^4.0.0",
     "@types/file-saver": "^2.0.1",
     "@types/pdfkit": "^0.10.4",
+    "pdfkit": "git+https://github.com/Xmader/pdfkit.git",
     "rollup": "^1.26.3",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-builtins": "^2.1.2",
@@ -55,6 +55,7 @@
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-string": "^3.0.0",
     "rollup-plugin-typescript": "^1.0.1",
+    "svg-to-pdfkit": "^0.1.8",
     "tslib": "^1.10.0",
     "typescript": "^4.1.1-rc"
   },
