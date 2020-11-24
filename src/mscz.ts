@@ -2,9 +2,11 @@
 import { saveAs, assertRes } from './utils'
 import { ScoreInfo } from './scoreinfo'
 
-let msczBufferP: Promise<ArrayBuffer> | undefined
+const MSCZ_BUF_SYM = Symbol('msczBufferP')
 
 export const fetchMscz = async (scoreinfo: ScoreInfo): Promise<ArrayBuffer> => {
+  let msczBufferP = scoreinfo.store.get(MSCZ_BUF_SYM) as Promise<ArrayBuffer> | undefined
+
   if (!msczBufferP) {
     const url = scoreinfo.msczCidUrl
     msczBufferP = (async (): Promise<ArrayBuffer> => {
@@ -16,6 +18,7 @@ export const fetchMscz = async (scoreinfo: ScoreInfo): Promise<ArrayBuffer> => {
       const data = await r.arrayBuffer()
       return data
     })()
+    scoreinfo.store.set(MSCZ_BUF_SYM, msczBufferP)
   }
 
   return msczBufferP

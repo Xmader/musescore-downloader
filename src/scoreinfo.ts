@@ -10,6 +10,8 @@ export abstract class ScoreInfo {
   abstract pageCount: number;
   abstract thumbnailUrl: string;
 
+  public store = new Map<symbol, any>();
+
   get idLastDigit (): number {
     return (+this.id) % RADIX
   }
