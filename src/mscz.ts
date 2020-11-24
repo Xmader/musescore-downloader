@@ -11,8 +11,13 @@ export const fetchMscz = async (scoreinfo: ScoreInfo, _fetch = fetch): Promise<A
     const url = scoreinfo.msczCidUrl
     msczBufferP = (async (): Promise<ArrayBuffer> => {
       const r0 = await _fetch(url)
-      assertRes(r0)
+      // ipfs-http-gateway specific error
+      // may read further error msg as json
+      if (r0.status !== 500) {
+        assertRes(r0)
+      }
       const cidRes = await r0.json()
+
       const r = await _fetch(scoreinfo.getMsczUrl(cidRes))
       assertRes(r)
       const data = await r.arrayBuffer()

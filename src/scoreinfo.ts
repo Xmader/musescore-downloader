@@ -24,9 +24,17 @@ export abstract class ScoreInfo {
     return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`
   }
 
-  getMsczUrl (cidRes: { Key: string }): string {
+  getMsczUrl (cidRes: { Key: string; Message: string }): string {
     const cid = cidRes.Key
-    if (!cid) throw new Error('score not in dataset')
+    if (!cid) {
+      // read further error msg
+      const err = cidRes.Message
+      if (err.includes('no link named')) { // file not found
+        throw new Error('score not in dataset')
+      } else {
+        throw new Error(err)
+      }
+    }
     return `https://ipfs.infura.io/ipfs/${cid}`
   }
 }
