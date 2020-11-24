@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.15.20
+// @version      0.16.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -22,10 +22,11 @@
     window.eval('(' + function () {
 
     function __awaiter(thisArg, _arguments, P, generator) {
+        function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
         return new (P || (P = Promise))(function (resolve, reject) {
             function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
             function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-            function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+            function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
             step((generator = generator.apply(thisArg, _arguments || [])).next());
         });
     }
@@ -36,185 +37,27 @@
     	return module = { exports: {} }, fn(module, module.exports), module.exports;
     }
 
-    var FileSaver = createCommonjsModule(function (module, exports) {
-    (function (global, factory) {
-      {
-        factory();
-      }
-    })(commonjsGlobal, function () {
-
-      /*
-      * FileSaver.js
-      * A saveAs() FileSaver implementation.
-      *
-      * By Eli Grey, http://eligrey.com
-      *
-      * License : https://github.com/eligrey/FileSaver.js/blob/master/LICENSE.md (MIT)
-      * source  : http://purl.eligrey.com/github/FileSaver.js
-      */
-      // The one and only way of getting global scope in all environments
-      // https://stackoverflow.com/q/3277182/1008999
-      var _global = typeof window === 'object' && window.window === window ? window : typeof self === 'object' && self.self === self ? self : typeof commonjsGlobal === 'object' && commonjsGlobal.global === commonjsGlobal ? commonjsGlobal : void 0;
-
-      function bom(blob, opts) {
-        if (typeof opts === 'undefined') opts = {
-          autoBom: false
-        };else if (typeof opts !== 'object') {
-          console.warn('Deprecated: Expected third argument to be a object');
-          opts = {
-            autoBom: !opts
-          };
-        } // prepend BOM for UTF-8 XML and text/* types (including HTML)
-        // note: your browser will automatically convert UTF-16 U+FEFF to EF BB BF
-
-        if (opts.autoBom && /^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(blob.type)) {
-          return new Blob([String.fromCharCode(0xFEFF), blob], {
-            type: blob.type
-          });
-        }
-
-        return blob;
-      }
-
-      function download(url, name, opts) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url);
-        xhr.responseType = 'blob';
-
-        xhr.onload = function () {
-          saveAs(xhr.response, name, opts);
-        };
-
-        xhr.onerror = function () {
-          console.error('could not download file');
-        };
-
-        xhr.send();
-      }
-
-      function corsEnabled(url) {
-        var xhr = new XMLHttpRequest(); // use sync to avoid popup blocker
-
-        xhr.open('HEAD', url, false);
-
-        try {
-          xhr.send();
-        } catch (e) {}
-
-        return xhr.status >= 200 && xhr.status <= 299;
-      } // `a.click()` doesn't work for all browsers (#465)
+    var FileSaver_min = createCommonjsModule(function (module, exports) {
+    (function(a,b){b();})(commonjsGlobal,function(){function b(a,b){return "undefined"==typeof b?b={autoBom:!1}:"object"!=typeof b&&(console.warn("Deprecated: Expected third argument to be a object"),b={autoBom:!b}),b.autoBom&&/^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(a.type)?new Blob(["\uFEFF",a],{type:a.type}):a}function c(a,b,c){var d=new XMLHttpRequest;d.open("GET",a),d.responseType="blob",d.onload=function(){g(d.response,b,c);},d.onerror=function(){console.error("could not download file");},d.send();}function d(a){var b=new XMLHttpRequest;b.open("HEAD",a,!1);try{b.send();}catch(a){}return 200<=b.status&&299>=b.status}function e(a){try{a.dispatchEvent(new MouseEvent("click"));}catch(c){var b=document.createEvent("MouseEvents");b.initMouseEvent("click",!0,!0,window,0,0,0,80,20,!1,!1,!1,!1,0,null),a.dispatchEvent(b);}}var f="object"==typeof window&&window.window===window?window:"object"==typeof self&&self.self===self?self:"object"==typeof commonjsGlobal&&commonjsGlobal.global===commonjsGlobal?commonjsGlobal:void 0,a=f.navigator&&/Macintosh/.test(navigator.userAgent)&&/AppleWebKit/.test(navigator.userAgent)&&!/Safari/.test(navigator.userAgent),g=f.saveAs||("object"!=typeof window||window!==f?function(){}:"download"in HTMLAnchorElement.prototype&&!a?function(b,g,h){var i=f.URL||f.webkitURL,j=document.createElement("a");g=g||b.name||"download",j.download=g,j.rel="noopener","string"==typeof b?(j.href=b,j.origin===location.origin?e(j):d(j.href)?c(b,g,h):e(j,j.target="_blank")):(j.href=i.createObjectURL(b),setTimeout(function(){i.revokeObjectURL(j.href);},4E4),setTimeout(function(){e(j);},0));}:"msSaveOrOpenBlob"in navigator?function(f,g,h){if(g=g||f.name||"download","string"!=typeof f)navigator.msSaveOrOpenBlob(b(f,h),g);else if(d(f))c(f,g,h);else {var i=document.createElement("a");i.href=f,i.target="_blank",setTimeout(function(){e(i);});}}:function(b,d,e,g){if(g=g||open("","_blank"),g&&(g.document.title=g.document.body.innerText="downloading..."),"string"==typeof b)return c(b,d,e);var h="application/octet-stream"===b.type,i=/constructor/i.test(f.HTMLElement)||f.safari,j=/CriOS\/[\d]+/.test(navigator.userAgent);if((j||h&&i||a)&&"undefined"!=typeof FileReader){var k=new FileReader;k.onloadend=function(){var a=k.result;a=j?a:a.replace(/^data:[^;]*;/,"data:attachment/file;"),g?g.location.href=a:location=a,g=null;},k.readAsDataURL(b);}else {var l=f.URL||f.webkitURL,m=l.createObjectURL(b);g?g.location=m:location.href=m,g=null,setTimeout(function(){l.revokeObjectURL(m);},4E4);}});f.saveAs=g.saveAs=g,(module.exports=g);});
 
 
-      function click(node) {
-        try {
-          node.dispatchEvent(new MouseEvent('click'));
-        } catch (e) {
-          var evt = document.createEvent('MouseEvents');
-          evt.initMouseEvent('click', true, true, window, 0, 0, 0, 80, 20, false, false, false, false, 0, null);
-          node.dispatchEvent(evt);
-        }
-      }
-
-      var saveAs = _global.saveAs || ( // probably in some web worker
-      typeof window !== 'object' || window !== _global ? function saveAs() {}
-      /* noop */
-      // Use download attribute first if possible (#193 Lumia mobile)
-      : 'download' in HTMLAnchorElement.prototype ? function saveAs(blob, name, opts) {
-        var URL = _global.URL || _global.webkitURL;
-        var a = document.createElement('a');
-        name = name || blob.name || 'download';
-        a.download = name;
-        a.rel = 'noopener'; // tabnabbing
-        // TODO: detect chrome extensions & packaged apps
-        // a.target = '_blank'
-
-        if (typeof blob === 'string') {
-          // Support regular links
-          a.href = blob;
-
-          if (a.origin !== location.origin) {
-            corsEnabled(a.href) ? download(blob, name, opts) : click(a, a.target = '_blank');
-          } else {
-            click(a);
-          }
-        } else {
-          // Support blobs
-          a.href = URL.createObjectURL(blob);
-          setTimeout(function () {
-            URL.revokeObjectURL(a.href);
-          }, 4E4); // 40s
-
-          setTimeout(function () {
-            click(a);
-          }, 0);
-        }
-      } // Use msSaveOrOpenBlob as a second approach
-      : 'msSaveOrOpenBlob' in navigator ? function saveAs(blob, name, opts) {
-        name = name || blob.name || 'download';
-
-        if (typeof blob === 'string') {
-          if (corsEnabled(blob)) {
-            download(blob, name, opts);
-          } else {
-            var a = document.createElement('a');
-            a.href = blob;
-            a.target = '_blank';
-            setTimeout(function () {
-              click(a);
-            });
-          }
-        } else {
-          navigator.msSaveOrOpenBlob(bom(blob, opts), name);
-        }
-      } // Fallback to using FileReader and a popup
-      : function saveAs(blob, name, opts, popup) {
-        // Open a popup immediately do go around popup blocker
-        // Mostly only available on user interaction and the fileReader is async so...
-        popup = popup || open('', '_blank');
-
-        if (popup) {
-          popup.document.title = popup.document.body.innerText = 'downloading...';
-        }
-
-        if (typeof blob === 'string') return download(blob, name, opts);
-        var force = blob.type === 'application/octet-stream';
-
-        var isSafari = /constructor/i.test(_global.HTMLElement) || _global.safari;
-
-        var isChromeIOS = /CriOS\/[\d]+/.test(navigator.userAgent);
-
-        if ((isChromeIOS || force && isSafari) && typeof FileReader === 'object') {
-          // Safari doesn't allow downloading of blob URLs
-          var reader = new FileReader();
-
-          reader.onloadend = function () {
-            var url = reader.result;
-            url = isChromeIOS ? url : url.replace(/^data:[^;]*;/, 'data:attachment/file;');
-            if (popup) popup.location.href = url;else location = url;
-            popup = null; // reverse-tabnabbing #460
-          };
-
-          reader.readAsDataURL(blob);
-        } else {
-          var URL = _global.URL || _global.webkitURL;
-          var url = URL.createObjectURL(blob);
-          if (popup) popup.location = url;else location.href = url;
-          popup = null; // reverse-tabnabbing #460
-
-          setTimeout(function () {
-            URL.revokeObjectURL(url);
-          }, 4E4); // 40s
-        }
-      });
-      _global.saveAs = saveAs.saveAs = saveAs;
-
-      {
-        module.exports = saveAs;
-      }
-    });
     });
 
-    const saveAs = FileSaver.saveAs;
+    // Only Node.JS has a process variable that is of [[Class]] process
+    var detectNode = Object.prototype.toString.call(typeof process !== 'undefined' ? process : 0) === '[object process]';
+
+    const escapeFilename = (s) => {
+        return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_');
+    };
+    const getFetch = () => {
+        if (!detectNode) {
+            return fetch;
+        }
+        else {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+            return require('node-fetch');
+        }
+    };
     const fetchData = (url, init) => __awaiter(void 0, void 0, void 0, function* () {
         const r = yield fetch(url, init);
         const data = yield r.arrayBuffer();
@@ -236,6 +79,8 @@
         });
     });
     const getSandboxWindow = () => {
+        if (typeof document === 'undefined')
+            return {};
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         document.body.append(iframe);
@@ -273,10 +118,11 @@
     (function () {
 
         function __awaiter(thisArg, _arguments, P, generator) {
+            function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
             return new (P || (P = Promise))(function (resolve, reject) {
                 function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
                 function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-                function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+                function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
                 step((generator = generator.apply(thisArg, _arguments || [])).next());
             });
         }
@@ -10869,7 +10715,7 @@
           this.write_in_progress = true;
 
           var self = this;
-          nextTick(function() {
+          process.nextTick(function() {
             self.write_in_progress = false;
             var res = self._write(flush, input, in_off, in_len, out, out_off, out_len);
             self.callback(res[0], res[1]);
@@ -11413,7 +11259,7 @@
               }
             });
           } else {
-            nextTick(callback);
+            process.nextTick(callback);
           }
         };
 
@@ -11437,7 +11283,7 @@
 
           if (ws.ended) {
             if (callback)
-              nextTick(callback);
+              process.nextTick(callback);
           } else if (ws.ending) {
             if (callback)
               this.once('end', callback);
@@ -11454,7 +11300,7 @@
 
         Zlib$1.prototype.close = function(callback) {
           if (callback)
-            nextTick(callback);
+            process.nextTick(callback);
 
           if (this._closed)
             return;
@@ -11464,7 +11310,7 @@
           this._binding.close();
 
           var self = this;
-          nextTick(function() {
+          process.nextTick(function() {
             self.emit('close');
           });
         };
@@ -23198,13 +23044,17 @@
               evt.initMouseEvent('click', true, true, window, 0, 0, 0, 80, 20, false, false, false, false, 0, null);
               node.dispatchEvent(evt);
             }
-          }
+          } // Detect WebView inside a native macOS app by ruling out all browsers
+          // We just need to check for 'Safari' because all other browsers (besides Firefox) include that too
+          // https://www.whatismybrowser.com/guides/the-latest-user-agent/macos
 
+
+          var isMacOSWebView = _global.navigator && /Macintosh/.test(navigator.userAgent) && /AppleWebKit/.test(navigator.userAgent) && !/Safari/.test(navigator.userAgent);
           var saveAs = _global.saveAs || ( // probably in some web worker
           typeof window !== 'object' || window !== _global ? function saveAs() {}
           /* noop */
-          // Use download attribute first if possible (#193 Lumia mobile)
-          : 'download' in HTMLAnchorElement.prototype ? function saveAs(blob, name, opts) {
+          // Use download attribute first if possible (#193 Lumia mobile) unless this is a macOS WebView
+          : 'download' in HTMLAnchorElement.prototype && !isMacOSWebView ? function saveAs(blob, name, opts) {
             var URL = _global.URL || _global.webkitURL;
             var a = document.createElement('a');
             name = name || blob.name || 'download';
@@ -23268,7 +23118,7 @@
 
             var isChromeIOS = /CriOS\/[\d]+/.test(navigator.userAgent);
 
-            if ((isChromeIOS || force && isSafari) && typeof FileReader === 'object') {
+            if ((isChromeIOS || force && isSafari || isMacOSWebView) && typeof FileReader !== 'undefined') {
               // Safari doesn't allow downloading of blob URLs
               var reader = new FileReader();
 
@@ -26346,94 +26196,6 @@ Please pipe the document into a Node stream.\
         }
     }
 
-    /* eslint-disable @typescript-eslint/no-unsafe-return */
-    // run at document-start
-    const ugappJsStore = (() => {
-        try {
-            const l = document.body.children;
-            const el = [...l].find(e => Object.keys(e.dataset).length > 0);
-            const json = Object.values(el.dataset)[0];
-            return JSON.parse(json);
-        }
-        catch (err) {
-            console$1.error(err);
-            return null;
-        }
-    })();
-    const IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP';
-    const RADIX = 20;
-    const scoreinfo = {
-        get playerdata() {
-            // @ts-ignore
-            return ugappJsStore.store.page.data.score;
-        },
-        get id() {
-            try {
-                return this.playerdata.id;
-            }
-            catch (_a) {
-                const el = document.querySelector("meta[property='al:ios:url']");
-                const m = el.content.match(/(\d+)$/);
-                return +m[1];
-            }
-        },
-        get idLastDigit() {
-            return (+this.id) % RADIX;
-        },
-        get title() {
-            try {
-                return this.playerdata.title;
-            }
-            catch (_a) {
-                const el = document.querySelector("meta[property='og:title']");
-                return el.content;
-            }
-        },
-        get fileName() {
-            return this.title.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_');
-        },
-        get pageCount() {
-            try {
-                return this.playerdata.pages_count;
-            }
-            catch (_a) {
-                return document.querySelectorAll('.gXB83').length;
-            }
-        },
-        get baseUrl() {
-            let thumbnailUrl;
-            try {
-                thumbnailUrl = this.playerdata.thumbnails.original;
-            }
-            catch (_a) {
-                const el = document.querySelector("meta[property='og:image']");
-                thumbnailUrl = el.content;
-            }
-            const { origin, pathname } = new URL(thumbnailUrl);
-            // remove the last part
-            return origin + pathname.split('/').slice(0, -1).join('/') + '/';
-        },
-        get msczIpfsRef() {
-            return `/ipns/${IPNS_KEY}/${this.idLastDigit}/${this.id}.mscz`;
-        },
-        get msczCidUrl() {
-            return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`;
-        },
-        get sheetImgType() {
-            try {
-                const imgE = document.querySelector('img[src*=score_]');
-                const { pathname } = new URL(imgE.src);
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                const imgtype = pathname.match(/\.(\w+)$/)[1];
-                return imgtype;
-            }
-            catch (_) {
-                // return null
-                return 'svg';
-            }
-        },
-    };
-
     /* eslint-disable no-extend-native */
     /* eslint-disable @typescript-eslint/ban-types */
     /**
@@ -26587,8 +26349,8 @@ Please pipe the document into a Node stream.\
         midi: magicHookConstr('midi'),
         mp3: magicHookConstr('mp3'),
     };
-    const getApiUrl = (type, index) => {
-        return `/api/jmuse?id=${scoreinfo.id}&type=${type}&index=${index}&v2=1`;
+    const getApiUrl = (id, type, index) => {
+        return `/api/jmuse?id=${id}&type=${type}&index=${index}&v2=1`;
     };
     const getApiAuth = (type, index) => __awaiter(void 0, void 0, void 0, function* () {
         var _a;
@@ -26617,8 +26379,8 @@ Please pipe the document into a Node stream.\
         }
         return magic;
     });
-    const getFileUrl = (type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
-        const url = getApiUrl(type, index);
+    const getFileUrl = (id, type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
+        const url = getApiUrl(id, type, index);
         const auth = yield getApiAuth(type);
         const r = yield fetch(url, {
             headers: {
@@ -26632,7 +26394,7 @@ Please pipe the document into a Node stream.\
     let pdfBlob;
     const _downloadPDF = (imgURLs, imgType, name = '') => __awaiter(void 0, void 0, void 0, function* () {
         if (pdfBlob) {
-            return saveAs(pdfBlob, `${name}.pdf`);
+            return FileSaver_min.saveAs(pdfBlob, `${name}.pdf`);
         }
         const cachedImg = document.querySelector('img[src*=score_]');
         const { naturalWidth: width, naturalHeight: height } = cachedImg;
@@ -26640,87 +26402,57 @@ Please pipe the document into a Node stream.\
         const pdfArrayBuffer = yield worker.generatePDF(imgURLs, imgType, width, height);
         worker.terminate();
         pdfBlob = new Blob([pdfArrayBuffer]);
-        saveAs(pdfBlob, `${name}.pdf`);
+        FileSaver_min.saveAs(pdfBlob, `${name}.pdf`);
     });
-    const downloadPDF = () => __awaiter(void 0, void 0, void 0, function* () {
-        const imgType = scoreinfo.sheetImgType;
-        const pageCount = scoreinfo.pageCount;
+    const downloadPDF = (scoreinfo, sheet) => __awaiter(void 0, void 0, void 0, function* () {
+        const imgType = sheet.imgType;
+        const pageCount = sheet.pageCount;
         const rs = Array.from({ length: pageCount }).map((_, i) => {
             if (i === 0) { // The url to the first page is static. We don't need to use API to obtain it.
-                return scoreinfo.baseUrl + `score_${i}.${imgType}`;
+                return sheet.thumbnailUrl;
             }
             else { // obtain image urls using the API
-                return getFileUrl('img', i);
+                return getFileUrl(scoreinfo.id, 'img', i);
             }
         });
         const sheetImgURLs = yield Promise.all(rs);
         return _downloadPDF(sheetImgURLs, imgType, scoreinfo.fileName);
     });
 
-    let msczBufferP;
-    const fetchMscz = () => __awaiter(void 0, void 0, void 0, function* () {
+    const MSCZ_BUF_SYM = Symbol('msczBufferP');
+    const fetchMscz = (scoreinfo, _fetch = getFetch()) => __awaiter(void 0, void 0, void 0, function* () {
+        let msczBufferP = scoreinfo.store.get(MSCZ_BUF_SYM);
         if (!msczBufferP) {
             const url = scoreinfo.msczCidUrl;
             msczBufferP = (() => __awaiter(void 0, void 0, void 0, function* () {
-                const r0 = yield fetch(url);
-                assertRes(r0);
-                const { Key } = yield r0.json();
-                const r = yield fetch(`https://ipfs.infura.io/ipfs/${Key}`);
+                const r0 = yield _fetch(url);
+                // ipfs-http-gateway specific error
+                // may read further error msg as json
+                if (r0.status !== 500) {
+                    assertRes(r0);
+                }
+                const cidRes = yield r0.json();
+                const r = yield _fetch(scoreinfo.loadMsczUrl(cidRes));
                 assertRes(r);
                 const data = yield r.arrayBuffer();
                 return data;
             }))();
+            scoreinfo.store.set(MSCZ_BUF_SYM, msczBufferP);
         }
         return msczBufferP;
     });
-    const downloadMscz = () => __awaiter(void 0, void 0, void 0, function* () {
-        const data = new Blob([yield fetchMscz()]);
+    const downloadMscz = (scoreinfo, saveAs) => __awaiter(void 0, void 0, void 0, function* () {
+        const data = new Blob([yield fetchMscz(scoreinfo)]);
         const filename = scoreinfo.fileName;
         saveAs(data, `${filename}.mscz`);
     });
 
-    const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.10/webmscore.js';
-    // fonts for Chinese characters (CN) and Korean hangul (KR)
-    // JP characters are included in the CN font
-    const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts/SourceHanSans${l}-Regular.woff2`);
-    const SF3_URL = 'https://cdn.jsdelivr.net/npm/@librescore/sf3/FluidR3Mono_GM.sf3';
-    const SOUND_FONT_LOADED = Symbol('SoundFont loaded');
-    const initMscore = (w) => __awaiter(void 0, void 0, void 0, function* () {
-        if (!w['WebMscore']) {
-            // init webmscore (https://github.com/LibreScore/webmscore)
-            const script = w.document.createElement('script');
-            script.src = WEBMSCORE_URL;
-            w.document.body.append(script);
-            yield new Promise(resolve => { script.onload = resolve; });
-        }
-    });
-    let fonts;
-    const initFonts = () => {
-        // load CJK fonts
-        // CJK (East Asian) characters will be rendered as "tofu" if there is no font
-        if (!fonts) {
-            fonts = Promise.all(FONT_URLS.map(url => fetchData(url)));
-        }
-    };
-    const loadSoundFont = (score) => {
-        if (!score[SOUND_FONT_LOADED]) {
-            const loadPromise = (() => __awaiter(void 0, void 0, void 0, function* () {
-                yield score.setSoundFont(yield fetchData(SF3_URL));
-            }))();
-            score[SOUND_FONT_LOADED] = loadPromise;
-        }
-        return score[SOUND_FONT_LOADED];
-    };
-    const loadMscore = (w) => __awaiter(void 0, void 0, void 0, function* () {
-        initFonts();
-        yield initMscore(w);
-        const WebMscore = w['WebMscore'];
-        // parse mscz data
-        const data = new Uint8Array(new Uint8Array(yield fetchMscz()));
-        const score = yield WebMscore.load('mscz', data, yield fonts);
-        yield score.generateExcerpts();
-        return score;
-    });
+    /**
+     * type checking only so no missing keys
+     */
+    function createLocale(obj) {
+        return Object.freeze(obj);
+    }
 
     var en = createLocale({
         'PROCESSING'() {
@@ -26776,20 +26508,23 @@ Please pipe the document into a Node stream.\
         },
     });
 
-    /**
-     * type checking only so no missing keys
-     */
-    function createLocale(obj) {
-        return Object.freeze(obj);
-    }
     const locales = ((l) => Object.freeze(l))({
         en,
         es,
     });
     // detect browser language
     const lang = (() => {
+        let userLangs;
+        if (!detectNode) {
+            userLangs = navigator.languages;
+        }
+        else {
+            const env = process.env;
+            const l = env.LC_ALL || env.LC_MESSAGES || env.LANG || env.LANGUAGE || '';
+            userLangs = [l.slice(0, 2)];
+        }
         const names = Object.keys(locales);
-        const _lang = navigator.languages.find(l => {
+        const _lang = userLangs.find(l => {
             // find the first occurrence of valid languages
             return names.includes(l);
         });
@@ -26800,6 +26535,105 @@ Please pipe the document into a Node stream.\
         const locale = locales[lang];
         return locale[key];
     }
+
+    /* eslint-disable @typescript-eslint/no-var-requires */
+    const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.10/webmscore.js';
+    // fonts for Chinese characters (CN) and Korean hangul (KR)
+    // JP characters are included in the CN font
+    const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts/SourceHanSans${l}-Regular.woff2`);
+    const SF3_URL = 'https://cdn.jsdelivr.net/npm/@librescore/sf3/FluidR3Mono_GM.sf3';
+    const SOUND_FONT_LOADED = Symbol('SoundFont loaded');
+    const initMscore = (w) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!detectNode) { // attached to a page
+            if (!w['WebMscore']) {
+                // init webmscore (https://github.com/LibreScore/webmscore)
+                const script = w.document.createElement('script');
+                script.src = WEBMSCORE_URL;
+                w.document.body.append(script);
+                yield new Promise(resolve => { script.onload = resolve; });
+            }
+            return w['WebMscore'];
+        }
+        else { // nodejs
+            return require('webmscore').default;
+        }
+    });
+    let fonts;
+    const initFonts = () => {
+        // load CJK fonts
+        // CJK (East Asian) characters will be rendered as "tofu" if there is no font
+        if (!fonts) {
+            if (detectNode) {
+                // module.exports.CN = ..., module.exports.KR = ...
+                const FONTS = Object.values(require('@librescore/fonts'));
+                const fs = require('fs');
+                fonts = Promise.all(FONTS.map((path) => fs.promises.readFile(path)));
+            }
+            else {
+                fonts = Promise.all(FONT_URLS.map(url => fetchData(url)));
+            }
+        }
+    };
+    const loadSoundFont = (score) => {
+        if (!score[SOUND_FONT_LOADED]) {
+            const loadPromise = (() => __awaiter(void 0, void 0, void 0, function* () {
+                let data;
+                if (detectNode) {
+                    // module.exports.FluidR3Mono = ...
+                    const SF3 = Object.values(require('@librescore/sf3'))[0];
+                    const fs = require('fs');
+                    data = yield fs.promises.readFile(SF3);
+                }
+                else {
+                    data = yield fetchData(SF3_URL);
+                }
+                yield score.setSoundFont(data);
+            }))();
+            score[SOUND_FONT_LOADED] = loadPromise;
+        }
+        return score[SOUND_FONT_LOADED];
+    };
+    const loadMscore = (scoreinfo, w) => __awaiter(void 0, void 0, void 0, function* () {
+        initFonts();
+        const WebMscore = yield initMscore(w);
+        // parse mscz data
+        const data = new Uint8Array(new Uint8Array(yield fetchMscz(scoreinfo)));
+        const score = yield WebMscore.load('mscz', data, yield fonts);
+        yield score.generateExcerpts();
+        return score;
+    });
+    const INDV_DOWNLOADS = [
+        {
+            name: i18n('DOWNLOAD')('PDF'),
+            fileExt: 'pdf',
+            action: (score) => score.savePdf(),
+        },
+        {
+            name: i18n('DOWNLOAD')('MSCZ'),
+            fileExt: 'mscz',
+            action: (score) => score.saveMsc('mscz'),
+        },
+        {
+            name: i18n('DOWNLOAD')('MusicXML'),
+            fileExt: 'mxl',
+            action: (score) => score.saveMxl(),
+        },
+        {
+            name: i18n('DOWNLOAD')('MIDI'),
+            fileExt: 'mid',
+            action: (score) => score.saveMidi(true, true),
+        },
+        {
+            name: i18n('DOWNLOAD_AUDIO')('FLAC'),
+            fileExt: 'flac',
+            action: (score) => loadSoundFont(score).then(() => score.saveAudio('flac')),
+        },
+        {
+            name: i18n('DOWNLOAD_AUDIO')('OGG'),
+            fileExt: 'ogg',
+            action: (score) => loadSoundFont(score).then(() => score.saveAudio('ogg')),
+        },
+    ];
 
     var btnListCss = "div {\n  flex-wrap: wrap;\n  display: flex;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n  position: absolute;\n  z-index: 999;\n  background: #f6f6f6;\n}\n\nbutton {\n  width: 205px !important;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
 
@@ -26957,7 +26791,7 @@ Please pipe the document into a Node stream.\
                 a.dispatchEvent(new MouseEvent('click'));
             }), fallback, timeout);
         };
-        BtnAction.mscoreWindow = (fn) => {
+        BtnAction.mscoreWindow = (scoreinfo, fn) => {
             return (btnName, btn, setText) => __awaiter(this, void 0, void 0, function* () {
                 const _onclick = btn.onclick;
                 btn.onclick = null;
@@ -26979,7 +26813,7 @@ Please pipe the document into a Node stream.\
                     setText(btnName);
                     btn.onclick = _onclick;
                 });
-                score = yield loadMscore(w);
+                score = yield loadMscore(scoreinfo, w);
                 fn(w, score, txt);
             });
         };
@@ -27015,9 +26849,83 @@ Please pipe the document into a Node stream.\
         };
     })(BtnAction || (BtnAction = {}));
 
+    class ScoreInfo {
+        constructor() {
+            this.IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP';
+            this.RADIX = 20;
+            this.store = new Map();
+        }
+        get idLastDigit() {
+            return (+this.id) % this.RADIX;
+        }
+        get fileName() {
+            return escapeFilename(this.title);
+        }
+        get msczIpfsRef() {
+            return `/ipns/${this.IPNS_KEY}/${this.idLastDigit}/${this.id}.mscz`;
+        }
+        get msczCidUrl() {
+            return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`;
+        }
+        loadMsczUrl(cidRes) {
+            const cid = cidRes.Key;
+            if (!cid) {
+                // read further error msg
+                const err = cidRes.Message;
+                if (err.includes('no link named')) { // file not found
+                    throw new Error('score not in dataset');
+                }
+                else {
+                    throw new Error(err);
+                }
+            }
+            this.msczUrl = `https://ipfs.infura.io/ipfs/${cid}`;
+            return this.msczUrl;
+        }
+    }
+    class ScoreInfoInPage extends ScoreInfo {
+        constructor(document) {
+            super();
+            this.document = document;
+        }
+        get id() {
+            const el = this.document.querySelector("meta[property='al:ios:url']");
+            const m = el.content.match(/(\d+)$/);
+            return +m[1];
+        }
+        get title() {
+            const el = this.document.querySelector("meta[property='og:title']");
+            return el.content;
+        }
+    }
+    class SheetInfo {
+        get imgType() {
+            const thumbnail = this.thumbnailUrl;
+            const imgtype = thumbnail.match(/\.(\w+)$/)[1];
+            return imgtype;
+        }
+    }
+    class SheetInfoInPage extends SheetInfo {
+        constructor(document) {
+            super();
+            this.document = document;
+        }
+        get pageCount() {
+            return this.document.querySelectorAll('.gXB83').length;
+        }
+        get thumbnailUrl() {
+            // url to the image of the first page
+            const el = this.document.querySelector('link[as=image]');
+            const url = el.href;
+            return url.split('@')[0];
+        }
+    }
+
+    const { saveAs } = FileSaver_min;
     const main = () => {
         const btnList = new BtnList();
-        const filename = scoreinfo.fileName;
+        const scoreinfo = new ScoreInfoInPage(document);
+        const { fileName, id } = scoreinfo;
         let indvPartBtn = null;
         const fallback = () => {
             // btns fallback to load from MSCZ file (`Individual Parts`)
@@ -27025,33 +26933,33 @@ Please pipe the document into a Node stream.\
         };
         btnList.add({
             name: i18n('DOWNLOAD')('MSCZ'),
-            action: BtnAction.process(downloadMscz),
+            action: BtnAction.process(() => downloadMscz(scoreinfo, saveAs)),
         });
         btnList.add({
             name: i18n('DOWNLOAD')('PDF'),
-            action: BtnAction.process(downloadPDF, fallback, 3 * 60 * 1000 /* 3min */),
+            action: BtnAction.process(() => downloadPDF(scoreinfo, new SheetInfoInPage(document)), fallback, 3 * 60 * 1000 /* 3min */),
         });
         btnList.add({
             name: i18n('DOWNLOAD')('MusicXML'),
-            action: BtnAction.mscoreWindow((w, score) => __awaiter(void 0, void 0, void 0, function* () {
+            action: BtnAction.mscoreWindow(scoreinfo, (w, score) => __awaiter(void 0, void 0, void 0, function* () {
                 const mxl = yield score.saveMxl();
                 const data = new Blob([mxl]);
-                saveAs(data, `${filename}.mxl`);
+                saveAs(data, `${fileName}.mxl`);
                 w.close();
             })),
         });
         btnList.add({
             name: i18n('DOWNLOAD')('MIDI'),
-            action: BtnAction.download(() => getFileUrl('midi'), fallback, 30 * 1000 /* 30s */),
+            action: BtnAction.download(() => getFileUrl(id, 'midi'), fallback, 30 * 1000 /* 30s */),
         });
         btnList.add({
             name: i18n('DOWNLOAD')('MP3'),
-            action: BtnAction.download(() => getFileUrl('mp3'), fallback, 30 * 1000 /* 30s */),
+            action: BtnAction.download(() => getFileUrl(id, 'mp3'), fallback, 30 * 1000 /* 30s */),
         });
         indvPartBtn = btnList.add({
             name: i18n('IND_PARTS')(),
             tooltip: i18n('IND_PARTS_TOOLTIP')(),
-            action: BtnAction.mscoreWindow((w, score, txt) => __awaiter(void 0, void 0, void 0, function* () {
+            action: BtnAction.mscoreWindow(scoreinfo, (w, score, txt) => __awaiter(void 0, void 0, void 0, function* () {
                 const metadata = yield score.metadata();
                 console$1.log('score metadata loaded by webmscore', metadata);
                 // add the "full score" option as a "part" 
@@ -27060,38 +26968,7 @@ Please pipe the document into a Node stream.\
                 txt.remove();
                 const fieldset = w.document.createElement('fieldset');
                 w.document.body.append(fieldset);
-                const downloads = [
-                    {
-                        name: i18n('DOWNLOAD')('PDF'),
-                        fileExt: 'pdf',
-                        action: (score) => score.savePdf(),
-                    },
-                    {
-                        name: i18n('DOWNLOAD')('MSCZ'),
-                        fileExt: 'mscz',
-                        action: (score) => score.saveMsc('mscz'),
-                    },
-                    {
-                        name: i18n('DOWNLOAD')('MusicXML'),
-                        fileExt: 'mxl',
-                        action: (score) => score.saveMxl(),
-                    },
-                    {
-                        name: i18n('DOWNLOAD')('MIDI'),
-                        fileExt: 'mid',
-                        action: (score) => score.saveMidi(true, true),
-                    },
-                    {
-                        name: i18n('DOWNLOAD_AUDIO')('FLAC'),
-                        fileExt: 'flac',
-                        action: (score) => loadSoundFont(score).then(() => score.saveAudio('flac')),
-                    },
-                    {
-                        name: i18n('DOWNLOAD_AUDIO')('OGG'),
-                        fileExt: 'ogg',
-                        action: (score) => loadSoundFont(score).then(() => score.saveAudio('ogg')),
-                    },
-                ];
+                const downloads = INDV_DOWNLOADS;
                 // part selection
                 const DEFAULT_PART = -1; // initially select "full score"
                 for (const excerpt of metadata.excerpts) {
@@ -27130,7 +27007,7 @@ Please pipe the document into a Node stream.\
                         const checked = fieldset.querySelector('input:checked');
                         const partName = checked.alt;
                         const data = new Blob([yield d.action(score)]);
-                        saveAs(data, `${filename} - ${partName}.${d.fileExt}`);
+                        saveAs(data, `${fileName} - ${partName}.${d.fileExt}`);
                         // unlock button
                         initBtn();
                     });
