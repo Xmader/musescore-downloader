@@ -11,17 +11,9 @@ export const scoreinfo = {
     return +m[1]
   },
 
-  get idLastDigit (this: typeof scoreinfo): number {
-    return (+this.id) % RADIX
-  },
-
   get title (this: typeof scoreinfo): string {
     const el = document.querySelector("meta[property='og:title']") as HTMLMetaElement
     return el.content
-  },
-
-  get fileName (this: typeof scoreinfo): string {
-    return this.title.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_')
   },
 
   get pageCount (this: typeof scoreinfo): number {
@@ -37,14 +29,6 @@ export const scoreinfo = {
     return origin + pathname.split('/').slice(0, -1).join('/') + '/'
   },
 
-  get msczIpfsRef (this: typeof scoreinfo): string {
-    return `/ipns/${IPNS_KEY}/${this.idLastDigit}/${this.id}.mscz`
-  },
-
-  get msczCidUrl (this: typeof scoreinfo): string {
-    return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`
-  },
-
   get sheetImgType (): 'svg' | 'png' {
     try {
       const imgE = document.querySelector('img[src*=score_]') as HTMLImageElement
@@ -56,6 +40,22 @@ export const scoreinfo = {
       // return null
       return 'svg'
     }
+  },
+
+  get idLastDigit (this: typeof scoreinfo): number {
+    return (+this.id) % RADIX
+  },
+
+  get fileName (this: typeof scoreinfo): string {
+    return this.title.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_')
+  },
+
+  get msczIpfsRef (this: typeof scoreinfo): string {
+    return `/ipns/${IPNS_KEY}/${this.idLastDigit}/${this.id}.mscz`
+  },
+
+  get msczCidUrl (this: typeof scoreinfo): string {
+    return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`
   },
 }
 
