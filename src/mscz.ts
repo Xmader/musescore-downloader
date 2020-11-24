@@ -18,7 +18,7 @@ export const fetchMscz = async (scoreinfo: ScoreInfo, _fetch = getFetch()): Prom
       }
       const cidRes = await r0.json()
 
-      const r = await _fetch(scoreinfo.getMsczUrl(cidRes))
+      const r = await _fetch(scoreinfo.loadMsczUrl(cidRes))
       assertRes(r)
       const data = await r.arrayBuffer()
       return data

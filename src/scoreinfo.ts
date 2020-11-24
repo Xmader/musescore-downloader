@@ -26,7 +26,8 @@ export abstract class ScoreInfo {
     return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`
   }
 
-  getMsczUrl (cidRes: { Key: string; Message: string }): string {
+  public msczUrl: string;
+  public loadMsczUrl (cidRes: { Key: string; Message: string }): string {
     const cid = cidRes.Key
     if (!cid) {
       // read further error msg
@@ -37,7 +38,8 @@ export abstract class ScoreInfo {
         throw new Error(err)
       }
     }
-    return `https://ipfs.infura.io/ipfs/${cid}`
+    this.msczUrl = `https://ipfs.infura.io/ipfs/${cid}`
+    return this.msczUrl
   }
 }
 
