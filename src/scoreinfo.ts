@@ -39,6 +39,10 @@ export abstract class ScoreInfo {
   }
 }
 
+export class ScoreInfoObj extends ScoreInfo {
+  constructor (public id: number, public title: string) { super() }
+}
+
 export class ScoreInfoInPage extends ScoreInfo {
   constructor (private document: Document) { super() }
 
