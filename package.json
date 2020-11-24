@@ -40,12 +40,15 @@
     "@librescore/fonts": "^0.2.1",
     "@librescore/sf3": "^0.3.0",
     "detect-node": "^2.0.4",
+    "inquirer": "^7.3.3",
     "node-fetch": "^2.6.1",
+    "ora": "^5.1.0",
     "webmscore": "^0.10.4"
   },
   "devDependencies": {
     "@rollup/plugin-json": "^4.1.0",
     "@types/file-saver": "^2.0.1",
+    "@types/inquirer": "^7.3.1",
     "@types/pdfkit": "^0.10.6",
     "pdfkit": "git+https://github.com/Xmader/pdfkit.git",
     "rollup": "^1.32.1",
