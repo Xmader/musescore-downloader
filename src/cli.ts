@@ -1,14 +1,17 @@
+
+/* eslint-disable @typescript-eslint/no-var-requires */
 /* eslint-disable no-void */
 
-import inquirer from 'inquirer'
-import ora from 'ora'
-import chalk from 'chalk'
 import fs from 'fs'
 import { fetchMscz } from './mscz'
 import { loadMscore, INDV_DOWNLOADS, WebMscore } from './mscore'
 import { ScoreInfoHtml } from './scoreinfo'
 import { escapeFilename } from './utils'
 import i18n from './i18n'
+
+const inquirer: typeof import('inquirer') = require('inquirer')
+const ora: typeof import('ora') = require('ora')
+const chalk: typeof import('chalk') = require('chalk')
 
 const SCORE_URL_PREFIX = 'https://musescore.com/'
 
