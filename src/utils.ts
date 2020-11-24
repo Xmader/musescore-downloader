@@ -1,8 +1,5 @@
 
-import FileSaver from 'file-saver/dist/FileSaver.js'
 import isNodeJs from 'detect-node'
-
-export const saveAs: typeof import('file-saver').saveAs = FileSaver.saveAs
 
 export const getIndexPath = (id: number): string => {
   const idStr = String(id)

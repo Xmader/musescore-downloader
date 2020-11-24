@@ -1,5 +1,5 @@
 
-import { saveAs, assertRes, getFetch } from './utils'
+import { assertRes, getFetch } from './utils'
 import { ScoreInfo } from './scoreinfo'
 
 const MSCZ_BUF_SYM = Symbol('msczBufferP')
@@ -29,7 +29,7 @@ export const fetchMscz = async (scoreinfo: ScoreInfo, _fetch = getFetch()): Prom
   return msczBufferP
 }
 
-export const downloadMscz = async (scoreinfo: ScoreInfo): Promise<void> => {
+export const downloadMscz = async (scoreinfo: ScoreInfo, saveAs: typeof import('file-saver').saveAs): Promise<void> => {
   const data = new Blob([await fetchMscz(scoreinfo)])
   const filename = scoreinfo.fileName
   saveAs(data, `${filename}.mscz`)

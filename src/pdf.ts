@@ -1,14 +1,14 @@
 
 import { PDFWorkerHelper } from './worker-helper'
 import { getFileUrl } from './file'
-import { saveAs } from './utils'
+import FileSaver from 'file-saver'
 import { ScoreInfo, SheetInfo } from './scoreinfo'
 
 let pdfBlob: Blob
 
 const _downloadPDF = async (imgURLs: string[], imgType: 'svg' | 'png', name = ''): Promise<void> => {
   if (pdfBlob) {
-    return saveAs(pdfBlob, `${name}.pdf`)
+    return FileSaver.saveAs(pdfBlob, `${name}.pdf`)
   }
 
   const cachedImg = document.querySelector('img[src*=score_]') as HTMLImageElement
@@ -20,7 +20,7 @@ const _downloadPDF = async (imgURLs: string[], imgType: 'svg' | 'png', name = ''
 
   pdfBlob = new Blob([pdfArrayBuffer])
 
-  saveAs(pdfBlob, `${name}.pdf`)
+  FileSaver.saveAs(pdfBlob, `${name}.pdf`)
 }
 
 export const downloadPDF = async (scoreinfo: ScoreInfo, sheet: SheetInfo): Promise<void> => {

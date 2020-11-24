@@ -1,6 +1,7 @@
 import './meta'
 
-import { waitForDocumentLoaded, saveAs, console } from './utils'
+import FileSaver from 'file-saver'
+import { waitForDocumentLoaded, console } from './utils'
 import { downloadPDF } from './pdf'
 import { downloadMscz } from './mscz'
 import { getFileUrl } from './file'
@@ -8,6 +9,8 @@ import { INDV_DOWNLOADS } from './mscore'
 import { BtnList, BtnAction, BtnListMode } from './btn'
 import { ScoreInfoInPage, SheetInfoInPage } from './scoreinfo'
 import i18n from './i18n'
+
+const { saveAs } = FileSaver
 
 const main = (): void => {
   const btnList = new BtnList()
@@ -22,7 +25,7 @@ const main = (): void => {
 
   btnList.add({
     name: i18n('DOWNLOAD')('MSCZ'),
-    action: BtnAction.process(() => downloadMscz(scoreinfo)),
+    action: BtnAction.process(() => downloadMscz(scoreinfo, saveAs)),
   })
 
   btnList.add({
