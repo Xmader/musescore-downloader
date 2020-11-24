@@ -44,11 +44,11 @@
     "webmscore": "^0.10.4"
   },
   "devDependencies": {
-    "@rollup/plugin-json": "^4.0.0",
+    "@rollup/plugin-json": "^4.1.0",
     "@types/file-saver": "^2.0.1",
-    "@types/pdfkit": "^0.10.4",
+    "@types/pdfkit": "^0.10.6",
     "pdfkit": "git+https://github.com/Xmader/pdfkit.git",
-    "rollup": "^1.26.3",
+    "rollup": "^1.32.1",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-globals": "^1.4.0",
@@ -56,8 +56,8 @@
     "rollup-plugin-string": "^3.0.0",
     "rollup-plugin-typescript": "^1.0.1",
     "svg-to-pdfkit": "^0.1.8",
-    "tslib": "^1.10.0",
-    "typescript": "^4.1.1-rc"
+    "tslib": "^1.14.1",
+    "typescript": "^4.1.2"
   },
   "scripts": {
     "build": "rollup -c",
