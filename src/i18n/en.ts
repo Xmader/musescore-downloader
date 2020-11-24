@@ -1,5 +1,5 @@
 
-import { createLocale } from './'
+import { createLocale } from './utils'
 
 export default createLocale({
   'PROCESSING' () {

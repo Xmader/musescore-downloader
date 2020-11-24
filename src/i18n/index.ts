@@ -17,13 +17,6 @@ export interface LOCALE {
   'FULL_SCORE' (): string;
 }
 
-/**
- * type checking only so no missing keys
- */
-export function createLocale<OBJ extends LOCALE> (obj: OBJ): OBJ {
-  return Object.freeze(obj)
-}
-
 const locales = (<L extends { [n: string]: LOCALE } /** type checking */> (l: L) => Object.freeze(l))({
   en,
   es,
