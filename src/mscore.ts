@@ -56,8 +56,18 @@ const initFonts = () => {
 export const loadSoundFont = (score: WebMscore): Promise<void> => {
   if (!score[SOUND_FONT_LOADED]) {
     const loadPromise = (async () => {
+      let data: Uint8Array
+      if (isNodeJs) {
+        // module.exports.FluidR3Mono = ...
+        const SF3 = Object.values(require('@librescore/sf3'))[0]
+        const fs = require('fs')
+        data = await fs.promises.readFile(SF3)
+      } else {
+        data = await fetchData(SF3_URL)
+      }
+
       await score.setSoundFont(
-        await fetchData(SF3_URL),
+        data,
       )
     })()
     score[SOUND_FONT_LOADED] = loadPromise
