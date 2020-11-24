@@ -36,6 +36,7 @@
     "dist/main.js"
   ],
   "dependencies": {
+    "detect-node": "^2.0.4",
     "pdfkit": "git+https://github.com/Xmader/pdfkit.git",
     "svg-to-pdfkit": "^0.1.8",
     "webmscore": "^0.10.4"

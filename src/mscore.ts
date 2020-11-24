@@ -3,6 +3,7 @@
 import { fetchMscz } from './mscz'
 import { fetchData } from './utils'
 import { ScoreInfo } from './scoreinfo'
+import isNodeJs from 'detect-node'
 
 const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.10/webmscore.js'
 
@@ -16,8 +17,8 @@ const SOUND_FONT_LOADED = Symbol('SoundFont loaded')
 export type WebMscore = import('webmscore').default
 export type WebMscoreConstr = typeof import('webmscore').default
 
-const initMscore = async (w?: Window): Promise<WebMscoreConstr> => {
-  if (w !== undefined) { // attached to a page
+const initMscore = async (w: Window): Promise<WebMscoreConstr> => {
+  if (!isNodeJs) { // attached to a page
     if (!w['WebMscore']) {
       // init webmscore (https://github.com/LibreScore/webmscore)
       const script = w.document.createElement('script')
@@ -32,11 +33,11 @@ const initMscore = async (w?: Window): Promise<WebMscoreConstr> => {
 }
 
 let fonts: Promise<Uint8Array[]> | undefined
-const initFonts = (nodeJs: boolean) => {
+const initFonts = () => {
   // load CJK fonts
   // CJK (East Asian) characters will be rendered as "tofu" if there is no font
   if (!fonts) {
-    if (nodeJs) {
+    if (isNodeJs) {
       // module.exports.CN = ..., module.exports.KR = ...
       const FONTS = Object.values(require('@librescore/fonts'))
 
@@ -65,8 +66,8 @@ export const loadSoundFont = (score: WebMscore): Promise<void> => {
 }
 
 export const loadMscore = async (scoreinfo: ScoreInfo, w?: Window): Promise<WebMscore> => {
-  initFonts(w === undefined)
-  const WebMscore = await initMscore(w)
+  initFonts()
+  const WebMscore = await initMscore(w!)
 
   // parse mscz data
   const data = new Uint8Array(
