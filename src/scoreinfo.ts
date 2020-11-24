@@ -20,13 +20,11 @@ export const scoreinfo = {
     return document.querySelectorAll('.gXB83').length
   },
 
-  get baseUrl (this: typeof scoreinfo): string {
+  get thumbnailUrl (this: typeof scoreinfo): string {
+    // url to the image of the first page
     const el = document.querySelector("meta[property='og:image']") as HTMLMetaElement
-    const thumbnailUrl = el.content
-
-    const { origin, pathname } = new URL(thumbnailUrl)
-    // remove the last part
-    return origin + pathname.split('/').slice(0, -1).join('/') + '/'
+    const url = el.content
+    return url.split('@')[0]
   },
 
   get sheetImgType (): 'svg' | 'png' {

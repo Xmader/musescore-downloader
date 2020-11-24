@@ -29,7 +29,7 @@ export const downloadPDF = async (): Promise<void> => {
 
   const rs = Array.from({ length: pageCount }).map((_, i) => {
     if (i === 0) { // The url to the first page is static. We don't need to use API to obtain it.
-      return scoreinfo.baseUrl + `score_${i}.${imgType}`
+      return scoreinfo.thumbnailUrl
     } else { // obtain image urls using the API
       return getFileUrl('img', i)
     }
