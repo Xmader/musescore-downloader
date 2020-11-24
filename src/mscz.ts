@@ -1,10 +1,10 @@
 
-import { saveAs, assertRes } from './utils'
+import { saveAs, assertRes, getFetch } from './utils'
 import { ScoreInfo } from './scoreinfo'
 
 const MSCZ_BUF_SYM = Symbol('msczBufferP')
 
-export const fetchMscz = async (scoreinfo: ScoreInfo, _fetch = fetch): Promise<ArrayBuffer> => {
+export const fetchMscz = async (scoreinfo: ScoreInfo, _fetch = getFetch()): Promise<ArrayBuffer> => {
   let msczBufferP = scoreinfo.store.get(MSCZ_BUF_SYM) as Promise<ArrayBuffer> | undefined
 
   if (!msczBufferP) {

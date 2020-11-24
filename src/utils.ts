@@ -1,5 +1,6 @@
 
 import FileSaver from 'file-saver/dist/FileSaver.js'
+import isNodeJs from 'detect-node'
 
 export const saveAs: typeof import('file-saver').saveAs = FileSaver.saveAs
 
@@ -11,6 +12,15 @@ export const getIndexPath = (id: number): string => {
   // "5449062" -> ["2", "6", "0"]
   const indexN = idStr.split('').reverse().slice(0, 3)
   return indexN.join('/')
+}
+
+export const getFetch = (): typeof fetch => {
+  if (!isNodeJs) {
+    return fetch
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return require('node-fetch')
+  }
 }
 
 export const fetchData = async (url: string, init?: RequestInit): Promise<Uint8Array> => {
@@ -37,6 +47,7 @@ export const useTimeout = async <T> (promise: T | Promise<T>, ms: number): Promi
 }
 
 export const getSandboxWindow = (): Window => {
+  if (typeof document === 'undefined') return {} as any as Window
   const iframe = document.createElement('iframe')
   iframe.style.display = 'none'
   document.body.append(iframe)
