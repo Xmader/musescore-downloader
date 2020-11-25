@@ -23,7 +23,7 @@ export abstract class ScoreInfo {
   }
 
   get msczCidUrl (): string {
-    return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`
+    return `https://ipfs.io/api/v0/block/stat?arg=${this.msczIpfsRef}`
   }
 
   public msczUrl: string;
