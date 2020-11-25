@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.16.1
+// @version      0.16.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26420,19 +26420,59 @@ Please pipe the document into a Node stream.\
     });
 
     const MSCZ_BUF_SYM = Symbol('msczBufferP');
+    const MSCZ_URL_SYM = Symbol('msczUrl');
+    const MAIN_CID_SYM = Symbol('mainCid');
+    const IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP';
+    const IPNS_RS_URL = `https://ipfs.io/api/v0/dag/resolve?arg=/ipns/${IPNS_KEY}`;
+    const getMainCid = (scoreinfo, _fetch = getFetch()) => __awaiter(void 0, void 0, void 0, function* () {
+        // look for the persisted msczUrl inside scoreinfo
+        let result = scoreinfo.store.get(MAIN_CID_SYM);
+        if (result) {
+            return result;
+        }
+        const r = yield _fetch(IPNS_RS_URL);
+        assertRes(r);
+        const json = yield r.json();
+        result = json.Cid['/'];
+        scoreinfo.store.set(MAIN_CID_SYM, result); // persist to scoreinfo
+        return result;
+    });
+    const loadMsczUrl = (scoreinfo, _fetch = getFetch()) => __awaiter(void 0, void 0, void 0, function* () {
+        // look for the persisted msczUrl inside scoreinfo
+        let result = scoreinfo.store.get(MSCZ_URL_SYM);
+        if (result) {
+            return result;
+        }
+        const mainCid = yield getMainCid(scoreinfo, _fetch);
+        const url = scoreinfo.getMsczCidUrl(mainCid);
+        const r0 = yield _fetch(url);
+        // ipfs-http-gateway specific error
+        // may read further error msg as json
+        if (r0.status !== 500) {
+            assertRes(r0);
+        }
+        const cidRes = yield r0.json();
+        const cid = cidRes.Key;
+        if (!cid) {
+            // read further error msg
+            const err = cidRes.Message;
+            if (err.includes('no link named')) { // file not found
+                throw new Error('score not in dataset');
+            }
+            else {
+                throw new Error(err);
+            }
+        }
+        result = `https://ipfs.infura.io/ipfs/${cid}`;
+        scoreinfo.store.set(MSCZ_URL_SYM, result); // persist to scoreinfo
+        return result;
+    });
     const fetchMscz = (scoreinfo, _fetch = getFetch()) => __awaiter(void 0, void 0, void 0, function* () {
         let msczBufferP = scoreinfo.store.get(MSCZ_BUF_SYM);
         if (!msczBufferP) {
-            const url = scoreinfo.msczCidUrl;
             msczBufferP = (() => __awaiter(void 0, void 0, void 0, function* () {
-                const r0 = yield _fetch(url);
-                // ipfs-http-gateway specific error
-                // may read further error msg as json
-                if (r0.status !== 500) {
-                    assertRes(r0);
-                }
-                const cidRes = yield r0.json();
-                const r = yield _fetch(scoreinfo.loadMsczUrl(cidRes));
+                const url = yield loadMsczUrl(scoreinfo, _fetch);
+                const r = yield _fetch(url);
                 assertRes(r);
                 const data = yield r.arrayBuffer();
                 return data;
@@ -26851,7 +26891,6 @@ Please pipe the document into a Node stream.\
 
     class ScoreInfo {
         constructor() {
-            this.IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP';
             this.RADIX = 20;
             this.store = new Map();
         }
@@ -26861,26 +26900,11 @@ Please pipe the document into a Node stream.\
         get fileName() {
             return escapeFilename(this.title);
         }
-        get msczIpfsRef() {
-            return `/ipns/${this.IPNS_KEY}/${this.idLastDigit}/${this.id}.mscz`;
+        getMsczIpfsRef(mainCid) {
+            return `/ipfs/${mainCid}/${this.idLastDigit}/${this.id}.mscz`;
         }
-        get msczCidUrl() {
-            return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.msczIpfsRef}`;
-        }
-        loadMsczUrl(cidRes) {
-            const cid = cidRes.Key;
-            if (!cid) {
-                // read further error msg
-                const err = cidRes.Message;
-                if (err.includes('no link named')) { // file not found
-                    throw new Error('score not in dataset');
-                }
-                else {
-                    throw new Error(err);
-                }
-            }
-            this.msczUrl = `https://ipfs.infura.io/ipfs/${cid}`;
-            return this.msczUrl;
+        getMsczCidUrl(mainCid) {
+            return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.getMsczIpfsRef(mainCid)}`;
         }
     }
     class ScoreInfoInPage extends ScoreInfo {
@@ -26901,7 +26925,7 @@ Please pipe the document into a Node stream.\
     class SheetInfo {
         get imgType() {
             const thumbnail = this.thumbnailUrl;
-            const imgtype = thumbnail.match(/\.(\w+)$/)[1];
+            const imgtype = thumbnail.match(/score_0\.(\w+)/)[1];
             return imgtype;
         }
     }
