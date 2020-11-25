@@ -84,8 +84,6 @@ export default [
             format: "iife",
             sourcemap: false,
             banner: getBannerText,
-            intro: "// fix for Greasemonkey\nwindow.eval('(' + function () {",
-            outro: "}.toString() + ')()')"
         },
         plugins,
     },
