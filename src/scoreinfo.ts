@@ -95,7 +95,7 @@ export abstract class SheetInfo {
 
   get imgType (): 'svg' | 'png' {
     const thumbnail = this.thumbnailUrl
-    const imgtype = thumbnail.match(/\.(\w+)$/)![1]
+    const imgtype = thumbnail.match(/score_0\.(\w+)/)![1]
     return imgtype as 'svg' | 'png'
   }
 }
