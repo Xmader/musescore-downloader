@@ -3,7 +3,7 @@
 /* eslint-disable no-void */
 
 import fs from 'fs'
-import { fetchMscz } from './mscz'
+import { fetchMscz, MSCZ_URL_SYM } from './mscz'
 import { loadMscore, INDV_DOWNLOADS, WebMscore } from './mscore'
 import { ScoreInfoHtml } from './scoreinfo'
 import { escapeFilename } from './utils'
@@ -59,7 +59,7 @@ void (async () => {
     await fetchMscz(scoreinfo)
 
     spinner.info('MSCZ file loaded')
-    spinner.info(`File URL: ${scoreinfo.msczUrl}`)
+    spinner.info(`File URL: ${scoreinfo.store.get(MSCZ_URL_SYM) as string}`)
     spinner.start()
 
     // load score using webmscore

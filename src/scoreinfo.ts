@@ -2,7 +2,6 @@
 import { getFetch, escapeFilename } from './utils'
 
 export abstract class ScoreInfo {
-  private readonly IPNS_KEY = 'QmSdXtvzC8v8iTTZuj5cVmiugnzbR1QATYRcGix4bBsioP';
   private readonly RADIX = 20;
 
   abstract id: number;
@@ -18,28 +17,12 @@ export abstract class ScoreInfo {
     return escapeFilename(this.title)
   }
 
-  get msczIpfsRef (): string {
-    return `/ipns/${this.IPNS_KEY}/${this.idLastDigit}/${this.id}.mscz`
+  public getMsczIpfsRef (mainCid: string): string {
+    return `/ipfs/${mainCid}/${this.idLastDigit}/${this.id}.mscz`
   }
 
-  get msczCidUrl (): string {
-    return `https://ipfs.io/api/v0/block/stat?arg=${this.msczIpfsRef}`
-  }
-
-  public msczUrl: string;
-  public loadMsczUrl (cidRes: { Key: string; Message: string }): string {
-    const cid = cidRes.Key
-    if (!cid) {
-      // read further error msg
-      const err = cidRes.Message
-      if (err.includes('no link named')) { // file not found
-        throw new Error('score not in dataset')
-      } else {
-        throw new Error(err)
-      }
-    }
-    this.msczUrl = `https://ipfs.infura.io/ipfs/${cid}`
-    return this.msczUrl
+  public getMsczCidUrl (mainCid: string): string {
+    return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.getMsczIpfsRef(mainCid)}`
   }
 }
 
