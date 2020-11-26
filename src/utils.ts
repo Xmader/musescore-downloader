@@ -52,7 +52,7 @@ export const getUnsafeWindow = (): Window => {
   return window.eval('window') as Window
 }
 
-export const console: Console = window.console // Object.is(window.console, unsafeWindow.console) == false
+export const console: Console = (window || global).console // Object.is(window.console, unsafeWindow.console) == false
 
 export const windowOpen: Window['open'] = (...args): Window | null => {
   return window.open(...args) // Object.is(window.open, unsafeWindow.open) == false
