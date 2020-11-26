@@ -104,6 +104,9 @@ void (async () => {
     name: 'types',
     message: 'Filetype Selection',
     choices: typeChoices,
+    validate (input: number[]) {
+      return input.length >= 1
+    },
   })
   const filetypes = types.map(i => INDV_DOWNLOADS[i])
 
