@@ -51,14 +51,23 @@ export const getSandboxWindowAsync = async (): Promise<Window> => {
   if (typeof document === 'undefined') return {} as any as Window
 
   return new Promise((resolve) => {
-    window.onmouseover = () => {
-      const iframe = document.createElement('iframe')
+    const targetEl = document.documentElement
+    const eventName = 'onmousemove'
+
+    const unsafe = getUnsafeWindow()
+    const id = Math.random().toString()
+
+    unsafe[id] = (iframe: HTMLIFrameElement) => {
+      delete unsafe[id]
+      targetEl.removeAttribute(eventName)
+
       iframe.style.display = 'none'
-      document.body.append(iframe)
+      targetEl.append(iframe)
       const w = iframe.contentWindow
-      window.onmouseover = null
       resolve(w as Window)
     }
+
+    targetEl.setAttribute(eventName, `window['${id}'](document.createElement('iframe'))`)
   })
 }
 
