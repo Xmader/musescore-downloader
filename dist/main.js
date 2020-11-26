@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.17.0
+// @version      0.17.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -75,13 +75,27 @@
             promise.then(resolve, reject).finally(() => clearTimeout(i));
         });
     });
+    const getSandboxWindowAsync = () => __awaiter(void 0, void 0, void 0, function* () {
+        if (typeof document === 'undefined')
+            return {};
+        return new Promise((resolve) => {
+            window.onmouseover = () => {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                document.body.append(iframe);
+                const w = iframe.contentWindow;
+                window.onmouseover = null;
+                resolve(w);
+            };
+        });
+    });
     const getUnsafeWindow = () => {
         // eslint-disable-next-line no-eval
         return window.eval('window');
     };
     const console$1 = (window || global).console; // Object.is(window.console, unsafeWindow.console) == false
-    const windowOpen = (...args) => {
-        return window.open(...args); // Object.is(window.open, unsafeWindow.open) == false
+    const windowOpenAsync = (...args) => {
+        return getSandboxWindowAsync().then(w => w.open(...args));
     };
     const attachShadow = (el) => {
         return Element.prototype.attachShadow.call(el, { mode: 'closed' });
@@ -26759,45 +26773,47 @@ Please pipe the document into a Node stream.\
          * replace the template button with the list of new buttons
          */
         commit(mode = BtnListMode.InPage) {
-            switch (mode) {
-                case BtnListMode.InPage: {
-                    // fallback to BtnListMode.ExtWindow
-                    try {
-                        this.getBtnParent();
-                    }
-                    catch (_a) {
-                        return this.commit(BtnListMode.ExtWindow);
-                    }
-                    let el = this._commit();
-                    const observer = new MutationObserver(() => {
-                        // check if the buttons are still in document when dom updates 
-                        if (!document.contains(el)) {
-                            try {
-                                this.getBtnParent();
-                            }
-                            catch (_a) {
-                                observer.disconnect();
-                                this.commit(BtnListMode.ExtWindow);
-                            }
-                            // re-commit
-                            // performance issue?
-                            el = this._commit();
+            return __awaiter(this, void 0, void 0, function* () {
+                switch (mode) {
+                    case BtnListMode.InPage: {
+                        // fallback to BtnListMode.ExtWindow
+                        try {
+                            this.getBtnParent();
                         }
-                    });
-                    observer.observe(document, { childList: true, subtree: true });
-                    break;
+                        catch (_a) {
+                            return this.commit(BtnListMode.ExtWindow);
+                        }
+                        let el = this._commit();
+                        const observer = new MutationObserver(() => {
+                            // check if the buttons are still in document when dom updates 
+                            if (!document.contains(el)) {
+                                try {
+                                    this.getBtnParent();
+                                }
+                                catch (_a) {
+                                    observer.disconnect();
+                                    this.commit(BtnListMode.ExtWindow);
+                                }
+                                // re-commit
+                                // performance issue?
+                                el = this._commit();
+                            }
+                        });
+                        observer.observe(document, { childList: true, subtree: true });
+                        break;
+                    }
+                    case BtnListMode.ExtWindow: {
+                        const div = this._commit();
+                        const w = yield windowOpenAsync('', undefined, 'resizable,width=230,height=270');
+                        // eslint-disable-next-line no-unused-expressions
+                        w === null || w === void 0 ? void 0 : w.document.body.append(div);
+                        window.addEventListener('unload', () => w === null || w === void 0 ? void 0 : w.close());
+                        break;
+                    }
+                    default:
+                        throw new Error('unknown BtnListMode');
                 }
-                case BtnListMode.ExtWindow: {
-                    const div = this._commit();
-                    const w = windowOpen('', undefined, 'resizable,width=230,height=270');
-                    // eslint-disable-next-line no-unused-expressions
-                    w === null || w === void 0 ? void 0 : w.document.body.append(div);
-                    window.addEventListener('unload', () => w === null || w === void 0 ? void 0 : w.close());
-                    break;
-                }
-                default:
-                    throw new Error('unknown BtnListMode');
-            }
+            });
         }
     }
     // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -26811,7 +26827,7 @@ Please pipe the document into a Node stream.\
         };
         BtnAction.openUrl = (url) => {
             return BtnAction.process(() => __awaiter(this, void 0, void 0, function* () {
-                windowOpen(yield normalizeUrlInput(url));
+                return windowOpenAsync(yield normalizeUrlInput(url));
             }));
         };
         BtnAction.download = (url, fallback, timeout) => {
@@ -26827,7 +26843,7 @@ Please pipe the document into a Node stream.\
                 const _onclick = btn.onclick;
                 btn.onclick = null;
                 setText(i18n('PROCESSING')());
-                const w = windowOpen('');
+                const w = yield windowOpenAsync('');
                 const txt = document.createTextNode(i18n('PROCESSING')());
                 w.document.body.append(txt);
                 // set page hooks
