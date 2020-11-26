@@ -76,6 +76,11 @@ export const fetchMscz = async (scoreinfo: ScoreInfo, _fetch = getFetch()): Prom
   return msczBufferP
 }
 
+// eslint-disable-next-line @typescript-eslint/require-await
+export const setMscz = async (scoreinfo: ScoreInfo, buffer: ArrayBuffer): Promise<void> => {
+  scoreinfo.store.set(MSCZ_BUF_SYM, Promise.resolve(buffer))
+}
+
 export const downloadMscz = async (scoreinfo: ScoreInfo, saveAs: typeof import('file-saver').saveAs): Promise<void> => {
   const data = new Blob([await fetchMscz(scoreinfo)])
   const filename = scoreinfo.fileName

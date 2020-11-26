@@ -4,9 +4,9 @@
 
 import fs from 'fs'
 import path from 'path'
-import { fetchMscz, MSCZ_URL_SYM } from './mscz'
+import { fetchMscz, setMscz, MSCZ_URL_SYM } from './mscz'
 import { loadMscore, INDV_DOWNLOADS, WebMscore } from './mscore'
-import { ScoreInfoHtml } from './scoreinfo'
+import { ScoreInfo, ScoreInfoHtml, ScoreInfoObj } from './scoreinfo'
 import { escapeFilename } from './utils'
 import i18n from './i18n'
 
@@ -15,6 +15,7 @@ const ora: typeof import('ora') = require('ora')
 const chalk: typeof import('chalk') = require('chalk')
 
 const SCORE_URL_PREFIX = 'https://musescore.com/'
+const EXT = '.mscz'
 
 interface Params {
   url: string;
@@ -25,35 +26,42 @@ interface Params {
 }
 
 void (async () => {
-  // ask for the page url
-  const { url } = await inquirer.prompt<Params>({
-    type: 'input',
-    name: 'url',
-    message: 'Score URL:',
-    suffix: ` (starts with "${SCORE_URL_PREFIX}")\n `,
-    validate (input: string) {
-      return input && input.startsWith(SCORE_URL_PREFIX)
-    },
-    default: process.argv[2],
-  })
+  const fileInit: string | undefined = process.argv[2]
+  const isLocalFile = fileInit?.endsWith(EXT) && fs.existsSync(fileInit)
 
-  // request scoreinfo
-  const scoreinfo = await ScoreInfoHtml.request(url)
-  const fileName = scoreinfo.fileName
+  let scoreinfo: ScoreInfo
+  if (!isLocalFile) {
+    // ask for the page url
+    const { url } = await inquirer.prompt<Params>({
+      type: 'input',
+      name: 'url',
+      message: 'Score URL:',
+      suffix: ` (starts with "${SCORE_URL_PREFIX}")\n `,
+      validate (input: string) {
+        return input && input.startsWith(SCORE_URL_PREFIX)
+      },
+      default: fileInit,
+    })
 
-  // confirmation
-  const { confirmed } = await inquirer.prompt<Params>({
-    type: 'confirm',
-    name: 'confirmed',
-    message: 'Continue?',
-    prefix: `${chalk.yellow('!')} ` +
-      `ID: ${scoreinfo.id}\n  ` +
-      `Title: ${scoreinfo.title}\n `,
-    default: true,
-  })
-  if (!confirmed) return
+    // request scoreinfo
+    scoreinfo = await ScoreInfoHtml.request(url)
 
-  console.log()
+    // confirmation
+    const { confirmed } = await inquirer.prompt<Params>({
+      type: 'confirm',
+      name: 'confirmed',
+      message: 'Continue?',
+      prefix: `${chalk.yellow('!')} ` +
+        `ID: ${scoreinfo.id}\n  ` +
+        `Title: ${scoreinfo.title}\n `,
+      default: true,
+    })
+    if (!confirmed) return
+    console.log() // print a blank line to the terminal
+  } else {
+    scoreinfo = new ScoreInfoObj(0, path.basename(fileInit, EXT))
+  }
+
   const spinner = ora({
     text: i18n('PROCESSING')(),
     color: 'blue',
@@ -64,11 +72,19 @@ void (async () => {
   let score: WebMscore
   let metadata: import('webmscore/schemas').ScoreMetadata
   try {
-    // fetch mscz file from the dataset, and cache it for side effect
-    await fetchMscz(scoreinfo)
+    if (!isLocalFile) {
+      // fetch mscz file from the dataset, and cache it for side effect
+      await fetchMscz(scoreinfo)
+    } else {
+      // load local file
+      const data = await fs.promises.readFile(fileInit)
+      await setMscz(scoreinfo, data.buffer)
+    }
 
     spinner.info('MSCZ file loaded')
-    spinner.info(`File URL: ${scoreinfo.store.get(MSCZ_URL_SYM) as string}`)
+    if (!isLocalFile) {
+      spinner.info(`File URL: ${scoreinfo.store.get(MSCZ_URL_SYM) as string}`)
+    }
     spinner.start()
 
     // load score using webmscore
@@ -123,6 +139,7 @@ void (async () => {
   })
 
   // export files
+  const fileName = scoreinfo.fileName || await score.titleFilenameSafe()
   spinner.start()
   await Promise.all(
     filetypes.map(async (d) => {

@@ -27,7 +27,7 @@ export abstract class ScoreInfo {
 }
 
 export class ScoreInfoObj extends ScoreInfo {
-  constructor (public id: number, public title: string) { super() }
+  constructor (public id: number = 0, public title: string = '') { super() }
 }
 
 export class ScoreInfoInPage extends ScoreInfo {
