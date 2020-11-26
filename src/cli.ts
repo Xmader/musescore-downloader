@@ -18,7 +18,7 @@ const SCORE_URL_PREFIX = 'https://musescore.com/'
 const EXT = '.mscz'
 
 interface Params {
-  url: string;
+  fileInit: string;
   confirmed: boolean;
   part: number;
   types: number[];
@@ -26,25 +26,27 @@ interface Params {
 }
 
 void (async () => {
-  const fileInit: string | undefined = process.argv[2]
-  const isLocalFile = fileInit?.endsWith(EXT) && fs.existsSync(fileInit)
-
   let scoreinfo: ScoreInfo
-  if (!isLocalFile) {
-    // ask for the page url
-    const { url } = await inquirer.prompt<Params>({
-      type: 'input',
-      name: 'url',
-      message: 'Score URL:',
-      suffix: ` (starts with "${SCORE_URL_PREFIX}")\n `,
-      validate (input: string) {
-        return input && input.startsWith(SCORE_URL_PREFIX)
-      },
-      default: fileInit,
-    })
+  // ask for the page url or path to local file
+  const { fileInit } = await inquirer.prompt<Params>({
+    type: 'input',
+    name: 'fileInit',
+    message: 'Score URL or path to local MSCZ file:',
+    suffix: `\n  (starts with "${SCORE_URL_PREFIX}" or local filepath ends with "${EXT}")\n `,
+    validate (input: string) {
+      return input &&
+        (
+          input.startsWith(SCORE_URL_PREFIX) ||
+          (input.endsWith(EXT) && fs.statSync(input).isFile())
+        )
+    },
+    default: process.argv[2],
+  })
 
+  const isLocalFile = fileInit.endsWith(EXT)
+  if (!isLocalFile) {
     // request scoreinfo
-    scoreinfo = await ScoreInfoHtml.request(url)
+    scoreinfo = await ScoreInfoHtml.request(fileInit)
 
     // confirmation
     const { confirmed } = await inquirer.prompt<Params>({
