@@ -45,6 +45,7 @@ There is an article on their website: [Score download becomes a part of the Pro 
 1. Install Node.js LTS (https://nodejs.org/)
 2. Open a command line terminal or command prompt
 3. Type `npx msdl`, enter
+  (`npx msdl` will always run the latest version)
 4. Follow the instructions
 
 [source code](/src/cli.ts)
