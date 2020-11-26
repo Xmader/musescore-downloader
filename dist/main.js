@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.17.1
+// @version      0.17.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -79,14 +79,18 @@
         if (typeof document === 'undefined')
             return {};
         return new Promise((resolve) => {
-            window.onmouseover = () => {
-                const iframe = document.createElement('iframe');
+            const targetEl = document.documentElement;
+            const eventName = 'onmousemove';
+            const id = Math.random().toString();
+            targetEl[id] = (iframe) => {
+                delete targetEl[id];
+                targetEl.removeAttribute(eventName);
                 iframe.style.display = 'none';
-                document.body.append(iframe);
+                targetEl.append(iframe);
                 const w = iframe.contentWindow;
-                window.onmouseover = null;
                 resolve(w);
             };
+            targetEl.setAttribute(eventName, `this['${id}'](document.createElement('iframe'))`);
         });
     });
     const getUnsafeWindow = () => {
