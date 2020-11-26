@@ -99,6 +99,19 @@ void (async () => {
   })
   const filetypes = types.map(i => INDV_DOWNLOADS[i])
 
+  // destination directory
+  const { dest } = await inquirer.prompt({
+    type: 'input',
+    name: 'dest',
+    message: 'Destination Directory:',
+    validate (input: string) {
+      return input && fs.statSync(input).isDirectory()
+    },
+    default: process.cwd(),
+  })
+  // change working directory
+  process.chdir(dest)
+
   // export files
   spinner.start()
   await Promise.all(
