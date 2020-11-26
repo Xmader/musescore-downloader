@@ -47,6 +47,21 @@ export const useTimeout = async <T> (promise: T | Promise<T>, ms: number): Promi
   })
 }
 
+export const getSandboxWindowAsync = async (): Promise<Window> => {
+  if (typeof document === 'undefined') return {} as any as Window
+
+  return new Promise((resolve) => {
+    window.onmouseover = () => {
+      const iframe = document.createElement('iframe')
+      iframe.style.display = 'none'
+      document.body.append(iframe)
+      const w = iframe.contentWindow
+      window.onmouseover = null
+      resolve(w as Window)
+    }
+  })
+}
+
 export const getUnsafeWindow = (): Window => {
   // eslint-disable-next-line no-eval
   return window.eval('window') as Window
@@ -54,8 +69,8 @@ export const getUnsafeWindow = (): Window => {
 
 export const console: Console = (window || global).console // Object.is(window.console, unsafeWindow.console) == false
 
-export const windowOpen: Window['open'] = (...args): Window | null => {
-  return window.open(...args) // Object.is(window.open, unsafeWindow.open) == false
+export const windowOpenAsync = (...args: Parameters<Window['open']>): Promise<Window | null> => {
+  return getSandboxWindowAsync().then(w => w.open(...args))
 }
 
 export const attachShadow = (el: Element): ShadowRoot => {

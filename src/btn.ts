@@ -1,7 +1,7 @@
 
 import { ScoreInfo } from './scoreinfo'
 import { loadMscore, WebMscore } from './mscore'
-import { useTimeout, windowOpen, console, attachShadow } from './utils'
+import { useTimeout, windowOpenAsync, console, attachShadow } from './utils'
 import i18n from './i18n'
 // @ts-ignore
 import btnListCss from './btn.css'
@@ -116,7 +116,7 @@ export class BtnList {
   /**
    * replace the template button with the list of new buttons
    */
-  commit (mode: BtnListMode = BtnListMode.InPage): void {
+  async commit (mode: BtnListMode = BtnListMode.InPage): Promise<void> {
     switch (mode) {
       case BtnListMode.InPage: {
         // fallback to BtnListMode.ExtWindow
@@ -148,7 +148,7 @@ export class BtnList {
 
       case BtnListMode.ExtWindow: {
         const div = this._commit()
-        const w = windowOpen('', undefined, 'resizable,width=230,height=270')
+        const w = await windowOpenAsync('', undefined, 'resizable,width=230,height=270')
         // eslint-disable-next-line no-unused-expressions
         w?.document.body.append(div)
         window.addEventListener('unload', () => w?.close())
@@ -176,7 +176,7 @@ export namespace BtnAction {
 
   export const openUrl = (url: UrlInput): BtnAction => {
     return process(async (): Promise<any> => {
-      windowOpen(await normalizeUrlInput(url))
+      return windowOpenAsync(await normalizeUrlInput(url))
     })
   }
 
@@ -195,7 +195,7 @@ export namespace BtnAction {
       btn.onclick = null
       setText(i18n('PROCESSING')())
 
-      const w = windowOpen('') as Window
+      const w = await windowOpenAsync('') as Window
       const txt = document.createTextNode(i18n('PROCESSING')())
       w.document.body.append(txt)
 
