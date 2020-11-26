@@ -38,6 +38,17 @@ There is an article on their website: [Score download becomes a part of the Pro 
 
 ## Installation
 
+### CLI Usage
+
+(recommended, more bulletproof)
+
+1. Install Node.js LTS (https://nodejs.org/)
+2. Open a command line terminal or command prompt
+3. Type `npx msdl`, enter
+4. Follow the instructions
+
+[source code](/src/cli.ts)
+
 ### Install as Userscript
 
 This script is available as a [Userscript](https://en.wikipedia.org/wiki/Userscript). To use this Userscript, you need to first install a [user script manager](https://greasyfork.org/en/help/installing-user-scripts), like Tampermonkey.
