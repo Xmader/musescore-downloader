@@ -15,9 +15,17 @@ const chalk: typeof import('chalk') = require('chalk')
 
 const SCORE_URL_PREFIX = 'https://musescore.com/'
 
+interface Params {
+  url: string;
+  confirmed: boolean;
+  part: number;
+  types: number[];
+  dest: string;
+}
+
 void (async () => {
   // ask for the page url
-  const { url } = await inquirer.prompt({
+  const { url } = await inquirer.prompt<Params>({
     type: 'input',
     name: 'url',
     message: 'Score URL:',
@@ -33,7 +41,7 @@ void (async () => {
   const fileName = scoreinfo.fileName
 
   // confirmation
-  const { confirmed } = await inquirer.prompt({
+  const { confirmed } = await inquirer.prompt<Params>({
     type: 'confirm',
     name: 'confirmed',
     message: 'Continue?',
@@ -81,7 +89,7 @@ void (async () => {
   const typeChoices = INDV_DOWNLOADS.map((d, i) => ({ name: d.name, value: i }))
 
   // part selection
-  const { part }: { part: number } = await inquirer.prompt({
+  const { part } = await inquirer.prompt<Params>({
     type: 'list',
     name: 'part',
     message: 'Part Selection',
@@ -91,7 +99,7 @@ void (async () => {
   await score.setExcerptId(part)
 
   // filetype selection
-  const { types }: { types: number[] } = await inquirer.prompt({
+  const { types } = await inquirer.prompt<Params>({
     type: 'checkbox',
     name: 'types',
     message: 'Filetype Selection',
@@ -100,7 +108,7 @@ void (async () => {
   const filetypes = types.map(i => INDV_DOWNLOADS[i])
 
   // destination directory
-  const { dest } = await inquirer.prompt({
+  const { dest } = await inquirer.prompt<Params>({
     type: 'input',
     name: 'dest',
     message: 'Destination Directory:',
