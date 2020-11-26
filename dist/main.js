@@ -5,21 +5,18 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.16.2
+// @version      0.17.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
 // @license      MIT
 // @copyright    Copyright (c) 2019-2020 Xmader
-// @grant        none
+// @grant        unsafeWindow
 // @run-at       document-start
 // ==/UserScript==
 
 (function () {
     'use strict';
-
-    // fix for Greasemonkey
-    window.eval('(' + function () {
 
     function __awaiter(thisArg, _arguments, P, generator) {
         function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -78,20 +75,16 @@
             promise.then(resolve, reject).finally(() => clearTimeout(i));
         });
     });
-    const getSandboxWindow = () => {
-        if (typeof document === 'undefined')
-            return {};
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        document.body.append(iframe);
-        const w = iframe.contentWindow;
-        return w;
+    const getUnsafeWindow = () => {
+        // eslint-disable-next-line no-eval
+        return window.eval('window');
     };
-    const sandboxWindow = getSandboxWindow();
-    const console$1 = sandboxWindow['console'];
-    const _Element = sandboxWindow['Element'];
+    const console$1 = (window || global).console; // Object.is(window.console, unsafeWindow.console) == false
     const windowOpen = (...args) => {
-        return sandboxWindow.open(...args);
+        return window.open(...args); // Object.is(window.open, unsafeWindow.open) == false
+    };
+    const attachShadow = (el) => {
+        return Element.prototype.attachShadow.call(el, { mode: 'closed' });
     };
     const waitForDocumentLoaded = () => {
         if (document.readyState !== 'complete') {
@@ -26271,9 +26264,10 @@ Please pipe the document into a Node stream.\
             });
         }
         // hook `webpackJsonpmusescore.push` as soon as `webpackJsonpmusescore` is available
-        let jsonp = window['webpackJsonpmusescore'];
+        const _w = getUnsafeWindow();
+        let jsonp = _w['webpackJsonpmusescore'];
         let hooked = false;
-        Object.defineProperty(window, 'webpackJsonpmusescore', {
+        Object.defineProperty(_w, 'webpackJsonpmusescore', {
             get() { return jsonp; },
             set(v) {
                 jsonp = v;
@@ -26707,9 +26701,6 @@ Please pipe the document into a Node stream.\
         n.onclick = btn.onclick;
         return n;
     };
-    const attachShadow = (el) => {
-        return _Element.prototype.attachShadow.call(el, { mode: 'closed' });
-    };
     var BtnListMode;
     (function (BtnListMode) {
         BtnListMode[BtnListMode["InPage"] = 0] = "InPage";
@@ -27043,7 +27034,5 @@ Please pipe the document into a Node stream.\
     };
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     waitForDocumentLoaded().then(main);
-
-    }.toString() + ')()')
 
 }());
