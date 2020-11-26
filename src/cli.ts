@@ -3,6 +3,7 @@
 /* eslint-disable no-void */
 
 import fs from 'fs'
+import path from 'path'
 import { fetchMscz, MSCZ_URL_SYM } from './mscz'
 import { loadMscore, INDV_DOWNLOADS, WebMscore } from './mscore'
 import { ScoreInfoHtml } from './scoreinfo'
@@ -120,15 +121,14 @@ void (async () => {
     },
     default: process.cwd(),
   })
-  // change working directory
-  process.chdir(dest)
 
   // export files
   spinner.start()
   await Promise.all(
     filetypes.map(async (d) => {
       const data = await d.action(score)
-      const f = `${fileName} - ${escapeFilename(partName)}.${d.fileExt}`
+      const n = `${fileName} - ${escapeFilename(partName)}.${d.fileExt}`
+      const f = path.join(dest, n)
       await fs.promises.writeFile(f, data)
       spinner.info(`Saved ${chalk.underline(f)}`)
       spinner.start()
