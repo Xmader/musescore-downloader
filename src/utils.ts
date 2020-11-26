@@ -53,12 +53,10 @@ export const getSandboxWindowAsync = async (): Promise<Window> => {
   return new Promise((resolve) => {
     const targetEl = document.documentElement
     const eventName = 'onmousemove'
-
-    const unsafe = getUnsafeWindow()
     const id = Math.random().toString()
 
-    unsafe[id] = (iframe: HTMLIFrameElement) => {
-      delete unsafe[id]
+    targetEl[id] = (iframe: HTMLIFrameElement) => {
+      delete targetEl[id]
       targetEl.removeAttribute(eventName)
 
       iframe.style.display = 'none'
@@ -67,7 +65,7 @@ export const getSandboxWindowAsync = async (): Promise<Window> => {
       resolve(w as Window)
     }
 
-    targetEl.setAttribute(eventName, `window['${id}'](document.createElement('iframe'))`)
+    targetEl.setAttribute(eventName, `this['${id}'](document.createElement('iframe'))`)
   })
 }
 
