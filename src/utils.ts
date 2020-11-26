@@ -47,21 +47,19 @@ export const useTimeout = async <T> (promise: T | Promise<T>, ms: number): Promi
   })
 }
 
-export const getSandboxWindow = (): Window => {
-  if (typeof document === 'undefined') return {} as any as Window
-  const iframe = document.createElement('iframe')
-  iframe.style.display = 'none'
-  document.body.append(iframe)
-  const w = iframe.contentWindow
-  return w as Window
+export const getUnsafeWindow = (): Window => {
+  // eslint-disable-next-line no-eval
+  return window.eval('window') as Window
 }
 
-export const sandboxWindow = getSandboxWindow()
-export const console: Console = sandboxWindow['console']
-export const _Element: typeof Element = sandboxWindow['Element']
+export const console: Console = window.console // Object.is(window.console, unsafeWindow.console) == false
 
 export const windowOpen: Window['open'] = (...args): Window | null => {
-  return sandboxWindow.open(...args)
+  return window.open(...args) // Object.is(window.open, unsafeWindow.open) == false
+}
+
+export const attachShadow = (el: Element): ShadowRoot => {
+  return Element.prototype.attachShadow.call(el, { mode: 'closed' }) as ShadowRoot
 }
 
 export const waitForDocumentLoaded = (): Promise<void> => {

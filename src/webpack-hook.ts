@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 
 import { hookNative } from './anti-detection'
-import { console } from './utils'
+import { console, getUnsafeWindow } from './utils'
 
 const CHUNK_PUSH_FN = /^function [^r]\(\w\){/
 
@@ -86,9 +86,10 @@ export const [webpackGlobalOverride, onPackLoad] = (() => {
   }
 
   // hook `webpackJsonpmusescore.push` as soon as `webpackJsonpmusescore` is available
-  let jsonp = window['webpackJsonpmusescore']
+  const _w = getUnsafeWindow()
+  let jsonp = _w['webpackJsonpmusescore']
   let hooked = false
-  Object.defineProperty(window, 'webpackJsonpmusescore', {
+  Object.defineProperty(_w, 'webpackJsonpmusescore', {
     get () { return jsonp },
     set (v: WebpackJson) {
       jsonp = v

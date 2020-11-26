@@ -1,7 +1,7 @@
 
 import { ScoreInfo } from './scoreinfo'
 import { loadMscore, WebMscore } from './mscore'
-import { useTimeout, windowOpen, console, _Element } from './utils'
+import { useTimeout, windowOpen, console, attachShadow } from './utils'
 import i18n from './i18n'
 // @ts-ignore
 import btnListCss from './btn.css'
@@ -41,10 +41,6 @@ const cloneBtn = (btn: HTMLButtonElement) => {
   const n = btn.cloneNode(true) as HTMLButtonElement
   n.onclick = btn.onclick
   return n
-}
-
-const attachShadow = (el: Element): ShadowRoot => {
-  return _Element.prototype.attachShadow.call(el, { mode: 'closed' }) as ShadowRoot
 }
 
 interface BtnOptions {
