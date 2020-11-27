@@ -61,7 +61,6 @@ const plugins = [
         dirname: false,
         filename: false,
         baseDir: false,
-        process: false,
     }),
 ]
 
