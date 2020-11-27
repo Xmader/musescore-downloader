@@ -47,8 +47,28 @@ export const useTimeout = async <T> (promise: T | Promise<T>, ms: number): Promi
   })
 }
 
-export const getSandboxWindowAsync = async (targetEl = document.documentElement): Promise<Window> => {
+export const getSandboxWindowAsync = async (targetEl: Element | undefined = undefined): Promise<Window> => {
   if (typeof document === 'undefined') return {} as any as Window
+
+  if (!targetEl) {
+    return new Promise((resolve) => {
+      // You need ads in your pages, right?
+      const observer = new MutationObserver(() => {
+        for (let i = 0; i < window.frames.length; i++) {
+          // find iframe windows created by ads
+          const frame = frames[i]
+          try {
+            const href = frame.location.href
+            if (href === location.href || href === 'about:blank') {
+              resolve(frame)
+              return
+            }
+          } catch { }
+        }
+      })
+      observer.observe(document.body, { subtree: true, childList: true })
+    })
+  }
 
   return new Promise((resolve) => {
     const eventName = 'onmousemove'
@@ -75,7 +95,7 @@ export const getUnsafeWindow = (): Window => {
 
 export const console: Console = (window || global).console // Object.is(window.console, unsafeWindow.console) == false
 
-export const windowOpenAsync = (targetEl = document.documentElement, ...args: Parameters<Window['open']>): Promise<Window | null> => {
+export const windowOpenAsync = (targetEl: Element | undefined, ...args: Parameters<Window['open']>): Promise<Window | null> => {
   return getSandboxWindowAsync(targetEl).then(w => w.open(...args))
 }
 
