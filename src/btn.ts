@@ -9,7 +9,7 @@ import btnListCss from './btn.css'
 type BtnElement = HTMLButtonElement
 
 const getBtnContainer = (): HTMLDivElement => {
-  const container = document.querySelectorAll('aside>section>section')[0]
+  const container = document.querySelectorAll('section>section>section>section')[0]
   const btnParent = [...container.children].find((div) => {
     const b = div.querySelector('button, .button')
     const text = b ? b.outerHTML.replace(/\s/g, '') : ''
