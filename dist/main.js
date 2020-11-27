@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.19.1
+// @version      0.19.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -40,8 +40,234 @@
 
     });
 
+    var global$1 = (typeof global !== "undefined" ? global :
+                typeof self !== "undefined" ? self :
+                typeof window !== "undefined" ? window : {});
+
+    // shim for using process in browser
+    // based off https://github.com/defunctzombie/node-process/blob/master/browser.js
+
+    function defaultSetTimout() {
+        throw new Error('setTimeout has not been defined');
+    }
+    function defaultClearTimeout () {
+        throw new Error('clearTimeout has not been defined');
+    }
+    var cachedSetTimeout = defaultSetTimout;
+    var cachedClearTimeout = defaultClearTimeout;
+    if (typeof global$1.setTimeout === 'function') {
+        cachedSetTimeout = setTimeout;
+    }
+    if (typeof global$1.clearTimeout === 'function') {
+        cachedClearTimeout = clearTimeout;
+    }
+
+    function runTimeout(fun) {
+        if (cachedSetTimeout === setTimeout) {
+            //normal enviroments in sane situations
+            return setTimeout(fun, 0);
+        }
+        // if setTimeout wasn't available but was latter defined
+        if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+            cachedSetTimeout = setTimeout;
+            return setTimeout(fun, 0);
+        }
+        try {
+            // when when somebody has screwed with setTimeout but no I.E. maddness
+            return cachedSetTimeout(fun, 0);
+        } catch(e){
+            try {
+                // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+                return cachedSetTimeout.call(null, fun, 0);
+            } catch(e){
+                // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+                return cachedSetTimeout.call(this, fun, 0);
+            }
+        }
+
+
+    }
+    function runClearTimeout(marker) {
+        if (cachedClearTimeout === clearTimeout) {
+            //normal enviroments in sane situations
+            return clearTimeout(marker);
+        }
+        // if clearTimeout wasn't available but was latter defined
+        if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+            cachedClearTimeout = clearTimeout;
+            return clearTimeout(marker);
+        }
+        try {
+            // when when somebody has screwed with setTimeout but no I.E. maddness
+            return cachedClearTimeout(marker);
+        } catch (e){
+            try {
+                // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+                return cachedClearTimeout.call(null, marker);
+            } catch (e){
+                // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+                // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+                return cachedClearTimeout.call(this, marker);
+            }
+        }
+
+
+
+    }
+    var queue = [];
+    var draining = false;
+    var currentQueue;
+    var queueIndex = -1;
+
+    function cleanUpNextTick() {
+        if (!draining || !currentQueue) {
+            return;
+        }
+        draining = false;
+        if (currentQueue.length) {
+            queue = currentQueue.concat(queue);
+        } else {
+            queueIndex = -1;
+        }
+        if (queue.length) {
+            drainQueue();
+        }
+    }
+
+    function drainQueue() {
+        if (draining) {
+            return;
+        }
+        var timeout = runTimeout(cleanUpNextTick);
+        draining = true;
+
+        var len = queue.length;
+        while(len) {
+            currentQueue = queue;
+            queue = [];
+            while (++queueIndex < len) {
+                if (currentQueue) {
+                    currentQueue[queueIndex].run();
+                }
+            }
+            queueIndex = -1;
+            len = queue.length;
+        }
+        currentQueue = null;
+        draining = false;
+        runClearTimeout(timeout);
+    }
+    function nextTick(fun) {
+        var args = new Array(arguments.length - 1);
+        if (arguments.length > 1) {
+            for (var i = 1; i < arguments.length; i++) {
+                args[i - 1] = arguments[i];
+            }
+        }
+        queue.push(new Item(fun, args));
+        if (queue.length === 1 && !draining) {
+            runTimeout(drainQueue);
+        }
+    }
+    // v8 likes predictible objects
+    function Item(fun, array) {
+        this.fun = fun;
+        this.array = array;
+    }
+    Item.prototype.run = function () {
+        this.fun.apply(null, this.array);
+    };
+    var title = 'browser';
+    var platform = 'browser';
+    var browser = true;
+    var env = {};
+    var argv = [];
+    var version = ''; // empty string to avoid regexp issues
+    var versions = {};
+    var release = {};
+    var config = {};
+
+    function noop() {}
+
+    var on = noop;
+    var addListener = noop;
+    var once = noop;
+    var off = noop;
+    var removeListener = noop;
+    var removeAllListeners = noop;
+    var emit = noop;
+
+    function binding(name) {
+        throw new Error('process.binding is not supported');
+    }
+
+    function cwd () { return '/' }
+    function chdir (dir) {
+        throw new Error('process.chdir is not supported');
+    }function umask() { return 0; }
+
+    // from https://github.com/kumavis/browser-process-hrtime/blob/master/index.js
+    var performance = global$1.performance || {};
+    var performanceNow =
+      performance.now        ||
+      performance.mozNow     ||
+      performance.msNow      ||
+      performance.oNow       ||
+      performance.webkitNow  ||
+      function(){ return (new Date()).getTime() };
+
+    // generate timestamp or delta
+    // see http://nodejs.org/api/process.html#process_process_hrtime
+    function hrtime(previousTimestamp){
+      var clocktime = performanceNow.call(performance)*1e-3;
+      var seconds = Math.floor(clocktime);
+      var nanoseconds = Math.floor((clocktime%1)*1e9);
+      if (previousTimestamp) {
+        seconds = seconds - previousTimestamp[0];
+        nanoseconds = nanoseconds - previousTimestamp[1];
+        if (nanoseconds<0) {
+          seconds--;
+          nanoseconds += 1e9;
+        }
+      }
+      return [seconds,nanoseconds]
+    }
+
+    var startTime = new Date();
+    function uptime() {
+      var currentTime = new Date();
+      var dif = currentTime - startTime;
+      return dif / 1000;
+    }
+
+    var process$1 = {
+      nextTick: nextTick,
+      title: title,
+      browser: browser,
+      env: env,
+      argv: argv,
+      version: version,
+      versions: versions,
+      on: on,
+      addListener: addListener,
+      once: once,
+      off: off,
+      removeListener: removeListener,
+      removeAllListeners: removeAllListeners,
+      emit: emit,
+      binding: binding,
+      cwd: cwd,
+      chdir: chdir,
+      umask: umask,
+      hrtime: hrtime,
+      platform: platform,
+      release: release,
+      config: config,
+      uptime: uptime
+    };
+
     // Only Node.JS has a process variable that is of [[Class]] process
-    var detectNode = Object.prototype.toString.call(typeof process !== 'undefined' ? process : 0) === '[object process]';
+    var detectNode = Object.prototype.toString.call(typeof process$1 !== 'undefined' ? process$1 : 0) === '[object process]';
 
     const escapeFilename = (s) => {
         return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_');
@@ -75,11 +301,30 @@
             promise.then(resolve, reject).finally(() => clearTimeout(i));
         });
     });
-    const getSandboxWindowAsync = () => __awaiter(void 0, void 0, void 0, function* () {
+    const getSandboxWindowAsync = (targetEl = undefined) => __awaiter(void 0, void 0, void 0, function* () {
         if (typeof document === 'undefined')
             return {};
+        if (!targetEl) {
+            return new Promise((resolve) => {
+                // You need ads in your pages, right?
+                const observer = new MutationObserver(() => {
+                    for (let i = 0; i < window.frames.length; i++) {
+                        // find iframe windows created by ads
+                        const frame = frames[i];
+                        try {
+                            const href = frame.location.href;
+                            if (href === location.href || href === 'about:blank') {
+                                resolve(frame);
+                                return;
+                            }
+                        }
+                        catch (_a) { }
+                    }
+                });
+                observer.observe(document.body, { subtree: true, childList: true });
+            });
+        }
         return new Promise((resolve) => {
-            const targetEl = document.documentElement;
             const eventName = 'onmousemove';
             const id = Math.random().toString();
             targetEl[id] = (iframe) => {
@@ -98,8 +343,8 @@
         return window.eval('window');
     };
     const console$1 = (window || global).console; // Object.is(window.console, unsafeWindow.console) == false
-    const windowOpenAsync = (...args) => {
-        return getSandboxWindowAsync().then(w => w.open(...args));
+    const windowOpenAsync = (targetEl, ...args) => {
+        return getSandboxWindowAsync(targetEl).then(w => w.open(...args));
     };
     const attachShadow = (el) => {
         return Element.prototype.attachShadow.call(el, { mode: 'closed' });
@@ -120,10 +365,6 @@
             return Promise.resolve();
         }
     };
-
-    var global$1 = (typeof global !== "undefined" ? global :
-                typeof self !== "undefined" ? self :
-                typeof window !== "undefined" ? window : {});
 
     const PDFWorker = function () { 
     (function () {
@@ -10726,7 +10967,7 @@
           this.write_in_progress = true;
 
           var self = this;
-          process.nextTick(function() {
+          nextTick(function() {
             self.write_in_progress = false;
             var res = self._write(flush, input, in_off, in_len, out, out_off, out_len);
             self.callback(res[0], res[1]);
@@ -11270,7 +11511,7 @@
               }
             });
           } else {
-            process.nextTick(callback);
+            nextTick(callback);
           }
         };
 
@@ -11294,7 +11535,7 @@
 
           if (ws.ended) {
             if (callback)
-              process.nextTick(callback);
+              nextTick(callback);
           } else if (ws.ending) {
             if (callback)
               this.once('end', callback);
@@ -11311,7 +11552,7 @@
 
         Zlib$1.prototype.close = function(callback) {
           if (callback)
-            process.nextTick(callback);
+            nextTick(callback);
 
           if (this._closed)
             return;
@@ -11321,7 +11562,7 @@
           this._binding.close();
 
           var self = this;
-          process.nextTick(function() {
+          nextTick(function() {
             self.emit('close');
           });
         };
@@ -26690,7 +26931,7 @@ Please pipe the document into a Node stream.\
     var btnListCss = "div {\n  flex-wrap: wrap;\n  display: flex;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n  position: absolute;\n  z-index: 999;\n  background: #f6f6f6;\n}\n\nbutton {\n  width: 205px !important;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
 
     const getBtnContainer = () => {
-        const container = document.querySelectorAll('aside>section>section')[0];
+        const container = document.querySelectorAll('section>section>section>section')[0];
         const btnParent = [...container.children].find((div) => {
             const b = div.querySelector('button, .button');
             const text = b ? b.outerHTML.replace(/\s/g, '') : '';
@@ -26808,7 +27049,7 @@ Please pipe the document into a Node stream.\
                     }
                     case BtnListMode.ExtWindow: {
                         const div = this._commit();
-                        const w = yield windowOpenAsync('', undefined, 'resizable,width=230,height=270');
+                        const w = yield windowOpenAsync(undefined, '', undefined, 'resizable,width=230,height=270');
                         // eslint-disable-next-line no-unused-expressions
                         w === null || w === void 0 ? void 0 : w.document.body.append(div);
                         window.addEventListener('unload', () => w === null || w === void 0 ? void 0 : w.close());
@@ -26829,11 +27070,6 @@ Please pipe the document into a Node stream.\
             else
                 return url;
         };
-        BtnAction.openUrl = (url) => {
-            return BtnAction.process(() => __awaiter(this, void 0, void 0, function* () {
-                return windowOpenAsync(yield normalizeUrlInput(url));
-            }));
-        };
         BtnAction.download = (url, fallback, timeout) => {
             return BtnAction.process(() => __awaiter(this, void 0, void 0, function* () {
                 const _url = yield normalizeUrlInput(url);
@@ -26847,7 +27083,7 @@ Please pipe the document into a Node stream.\
                 const _onclick = btn.onclick;
                 btn.onclick = null;
                 setText(i18n('PROCESSING')());
-                const w = yield windowOpenAsync('');
+                const w = yield windowOpenAsync(btn, '');
                 const txt = document.createTextNode(i18n('PROCESSING')());
                 w.document.body.append(txt);
                 // set page hooks
