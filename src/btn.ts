@@ -148,7 +148,7 @@ export class BtnList {
 
       case BtnListMode.ExtWindow: {
         const div = this._commit()
-        const w = await windowOpenAsync('', undefined, 'resizable,width=230,height=270')
+        const w = await windowOpenAsync(undefined, '', undefined, 'resizable,width=230,height=270')
         // eslint-disable-next-line no-unused-expressions
         w?.document.body.append(div)
         window.addEventListener('unload', () => w?.close())
@@ -174,12 +174,6 @@ export namespace BtnAction {
     else return url
   }
 
-  export const openUrl = (url: UrlInput): BtnAction => {
-    return process(async (): Promise<any> => {
-      return windowOpenAsync(await normalizeUrlInput(url))
-    })
-  }
-
   export const download = (url: UrlInput, fallback?: () => Promisable<void>, timeout?: number): BtnAction => {
     return process(async (): Promise<void> => {
       const _url = await normalizeUrlInput(url)
@@ -195,7 +189,7 @@ export namespace BtnAction {
       btn.onclick = null
       setText(i18n('PROCESSING')())
 
-      const w = await windowOpenAsync('') as Window
+      const w = await windowOpenAsync(btn, '') as Window
       const txt = document.createTextNode(i18n('PROCESSING')())
       w.document.body.append(txt)
 

@@ -47,11 +47,10 @@ export const useTimeout = async <T> (promise: T | Promise<T>, ms: number): Promi
   })
 }
 
-export const getSandboxWindowAsync = async (): Promise<Window> => {
+export const getSandboxWindowAsync = async (targetEl = document.documentElement): Promise<Window> => {
   if (typeof document === 'undefined') return {} as any as Window
 
   return new Promise((resolve) => {
-    const targetEl = document.documentElement
     const eventName = 'onmousemove'
     const id = Math.random().toString()
 
@@ -76,8 +75,8 @@ export const getUnsafeWindow = (): Window => {
 
 export const console: Console = (window || global).console // Object.is(window.console, unsafeWindow.console) == false
 
-export const windowOpenAsync = (...args: Parameters<Window['open']>): Promise<Window | null> => {
-  return getSandboxWindowAsync().then(w => w.open(...args))
+export const windowOpenAsync = (targetEl = document.documentElement, ...args: Parameters<Window['open']>): Promise<Window | null> => {
+  return getSandboxWindowAsync(targetEl).then(w => w.open(...args))
 }
 
 export const attachShadow = (el: Element): ShadowRoot => {
