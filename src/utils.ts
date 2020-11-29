@@ -15,12 +15,22 @@ export const getIndexPath = (id: number): string => {
   return indexN.join('/')
 }
 
+const NODE_FETCH_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0',
+  'Accept-Language': 'en-US,en;q=0.8',
+}
+
 export const getFetch = (): typeof fetch => {
   if (!isNodeJs) {
     return fetch
   } else {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return require('node-fetch')
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const nodeFetch = require('node-fetch')
+    return (input: RequestInfo, init?: RequestInit) => {
+      init = Object.assign({ headers: NODE_FETCH_HEADERS }, init)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return nodeFetch(input, init)
+    }
   }
 }
 
