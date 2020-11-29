@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.19.4
+// @version      0.19.5
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -338,10 +338,6 @@
             targetEl.setAttribute(eventName, `this['${id}'](document.createElement('iframe'))`);
         });
     });
-    const getUnsafeWindow = () => {
-        // eslint-disable-next-line no-eval
-        return window.eval('window');
-    };
     const console$1 = (window || global).console; // Object.is(window.console, unsafeWindow.console) == false
     const windowOpenAsync = (targetEl, ...args) => {
         return getSandboxWindowAsync(targetEl).then(w => w.open(...args));
@@ -26449,151 +26445,12 @@ Please pipe the document into a Node stream.\
     }
 
     /* eslint-disable no-extend-native */
-    /* eslint-disable @typescript-eslint/ban-types */
-    /**
-     * make hooked methods "native"
-     */
-    const makeNative = (() => {
-        const l = new Map();
-        hookNative(Function.prototype, 'toString', (_toString) => {
-            return function () {
-                if (l.has(this)) {
-                    const _fn = l.get(this) || parseInt; // "function () {\n    [native code]\n}"
-                    if (l.has(_fn)) { // nested
-                        return _fn.toString();
-                    }
-                    else {
-                        return _toString.call(_fn);
-                    }
-                }
-                return _toString.call(this);
-            };
-        }, true);
-        return (fn, original) => {
-            l.set(fn, original);
-        };
-    })();
-    function hookNative(target, method, hook, async = false) {
-        // reserve for future hook update
-        const _fn = target[method];
-        const detach = () => {
-            target[method] = _fn; // detach
-        };
-        // This script can run before anything on the page,  
-        // so setting this function to be non-configurable and non-writable is no use.
-        const hookedFn = hook(_fn, detach);
-        target[method] = hookedFn;
-        if (!async) {
-            makeNative(hookedFn, _fn);
-        }
-        else {
-            setTimeout(() => {
-                makeNative(hookedFn, _fn);
-            });
-        }
-    }
-
-    /* eslint-disable @typescript-eslint/no-unsafe-return */
-    const CHUNK_PUSH_FN = /^function [^r]\(\w\){/;
-    const ALL = '*';
-    const [webpackGlobalOverride, onPackLoad] = (() => {
-        const moduleOverrides = {};
-        const onPackLoadFns = [];
-        function applyOverride(pack) {
-            let entries = Object.entries(moduleOverrides);
-            // apply to all
-            const all = moduleOverrides[ALL];
-            if (all) {
-                entries = Object.keys(pack[1]).map(id => [id, all]);
-            }
-            entries.forEach(([id, override]) => {
-                const mod = pack[1][id];
-                if (mod) {
-                    pack[1][id] = function (n, r, t) {
-                        // make exports configurable
-                        t = Object.assign(t, {
-                            d(exp, name, fn) {
-                                return Object.defineProperty(exp, name, { enumerable: true, get: fn, configurable: true });
-                            },
-                        });
-                        mod(n, r, t);
-                        override(n, r, t);
-                    };
-                }
-            });
-        }
-        // hook `webpackJsonpmusescore.push` as soon as `webpackJsonpmusescore` is available
-        const _w = getUnsafeWindow();
-        let jsonp = _w['webpackJsonpmusescore'];
-        let hooked = false;
-        Object.defineProperty(_w, 'webpackJsonpmusescore', {
-            get() { return jsonp; },
-            set(v) {
-                jsonp = v;
-                if (!hooked && v.push.toString().match(CHUNK_PUSH_FN)) {
-                    hooked = true;
-                    hookNative(v, 'push', (_fn) => {
-                        return function (pack) {
-                            onPackLoadFns.forEach(fn => fn(pack));
-                            applyOverride(pack);
-                            return _fn.call(this, pack);
-                        };
-                    });
-                }
-            },
-        });
-        return [
-            // set overrides
-            (moduleId, override) => {
-                moduleOverrides[moduleId] = override;
-            },
-            // set onPackLoad listeners
-            (fn) => {
-                onPackLoadFns.push(fn);
-            },
-        ];
-    })();
-    const webpackContext = new Promise((resolve) => {
-        webpackGlobalOverride(ALL, (n, r, t) => {
-            resolve(t);
-        });
-    });
-
-    /* eslint-disable no-extend-native */
-    const TYPE_REG = /id=(\d+)&type=(img|mp3|midi)/;
     /**
      * I know this is super hacky.
      */
     const magicHookConstr = (() => {
-        const l = {};
-        webpackGlobalOverride(ALL, (n, r, t) => {
-            const e = n.exports;
-            if (typeof e === 'object' && e.fetch) {
-                const fn = e.fetch;
-                t.d(e, 'fetch', () => {
-                    return function (...args) {
-                        var _a, _b;
-                        const [url, init] = args;
-                        const token = (_a = init === null || init === void 0 ? void 0 : init.headers) === null || _a === void 0 ? void 0 : _a.Authorization;
-                        if (typeof url === 'string' && token) {
-                            const m = url.match(TYPE_REG);
-                            if (m) {
-                                const type = m[2];
-                                // eslint-disable-next-line no-unused-expressions
-                                (_b = l[type]) === null || _b === void 0 ? void 0 : _b.call(l, token);
-                            }
-                        }
-                        return fn(...args);
-                    };
-                });
-            }
-        });
         return (type) => __awaiter(void 0, void 0, void 0, function* () {
             return new Promise((resolve) => {
-                l[type] = (token) => {
-                    resolve(token);
-                    magics[type] = token;
-                };
             });
         });
     })();
