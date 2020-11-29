@@ -5,10 +5,11 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.19.5
+// @version      0.20.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
+// @match        https://s.musescore.com/*/*
 // @license      MIT
 // @copyright    Copyright (c) 2019-2020 Xmader
 // @grant        unsafeWindow
@@ -272,13 +273,22 @@
     const escapeFilename = (s) => {
         return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_');
     };
+    const NODE_FETCH_HEADERS = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0',
+        'Accept-Language': 'en-US,en;q=0.8',
+    };
     const getFetch = () => {
         if (!detectNode) {
             return fetch;
         }
         else {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-            return require('node-fetch');
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const nodeFetch = require('node-fetch');
+            return (input, init) => {
+                init = Object.assign({ headers: NODE_FETCH_HEADERS }, init);
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return nodeFetch(input, init);
+            };
         }
     };
     const fetchData = (url, init) => __awaiter(void 0, void 0, void 0, function* () {
@@ -27027,6 +27037,11 @@ Please pipe the document into a Node stream.\
             const el = this.document.querySelector("meta[property='og:title']");
             return el.content;
         }
+        get baseUrl() {
+            const el = this.document.querySelector("meta[property='og:image']");
+            const m = el.content.match(/^(.+\/)score_/);
+            return m[1];
+        }
     }
     class SheetInfo {
         get imgType() {
@@ -27050,12 +27065,30 @@ Please pipe the document into a Node stream.\
             return url.split('@')[0];
         }
     }
+    const getActualId = (scoreinfo, _fetch = getFetch()) => __awaiter(void 0, void 0, void 0, function* () {
+        if (scoreinfo.id <= 1000000000000) {
+            // actual id already
+            return scoreinfo.id;
+        }
+        const jsonPUrl = new URL(`${scoreinfo.baseUrl}space.jsonp`);
+        jsonPUrl.hostname = 's.musescore.com';
+        const r = yield _fetch(jsonPUrl.href);
+        const text = yield r.text();
+        const m = text.match(/^jsonp(\d+)/);
+        const id = +m[1];
+        Object.defineProperty(scoreinfo, 'id', {
+            get() { return id; },
+        });
+        return id;
+    });
 
     const { saveAs } = FileSaver_min;
     const main = () => {
         const btnList = new BtnList();
         const scoreinfo = new ScoreInfoInPage(document);
-        const { fileName, id } = scoreinfo;
+        const { fileName } = scoreinfo;
+        // eslint-disable-next-line no-void
+        void getActualId(scoreinfo);
         let indvPartBtn = null;
         const fallback = () => {
             // btns fallback to load from MSCZ file (`Individual Parts`)
@@ -27080,11 +27113,11 @@ Please pipe the document into a Node stream.\
         });
         btnList.add({
             name: i18n('DOWNLOAD')('MIDI'),
-            action: BtnAction.download(() => getFileUrl(id, 'midi'), fallback, 30 * 1000 /* 30s */),
+            action: BtnAction.download(() => getFileUrl(scoreinfo.id, 'midi'), fallback, 30 * 1000 /* 30s */),
         });
         btnList.add({
             name: i18n('DOWNLOAD')('MP3'),
-            action: BtnAction.download(() => getFileUrl(id, 'mp3'), fallback, 30 * 1000 /* 30s */),
+            action: BtnAction.download(() => getFileUrl(scoreinfo.id, 'mp3'), fallback, 30 * 1000 /* 30s */),
         });
         indvPartBtn = btnList.add({
             name: i18n('IND_PARTS')(),
