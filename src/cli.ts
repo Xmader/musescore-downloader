@@ -14,7 +14,7 @@ const inquirer: typeof import('inquirer') = require('inquirer')
 const ora: typeof import('ora') = require('ora')
 const chalk: typeof import('chalk') = require('chalk')
 
-const SCORE_URL_PREFIX = 'https://(s.)?musescore.com/'
+const SCORE_URL_PREFIX = 'https://(s.)musescore.com/'
 const SCORE_URL_REG = /https:\/\/(s\.)?musescore\.com\//
 const EXT = '.mscz'
 
