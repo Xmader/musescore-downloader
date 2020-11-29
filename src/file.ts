@@ -1,40 +1,15 @@
 /* eslint-disable no-extend-native */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
-import { ALL, webpackGlobalOverride } from './webpack-hook'
 import { console } from './utils'
 
 type FileType = 'img' | 'mp3' | 'midi'
-
-const TYPE_REG = /id=(\d+)&type=(img|mp3|midi)/
 
 /**
  * I know this is super hacky.
  */
 const magicHookConstr = (() => {
   const l = {}
-
-  webpackGlobalOverride(ALL, (n, r, t) => { // override
-    const e = n.exports
-    if (typeof e === 'object' && e.fetch) {
-      const fn = e.fetch
-      t.d(e, 'fetch', () => {
-        return function (...args) {
-          const [url, init] = args
-          const token = init?.headers?.Authorization
-          if (typeof url === 'string' && token) {
-            const m = url.match(TYPE_REG)
-            if (m) {
-              const type = m[2]
-              // eslint-disable-next-line no-unused-expressions
-              l[type]?.(token)
-            }
-          }
-          return fn(...args)
-        }
-      })
-    }
-  })
 
   return async (type: FileType) => {
     return new Promise<string>((resolve) => {
