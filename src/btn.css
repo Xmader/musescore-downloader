@@ -3,7 +3,7 @@ div {
   display: flex;
   align-items: center;
   font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;
-  position: absolute;
+  position: fixed;
   z-index: 999;
   background: #f6f6f6;
 }
