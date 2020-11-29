@@ -6,7 +6,7 @@ import fs from 'fs'
 import path from 'path'
 import { fetchMscz, setMscz, MSCZ_URL_SYM } from './mscz'
 import { loadMscore, INDV_DOWNLOADS, WebMscore } from './mscore'
-import { ScoreInfo, ScoreInfoHtml, ScoreInfoObj } from './scoreinfo'
+import { ScoreInfo, ScoreInfoHtml, ScoreInfoObj, getActualId } from './scoreinfo'
 import { escapeFilename } from './utils'
 import i18n from './i18n'
 
@@ -14,7 +14,8 @@ const inquirer: typeof import('inquirer') = require('inquirer')
 const ora: typeof import('ora') = require('ora')
 const chalk: typeof import('chalk') = require('chalk')
 
-const SCORE_URL_PREFIX = 'https://musescore.com/'
+const SCORE_URL_PREFIX = 'https://(s.)?musescore.com/'
+const SCORE_URL_REG = /https:\/\/(s\.)?musescore\.com\//
 const EXT = '.mscz'
 
 interface Params {
@@ -36,7 +37,7 @@ void (async () => {
     validate (input: string) {
       return input &&
         (
-          input.startsWith(SCORE_URL_PREFIX) ||
+          !!input.match(SCORE_URL_REG) ||
           (input.endsWith(EXT) && fs.statSync(input).isFile())
         )
     },
@@ -47,6 +48,7 @@ void (async () => {
   if (!isLocalFile) {
     // request scoreinfo
     scoreinfo = await ScoreInfoHtml.request(fileInit)
+    await getActualId(scoreinfo as any)
 
     // confirmation
     const { confirmed } = await inquirer.prompt<Params>({

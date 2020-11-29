@@ -7,7 +7,7 @@ import { downloadMscz } from './mscz'
 import { getFileUrl } from './file'
 import { INDV_DOWNLOADS } from './mscore'
 import { BtnList, BtnAction, BtnListMode } from './btn'
-import { ScoreInfoInPage, SheetInfoInPage } from './scoreinfo'
+import { ScoreInfoInPage, SheetInfoInPage, getActualId } from './scoreinfo'
 import i18n from './i18n'
 
 const { saveAs } = FileSaver
@@ -15,7 +15,10 @@ const { saveAs } = FileSaver
 const main = (): void => {
   const btnList = new BtnList()
   const scoreinfo = new ScoreInfoInPage(document)
-  const { fileName, id } = scoreinfo
+  const { fileName } = scoreinfo
+
+  // eslint-disable-next-line no-void
+  void getActualId(scoreinfo)
 
   let indvPartBtn: HTMLButtonElement | null = null
   const fallback = () => {
@@ -45,12 +48,12 @@ const main = (): void => {
 
   btnList.add({
     name: i18n('DOWNLOAD')('MIDI'),
-    action: BtnAction.download(() => getFileUrl(id, 'midi'), fallback, 30 * 1000 /* 30s */),
+    action: BtnAction.download(() => getFileUrl(scoreinfo.id, 'midi'), fallback, 30 * 1000 /* 30s */),
   })
 
   btnList.add({
     name: i18n('DOWNLOAD')('MP3'),
-    action: BtnAction.download(() => getFileUrl(id, 'mp3'), fallback, 30 * 1000 /* 30s */),
+    action: BtnAction.download(() => getFileUrl(scoreinfo.id, 'mp3'), fallback, 30 * 1000 /* 30s */),
   })
 
   indvPartBtn = btnList.add({

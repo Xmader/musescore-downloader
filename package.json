@@ -25,7 +25,7 @@
   "content_scripts": [
     {
       "matches": [
-        "*://musescore.com/*/*"
+        "*://*.musescore.com/*/*"
       ],
       "js": [
         "src/web-ext.js"

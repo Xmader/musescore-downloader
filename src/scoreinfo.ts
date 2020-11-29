@@ -43,11 +43,18 @@ export class ScoreInfoInPage extends ScoreInfo {
     const el = this.document.querySelector("meta[property='og:title']") as HTMLMetaElement
     return el.content
   }
+
+  get baseUrl (): string {
+    const el = this.document.querySelector("meta[property='og:image']") as HTMLMetaElement
+    const m = el.content.match(/^(.+\/)score_/) as RegExpMatchArray
+    return m[1]
+  }
 }
 
 export class ScoreInfoHtml extends ScoreInfo {
   private readonly ID_REG = /<meta property="al:ios:url" content="musescore:\/\/score\/(\d+)">/
   private readonly TITLE_REG = /<meta property="og:title" content="(.*)">/
+  private readonly BASEURL_REG = /<meta property="og:image" content="(.+\/)score_.*">/
 
   constructor (private html: string) { super() }
 
@@ -59,6 +66,12 @@ export class ScoreInfoHtml extends ScoreInfo {
 
   get title (): string {
     const m = this.html.match(this.TITLE_REG)
+    if (!m) return ''
+    return m[1]
+  }
+
+  get baseUrl (): string {
+    const m = this.html.match(this.BASEURL_REG)
     if (!m) return ''
     return m[1]
   }
@@ -96,4 +109,26 @@ export class SheetInfoInPage extends SheetInfo {
     const url = el.href
     return url.split('@')[0]
   }
+}
+
+export const getActualId = async (scoreinfo: ScoreInfoInPage | ScoreInfoHtml, _fetch = getFetch()): Promise<number> => {
+  if (scoreinfo.id <= 1000000000000) {
+    // actual id already
+    return scoreinfo.id
+  }
+
+  const jsonPUrl = new URL(`${scoreinfo.baseUrl}space.jsonp`)
+  jsonPUrl.hostname = 's.musescore.com'
+
+  const r = await _fetch(jsonPUrl.href)
+  const text = await r.text()
+
+  const m = text.match(/^jsonp(\d+)/) as RegExpMatchArray
+  const id = +m[1]
+
+  Object.defineProperty(scoreinfo, 'id', {
+    get () { return id },
+  })
+
+  return id
 }
