@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.19.2
+// @version      0.19.3
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26931,11 +26931,13 @@ Please pipe the document into a Node stream.\
     var btnListCss = "div {\n  flex-wrap: wrap;\n  display: flex;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n  position: absolute;\n  z-index: 999;\n  background: #f6f6f6;\n}\n\nbutton {\n  width: 205px !important;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
 
     const getBtnContainer = () => {
-        const container = document.querySelectorAll('section>section>section>section')[0];
-        const btnParent = [...container.children].find((div) => {
-            const b = div.querySelector('button, .button');
-            const text = b ? b.outerHTML.replace(/\s/g, '') : '';
-            return text.includes('Download') || text.includes('Print');
+        const containers = [...document.querySelectorAll('section>div div')];
+        const btnParent = containers.find(c => {
+            return [...c.children].find((div) => {
+                const b = div.querySelector('button, .button');
+                const text = b ? b.outerHTML.replace(/\s/g, '') : '';
+                return text.includes('Download') || text.includes('Print');
+            });
         });
         if (!btnParent)
             throw new Error('btn parent not found');
