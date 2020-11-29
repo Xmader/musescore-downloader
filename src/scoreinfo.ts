@@ -64,7 +64,13 @@ export class ScoreInfoHtml extends ScoreInfo {
   }
 
   static async request (url: string, _fetch = getFetch()): Promise<ScoreInfoHtml> {
-    const r = await _fetch(url)
+    const r = await _fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.8',
+      },
+    })
     if (!r.ok) return new ScoreInfoHtml('')
 
     const html = await r.text()
