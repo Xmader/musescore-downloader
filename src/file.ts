@@ -15,9 +15,12 @@ const magicHookConstr = (() => {
   const l = {}
 
   try {
-    hookNative(document.body, 'append', (fn) => {
+    const p = Object.getPrototypeOf(document.body)
+    Object.setPrototypeOf(document.body, null)
+
+    hookNative(document.body, 'append', () => {
       return function (...nodes: Node[]) {
-        fn.call(this, ...nodes)
+        p.append.call(this, ...nodes)
 
         if (nodes[0].nodeName === 'IFRAME') {
           const iframe = nodes[0] as HTMLIFrameElement
@@ -40,6 +43,8 @@ const magicHookConstr = (() => {
         }
       }
     })
+
+    Object.setPrototypeOf(document.body, p)
   } catch (err) {
     console.error(err)
   }
