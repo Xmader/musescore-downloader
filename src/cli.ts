@@ -48,7 +48,11 @@ void (async () => {
   if (!isLocalFile) {
     // request scoreinfo
     scoreinfo = await ScoreInfoHtml.request(fileInit)
-    await getActualId(scoreinfo as any)
+    try {
+      await getActualId(scoreinfo as any)
+    } catch (err) {
+      console.error(err)
+    }
 
     // confirmation
     const { confirmed } = await inquirer.prompt<Params>({
