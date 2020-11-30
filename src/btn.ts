@@ -9,14 +9,12 @@ import btnListCss from './btn.css'
 type BtnElement = HTMLButtonElement
 
 const getBtnContainer = (): HTMLDivElement => {
-  const containers = [...document.querySelectorAll('section>div div')]
-  const btnParent = containers.find(c => {
-    return [...c.children].find((div) => {
-      const b = div.querySelector('button, .button')
-      const text = b ? b.outerHTML.replace(/\s/g, '') : ''
-      return text.includes('Download') || text.includes('Print')
-    })
+  const els = [...document.querySelectorAll('*')].reverse()
+  const el = els.find(b => {
+    const text = b?.textContent?.replace(/\s/g, '') || ''
+    return text.includes('Download') || text.includes('Print')
   }) as HTMLDivElement | null
+  const btnParent = el?.parentElement?.parentElement as HTMLDivElement | undefined
   if (!btnParent) throw new Error('btn parent not found')
   return btnParent
 }
@@ -92,13 +90,18 @@ export class BtnList {
   }
 
   private _commit () {
-    let btnParent: HTMLDivElement = document.createElement('div')
+    const btnParent = document.querySelector('div') as HTMLDivElement
+    const shadow = attachShadow(btnParent)
+
     try {
-      btnParent = this.getBtnParent()
+      const anchorDiv = this.getBtnParent()
+      const { width, top, left } = anchorDiv.getBoundingClientRect()
+      btnParent.style.width = `${width}px`
+      btnParent.style.top = `${top}px`
+      btnParent.style.left = `${left}px`
     } catch (err) {
       console.error(err)
     }
-    const shadow = attachShadow(btnParent)
 
     // style the shadow DOM
     const style = document.createElement('style')
@@ -121,24 +124,16 @@ export class BtnList {
   async commit (mode: BtnListMode = BtnListMode.InPage): Promise<void> {
     switch (mode) {
       case BtnListMode.InPage: {
-        // fallback to BtnListMode.ExtWindow
+        let el: Element
         try {
-          this.getBtnParent()
+          el = this._commit()
         } catch {
+          // fallback to BtnListMode.ExtWindow
           return this.commit(BtnListMode.ExtWindow)
         }
-
-        let el: Element = this._commit()
         const observer = new MutationObserver(() => {
           // check if the buttons are still in document when dom updates 
           if (!document.contains(el)) {
-            try {
-              this.getBtnParent()
-            } catch {
-              observer.disconnect()
-              this.commit(BtnListMode.ExtWindow)
-            }
-
             // re-commit
             // performance issue?
             el = this._commit()

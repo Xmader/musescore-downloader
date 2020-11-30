@@ -3,9 +3,10 @@ div {
   display: flex;
   align-items: center;
   font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;
-  position: fixed;
-  z-index: 999;
+  position: absolute;
+  z-index: 9999;
   background: #f6f6f6;
+  min-width: 230px;
 }
 
 button {
