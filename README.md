@@ -63,7 +63,7 @@ Install this script from <https://msdl.librescore.org/install.user.js>
 
 The alternative method is to install this script as a Chrome or Firefox extension.
 
-You may install the browser extension directly from [addons.mozilla.org (for Firefox)](https://addons.mozilla.org/en-US/firefox/addon/musescore-downloader/) or [chrome web store (for Chrome and Chromium based browsers)](https://chrome.google.com/webstore/detail/fmmnkcdlphpgbdcdfnjkldfljedbbokp).
+You may install the browser extension directly from [addons.mozilla.org (for Firefox)](https://addons.mozilla.org/en-US/firefox/addon/musescore-downloader/) or [chrome web store (for Chrome and Chromium based browsers)](https://chrome.google.com/webstore/detail/mhdlcdhakmmikknpefblmnhdhjloanjc).
 
 The up-to-date version can be found on the [Github Releases](https://github.com/Xmader/musescore-downloader/releases) page.
 
