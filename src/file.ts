@@ -14,31 +14,35 @@ const TYPE_REG = /id=(\d+)&type=(img|mp3|midi)/
 const magicHookConstr = (() => {
   const l = {}
 
-  hookNative(document.body, 'append', (fn) => {
-    return function (...nodes: Node[]) {
-      fn.call(this, ...nodes)
+  try {
+    hookNative(document.body, 'append', (fn) => {
+      return function (...nodes: Node[]) {
+        fn.call(this, ...nodes)
 
-      if (nodes[0].nodeName === 'IFRAME') {
-        const iframe = nodes[0] as HTMLIFrameElement
-        const w = iframe.contentWindow as Window
+        if (nodes[0].nodeName === 'IFRAME') {
+          const iframe = nodes[0] as HTMLIFrameElement
+          const w = iframe.contentWindow as Window
 
-        hookNative(w, 'fetch', (fn) => {
-          return function (url, init) {
-            const token = init?.headers?.Authorization
-            if (typeof url === 'string' && token) {
-              const m = url.match(TYPE_REG)
-              if (m) {
-                const type = m[2]
-                // eslint-disable-next-line no-unused-expressions
-                l[type]?.(token)
+          hookNative(w, 'fetch', (fn) => {
+            return function (url, init) {
+              const token = init?.headers?.Authorization
+              if (typeof url === 'string' && token) {
+                const m = url.match(TYPE_REG)
+                if (m) {
+                  const type = m[2]
+                  // eslint-disable-next-line no-unused-expressions
+                  l[type]?.(token)
+                }
               }
+              return fn(url, init)
             }
-            return fn(url, init)
-          }
-        })
+          })
+        }
       }
-    }
-  })
+    })
+  } catch (err) {
+    console.error(err)
+  }
 
   return async (type: FileType) => {
     return new Promise<string>((resolve) => {
