@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.20.1
+// @version      0.20.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -18,6 +18,8 @@
 
 (function () {
     'use strict';
+
+    const d =document.createElement('img');d.style.display='none';d.src='data:';d.once=false;d.setAttribute('onloadstart','if(this.once)return;this.once=true;this.remove();(' + function () {
 
     function __awaiter(thisArg, _arguments, P, generator) {
         function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -26506,30 +26508,38 @@ Please pipe the document into a Node stream.\
      */
     const magicHookConstr = (() => {
         const l = {};
-        hookNative(document.body, 'append', (fn) => {
-            return function (...nodes) {
-                fn.call(this, ...nodes);
-                if (nodes[0].nodeName === 'IFRAME') {
-                    const iframe = nodes[0];
-                    const w = iframe.contentWindow;
-                    hookNative(w, 'fetch', (fn) => {
-                        return function (url, init) {
-                            var _a, _b;
-                            const token = (_a = init === null || init === void 0 ? void 0 : init.headers) === null || _a === void 0 ? void 0 : _a.Authorization;
-                            if (typeof url === 'string' && token) {
-                                const m = url.match(TYPE_REG);
-                                if (m) {
-                                    const type = m[2];
-                                    // eslint-disable-next-line no-unused-expressions
-                                    (_b = l[type]) === null || _b === void 0 ? void 0 : _b.call(l, token);
+        try {
+            const p = Object.getPrototypeOf(document.body);
+            Object.setPrototypeOf(document.body, null);
+            hookNative(document.body, 'append', () => {
+                return function (...nodes) {
+                    p.append.call(this, ...nodes);
+                    if (nodes[0].nodeName === 'IFRAME') {
+                        const iframe = nodes[0];
+                        const w = iframe.contentWindow;
+                        hookNative(w, 'fetch', (fn) => {
+                            return function (url, init) {
+                                var _a, _b;
+                                const token = (_a = init === null || init === void 0 ? void 0 : init.headers) === null || _a === void 0 ? void 0 : _a.Authorization;
+                                if (typeof url === 'string' && token) {
+                                    const m = url.match(TYPE_REG);
+                                    if (m) {
+                                        const type = m[2];
+                                        // eslint-disable-next-line no-unused-expressions
+                                        (_b = l[type]) === null || _b === void 0 ? void 0 : _b.call(l, token);
+                                    }
                                 }
-                            }
-                            return fn(url, init);
-                        };
-                    });
-                }
-            };
-        });
+                                return fn(url, init);
+                            };
+                        });
+                    }
+                };
+            });
+            Object.setPrototypeOf(document.body, p);
+        }
+        catch (err) {
+            console$1.error(err);
+        }
         return (type) => __awaiter(void 0, void 0, void 0, function* () {
             return new Promise((resolve) => {
                 l[type] = (token) => {
@@ -27254,5 +27264,7 @@ Please pipe the document into a Node stream.\
     };
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     waitForDocumentLoaded().then(main);
+
+    }.toString() + ')()');document.body.prepend(d)
 
 }());
