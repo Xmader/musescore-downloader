@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.20.0
+// @version      0.20.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26455,12 +26455,87 @@ Please pipe the document into a Node stream.\
     }
 
     /* eslint-disable no-extend-native */
+    /* eslint-disable @typescript-eslint/ban-types */
+    /**
+     * make hooked methods "native"
+     */
+    const makeNative = (() => {
+        const l = new Map();
+        hookNative(Function.prototype, 'toString', (_toString) => {
+            return function () {
+                if (l.has(this)) {
+                    const _fn = l.get(this) || parseInt; // "function () {\n    [native code]\n}"
+                    if (l.has(_fn)) { // nested
+                        return _fn.toString();
+                    }
+                    else {
+                        return _toString.call(_fn);
+                    }
+                }
+                return _toString.call(this);
+            };
+        }, true);
+        return (fn, original) => {
+            l.set(fn, original);
+        };
+    })();
+    function hookNative(target, method, hook, async = false) {
+        // reserve for future hook update
+        const _fn = target[method];
+        const detach = () => {
+            target[method] = _fn; // detach
+        };
+        // This script can run before anything on the page,  
+        // so setting this function to be non-configurable and non-writable is no use.
+        const hookedFn = hook(_fn, detach);
+        target[method] = hookedFn;
+        if (!async) {
+            makeNative(hookedFn, _fn);
+        }
+        else {
+            setTimeout(() => {
+                makeNative(hookedFn, _fn);
+            });
+        }
+    }
+
+    /* eslint-disable no-extend-native */
+    const TYPE_REG = /id=(\d+)&type=(img|mp3|midi)/;
     /**
      * I know this is super hacky.
      */
     const magicHookConstr = (() => {
+        const l = {};
+        hookNative(document.body, 'append', (fn) => {
+            return function (...nodes) {
+                fn.call(this, ...nodes);
+                if (nodes[0].nodeName === 'IFRAME') {
+                    const iframe = nodes[0];
+                    const w = iframe.contentWindow;
+                    hookNative(w, 'fetch', (fn) => {
+                        return function (url, init) {
+                            var _a, _b;
+                            const token = (_a = init === null || init === void 0 ? void 0 : init.headers) === null || _a === void 0 ? void 0 : _a.Authorization;
+                            if (typeof url === 'string' && token) {
+                                const m = url.match(TYPE_REG);
+                                if (m) {
+                                    const type = m[2];
+                                    // eslint-disable-next-line no-unused-expressions
+                                    (_b = l[type]) === null || _b === void 0 ? void 0 : _b.call(l, token);
+                                }
+                            }
+                            return fn(url, init);
+                        };
+                    });
+                }
+            };
+        });
         return (type) => __awaiter(void 0, void 0, void 0, function* () {
             return new Promise((resolve) => {
+                l[type] = (token) => {
+                    resolve(token);
+                    magics[type] = token;
+                };
             });
         });
     })();
@@ -26484,7 +26559,7 @@ Please pipe the document into a Node stream.\
                     break;
                 }
                 case 'mp3': {
-                    const el = document.querySelector('#playerBtnExprt');
+                    const el = document.querySelector('button[title="Toggle Play"]');
                     el.click();
                     break;
                 }
@@ -26795,17 +26870,17 @@ Please pipe the document into a Node stream.\
         },
     ];
 
-    var btnListCss = "div {\n  flex-wrap: wrap;\n  display: flex;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n  position: fixed;\n  z-index: 999;\n  background: #f6f6f6;\n}\n\nbutton {\n  width: 205px !important;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
+    var btnListCss = "div {\n  flex-wrap: wrap;\n  display: flex;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n  position: absolute;\n  z-index: 9999;\n  background: #f6f6f6;\n  min-width: 230px;\n}\n\nbutton {\n  width: 205px !important;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
 
     const getBtnContainer = () => {
-        const containers = [...document.querySelectorAll('section>div div')];
-        const btnParent = containers.find(c => {
-            return [...c.children].find((div) => {
-                const b = div.querySelector('button, .button');
-                const text = b ? b.outerHTML.replace(/\s/g, '') : '';
-                return text.includes('Download') || text.includes('Print');
-            });
+        var _a;
+        const els = [...document.querySelectorAll('*')].reverse();
+        const el = els.find(b => {
+            var _a;
+            const text = ((_a = b === null || b === void 0 ? void 0 : b.textContent) === null || _a === void 0 ? void 0 : _a.replace(/\s/g, '')) || '';
+            return text.includes('Download') || text.includes('Print');
         });
+        const btnParent = (_a = el === null || el === void 0 ? void 0 : el.parentElement) === null || _a === void 0 ? void 0 : _a.parentElement;
         if (!btnParent)
             throw new Error('btn parent not found');
         return btnParent;
@@ -26863,14 +26938,18 @@ Please pipe the document into a Node stream.\
             return btnTpl;
         }
         _commit() {
-            let btnParent = document.createElement('div');
+            const btnParent = document.querySelector('div');
+            const shadow = attachShadow(btnParent);
             try {
-                btnParent = this.getBtnParent();
+                const anchorDiv = this.getBtnParent();
+                const { width, top, left } = anchorDiv.getBoundingClientRect();
+                btnParent.style.width = `${width}px`;
+                btnParent.style.top = `${top}px`;
+                btnParent.style.left = `${left}px`;
             }
             catch (err) {
                 console$1.error(err);
             }
-            const shadow = attachShadow(btnParent);
             // style the shadow DOM
             const style = document.createElement('style');
             style.innerText = btnListCss;
@@ -26890,24 +26969,17 @@ Please pipe the document into a Node stream.\
             return __awaiter(this, void 0, void 0, function* () {
                 switch (mode) {
                     case BtnListMode.InPage: {
-                        // fallback to BtnListMode.ExtWindow
+                        let el;
                         try {
-                            this.getBtnParent();
+                            el = this._commit();
                         }
                         catch (_a) {
+                            // fallback to BtnListMode.ExtWindow
                             return this.commit(BtnListMode.ExtWindow);
                         }
-                        let el = this._commit();
                         const observer = new MutationObserver(() => {
                             // check if the buttons are still in document when dom updates 
                             if (!document.contains(el)) {
-                                try {
-                                    this.getBtnParent();
-                                }
-                                catch (_a) {
-                                    observer.disconnect();
-                                    this.commit(BtnListMode.ExtWindow);
-                                }
                                 // re-commit
                                 // performance issue?
                                 el = this._commit();
