@@ -1,15 +1,44 @@
 /* eslint-disable no-extend-native */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
+import { hookNative } from './anti-detection'
 import { console } from './utils'
 
 type FileType = 'img' | 'mp3' | 'midi'
+
+const TYPE_REG = /id=(\d+)&type=(img|mp3|midi)/
 
 /**
  * I know this is super hacky.
  */
 const magicHookConstr = (() => {
   const l = {}
+
+  hookNative(document.body, 'append', (fn) => {
+    return function (...nodes: Node[]) {
+      fn.call(this, ...nodes)
+
+      if (nodes[0].nodeName === 'IFRAME') {
+        const iframe = nodes[0] as HTMLIFrameElement
+        const w = iframe.contentWindow as Window
+
+        hookNative(w, 'fetch', (fn) => {
+          return function (url, init) {
+            const token = init?.headers?.Authorization
+            if (typeof url === 'string' && token) {
+              const m = url.match(TYPE_REG)
+              if (m) {
+                const type = m[2]
+                // eslint-disable-next-line no-unused-expressions
+                l[type]?.(token)
+              }
+            }
+            return fn(url, init)
+          }
+        })
+      }
+    }
+  })
 
   return async (type: FileType) => {
     return new Promise<string>((resolve) => {
@@ -45,7 +74,7 @@ const getApiAuth = async (type: FileType, index: number): Promise<string> => {
         break
       }
       case 'mp3': {
-        const el = document.querySelector('#playerBtnExprt') as HTMLButtonElement
+        const el = document.querySelector('button[title="Toggle Play"]') as HTMLButtonElement
         el.click()
         break
       }
