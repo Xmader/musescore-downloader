@@ -83,7 +83,7 @@ export default [
             format: "iife",
             sourcemap: false,
             banner: getBannerText,
-            intro: "const d = document.createElement('img');d.style.display = 'none';d.src='data:';d.setAttribute('onloadstart', 'this.remove();(' + function () {",
+            intro: "const d =document.createElement('img');d.style.display='none';d.src='data:';d.once=false;d.setAttribute('onloadstart','if(this.once)return;this.once=true;this.remove();(' + function () {",
             outro: "}.toString() + ')()');document.body.prepend(d)"
         },
         plugins,
