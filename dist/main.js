@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.20.3
+// @version      0.20.4
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -19,7 +19,7 @@
 (function () {
     'use strict';
 
-    const d =document.createElement('img');d.style.display='none';d.src='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';d.once=false;d.setAttribute('onload','if(this.once)return;this.once=true;this.remove();(' + function () {
+    const d=new Image();d.style.display='none';d.src='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';d.once=false;d.setAttribute('onload','if(this.once)return;this.once=true;this.remove();(' + function a () {
 
     function __awaiter(thisArg, _arguments, P, generator) {
         function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -26508,6 +26508,15 @@ Please pipe the document into a Node stream.\
      */
     const magicHookConstr = (() => {
         const l = {};
+        // get rid of `Disable Tampermonkey`
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach(x => [...x.addedNodes].forEach(e => {
+                if (!document.querySelector('.js-page')) {
+                    e.replaceWith(...x.removedNodes);
+                }
+            }));
+        });
+        observer.observe(document, { childList: true, subtree: true });
         try {
             const p = Object.getPrototypeOf(document.body);
             Object.setPrototypeOf(document.body, null);
@@ -26950,26 +26959,26 @@ Please pipe the document into a Node stream.\
         _commit() {
             const btnParent = document.querySelector('div');
             const shadow = attachShadow(btnParent);
-            try {
-                const anchorDiv = this.getBtnParent();
-                const { width, top, left } = anchorDiv.getBoundingClientRect();
-                btnParent.style.width = `${width}px`;
-                btnParent.style.top = `${top}px`;
-                btnParent.style.left = `${left}px`;
-            }
-            catch (err) {
-                console$1.error(err);
-            }
             // style the shadow DOM
             const style = document.createElement('style');
             style.innerText = btnListCss;
             shadow.append(style);
             // hide buttons using the shadow DOM
-            const newParent = btnParent.cloneNode(false);
-            newParent.append(...this.list.map(e => cloneBtn(e)));
-            shadow.append(newParent);
             const slot = document.createElement('slot');
             shadow.append(slot);
+            const newParent = document.createElement('div');
+            newParent.append(...this.list.map(e => cloneBtn(e)));
+            shadow.append(newParent);
+            try {
+                const anchorDiv = this.getBtnParent();
+                const { width, top, left } = anchorDiv.getBoundingClientRect();
+                newParent.style.width = `${width}px`;
+                newParent.style.top = `${top}px`;
+                newParent.style.left = `${left}px`;
+            }
+            catch (err) {
+                console$1.error(err);
+            }
             return btnParent;
         }
         /**
