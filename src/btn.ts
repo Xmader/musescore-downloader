@@ -93,27 +93,28 @@ export class BtnList {
     const btnParent = document.querySelector('div') as HTMLDivElement
     const shadow = attachShadow(btnParent)
 
-    try {
-      const anchorDiv = this.getBtnParent()
-      const { width, top, left } = anchorDiv.getBoundingClientRect()
-      btnParent.style.width = `${width}px`
-      btnParent.style.top = `${top}px`
-      btnParent.style.left = `${left}px`
-    } catch (err) {
-      console.error(err)
-    }
-
     // style the shadow DOM
     const style = document.createElement('style')
     style.innerText = btnListCss
     shadow.append(style)
 
     // hide buttons using the shadow DOM
-    const newParent = btnParent.cloneNode(false) as HTMLDivElement
-    newParent.append(...this.list.map(e => cloneBtn(e)))
-    shadow.append(newParent)
     const slot = document.createElement('slot')
     shadow.append(slot)
+
+    const newParent = document.createElement('div')
+    newParent.append(...this.list.map(e => cloneBtn(e)))
+    shadow.append(newParent)
+
+    try {
+      const anchorDiv = this.getBtnParent()
+      const { width, top, left } = anchorDiv.getBoundingClientRect()
+      newParent.style.width = `${width}px`
+      newParent.style.top = `${top}px`
+      newParent.style.left = `${left}px`
+    } catch (err) {
+      console.error(err)
+    }
 
     return btnParent
   }
