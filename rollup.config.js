@@ -83,7 +83,7 @@ export default [
             format: "iife",
             sourcemap: false,
             banner: getBannerText,
-            intro: "const d=new Image();d.style.display='none';d.src='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';d.once=false;d.setAttribute('onload','if(this.once)return;this.once=true;this.remove();(' + function () {",
+            intro: "const d=new Image();d.style.display='none';d.src='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';d.once=false;d.setAttribute('onload','if(this.once)return;this.once=true;this.remove();(' + function a () {",
             outro: "}.toString() + ')()');document.body.prepend(d)"
         },
         plugins,
