@@ -4,7 +4,7 @@ import { PDFWorker } from '../dist/cache/worker'
 
 const scriptUrlFromFunction = (fn: () => any): string => {
   const blob = new Blob(['(' + fn.toString() + ')()'], { type: 'application/javascript' })
-  return URL.createObjectURL(blob)
+  return window.URL.createObjectURL(blob)
 }
 
 export class PDFWorkerHelper extends Worker {
