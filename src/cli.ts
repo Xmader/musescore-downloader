@@ -33,7 +33,9 @@ void (async () => {
     type: 'input',
     name: 'fileInit',
     message: 'Score URL or path to local MSCZ file:',
-    suffix: `\n  (starts with "${SCORE_URL_PREFIX}" or local filepath ends with "${EXT}")\n `,
+    suffix: '\n  ' +
+      `(starts with "${SCORE_URL_PREFIX}" or local filepath ends with "${EXT}") ` +
+      `${chalk.bgGray`right-click to paste`}\n `,
     validate (input: string) {
       return input &&
         (
