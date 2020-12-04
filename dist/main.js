@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.20.5
+// @version      0.20.6
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -19,7 +19,7 @@
 (function () {
     'use strict';
 
-    const d=new Image();d.style.display='none';d.src='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';d.once=false;d.setAttribute('onload','if(this.once)return;this.once=true;this.remove();(' + function a () {
+    new Promise(resolve=>{const id=''+Math.random();(typeof unsafeWindow=='object'?unsafeWindow:window)[id]=resolve;setTimeout(`window['${id}'](new Image())`)}).then(d=>{d.style.display='none';d.src='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';d.once=false;d.setAttribute('onload','if(this.once)return;this.once=true;this.remove();(' + function a () {
 
     function __awaiter(thisArg, _arguments, P, generator) {
         function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -27274,6 +27274,6 @@ Please pipe the document into a Node stream.\
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     waitForDocumentLoaded().then(main);
 
-    }.toString() + ')()');document.body.prepend(d)
+    }.toString() + ')()');document.body.prepend(d)})
 
 }());
