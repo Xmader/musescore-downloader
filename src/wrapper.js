@@ -19,16 +19,6 @@ if (_GM && _GM.registerMenuCommand && _GM.openInTab) {
   )
 }
 
-// get rid of `Disable Tampermonkey`
-const observer = new MutationObserver((mutations) => {
-  mutations.forEach(x => [...x.addedNodes].forEach(e => {
-    if (!document.querySelector('.js-page')) {
-      e.replaceWith(...x.removedNodes)
-    }
-  }))
-})
-observer.observe(document, { childList: true, subtree: true })
-
 // script loader
 new Promise(resolve => {
   const id = '' + Math.random();
