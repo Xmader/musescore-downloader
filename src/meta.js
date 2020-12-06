@@ -13,5 +13,6 @@
 // @license      MIT
 // @copyright    Copyright (c) 2019-2020 Xmader
 // @grant        unsafeWindow
+// @grant        GM.registerMenuCommand
 // @run-at       document-start
 // ==/UserScript==
