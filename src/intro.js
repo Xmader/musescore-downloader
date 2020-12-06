@@ -11,6 +11,11 @@ if (_GM && _GM.registerMenuCommand && _GM.openInTab) {
     '** Source Code **',
     () => _GM.openInTab(_GM.info.script.homepage, { active: true })
   )
+
+  _GM.registerMenuCommand(
+    '** Discord **',
+    () => _GM.openInTab("https://discord.gg/DKu7cUZ4XQ", { active: true })
+  )
 }
 
 // script loader
