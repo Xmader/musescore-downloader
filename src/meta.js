@@ -14,5 +14,6 @@
 // @copyright    Copyright (c) 2019-2020 Xmader
 // @grant        unsafeWindow
 // @grant        GM.registerMenuCommand
+// @grant        GM.addElement
 // @run-at       document-start
 // ==/UserScript==

@@ -1,5 +1,6 @@
 
 import isNodeJs from 'detect-node'
+import { isGmAvailable, _GM } from './gm'
 
 export const escapeFilename = (s: string): string => {
   return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_')
@@ -59,6 +60,13 @@ export const useTimeout = async <T> (promise: T | Promise<T>, ms: number): Promi
 
 export const getSandboxWindowAsync = async (targetEl: Element | undefined = undefined): Promise<Window> => {
   if (typeof document === 'undefined') return {} as any as Window
+
+  if (isGmAvailable('addElement')) {
+    // create iframe using GM_addElement API
+    const iframe = await _GM.addElement('iframe', {})
+    iframe.style.display = 'none'
+    return iframe.contentWindow as Window
+  }
 
   if (!targetEl) {
     return new Promise((resolve) => {
