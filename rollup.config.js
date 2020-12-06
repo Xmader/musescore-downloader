@@ -15,6 +15,10 @@ const getBannerText = () => {
     return bannerText
 }
 
+const getIntro = () => {
+    return fs.readFileSync("./src/intro.js", "utf-8")
+}
+
 const basePlugins = [
     typescript({
         target: "ES6",
@@ -83,7 +87,7 @@ export default [
             format: "iife",
             sourcemap: false,
             banner: getBannerText,
-            intro: "const w=typeof unsafeWindow=='object'?unsafeWindow:window;const gmId=''+Math.random();w[gmId]=typeof GM=='object'?GM:undefined;new Promise(resolve=>{const id=''+Math.random();w[id]=resolve;setTimeout(`(function a(){window['${id}'](new Image())})()//# sourceURL=${location.href}`)}).then(d=>{d.style.display='none';d.src='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';d.once=false;d.setAttribute('onload',`if(this.once)return;this.once=true;this.remove();const GM=window['${gmId}'];(` + function a () {",
+            intro: getIntro,
             outro: "}.toString() + ')()');document.body.prepend(d)})"
         },
         plugins,
