@@ -1,3 +1,4 @@
+/* eslint-disable */
 const w = typeof unsafeWindow == 'object' ? unsafeWindow : window;
 
 // GM APIs glue
@@ -38,3 +39,6 @@ new Promise(resolve => {
   d.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
   d.once = false;
   d.setAttribute('onload', `if(this.once)return;this.once=true;this.remove();const GM=window['${gmId}'];delete window['${gmId}'];(` + function a () {
+  /** script code here */
+
+}.toString() + ')()');document.body.prepend(d)})

@@ -15,8 +15,9 @@ const getBannerText = () => {
     return bannerText
 }
 
-const getIntro = () => {
-    return fs.readFileSync("./src/intro.js", "utf-8")
+const getWrapper = (startL, endL) => {
+    const js = fs.readFileSync("./src/wrapper.js", "utf-8")
+    return js.split(/\n/g).slice(startL, endL).join("\n")
 }
 
 const basePlugins = [
@@ -87,8 +88,8 @@ export default [
             format: "iife",
             sourcemap: false,
             banner: getBannerText,
-            intro: getIntro,
-            outro: "}.toString() + ')()');document.body.prepend(d)})"
+            intro: () => getWrapper(0, -1),
+            outro: () => getWrapper(-1)
         },
         plugins,
     },
