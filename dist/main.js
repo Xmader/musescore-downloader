@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.21.1
+// @version      0.21.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -307,7 +307,7 @@
     // Only Node.JS has a process variable that is of [[Class]] process
     var detectNode = Object.prototype.toString.call(typeof process$1 !== 'undefined' ? process$1 : 0) === '[object process]';
 
-    const _GM = GM;
+    const _GM = (typeof GM === 'object' ? GM : undefined);
     const isGmAvailable = (requiredMethod = 'info') => {
         return typeof GM !== 'undefined' &&
             typeof GM[requiredMethod] !== 'undefined';
