@@ -15,5 +15,6 @@
 // @grant        unsafeWindow
 // @grant        GM.registerMenuCommand
 // @grant        GM.addElement
+// @grant        GM.openInTab
 // @run-at       document-start
 // ==/UserScript==

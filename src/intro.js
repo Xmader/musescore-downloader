@@ -5,6 +5,13 @@ const _GM = typeof GM == 'object' ? GM : undefined;
 const gmId = '' + Math.random();
 w[gmId] = _GM;
 
+if (_GM && _GM.registerMenuCommand && _GM.openInTab) {
+  // add buttons to the userscript manager menu
+  _GM.registerMenuCommand(
+    '** Source Code **',
+    () => _GM.openInTab(_GM.info.script.homepage, { active: true })
+  )
+}
 
 // script loader
 new Promise(resolve => {
