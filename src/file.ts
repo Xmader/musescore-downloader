@@ -36,7 +36,7 @@ const magicHookConstr = (() => {
           const iframe = nodes[0] as HTMLIFrameElement
           const w = iframe.contentWindow as Window
 
-          hookNative(w, 'fetch', (fn) => {
+          hookNative(w, 'fetch', () => {
             return function (url, init) {
               const token = init?.headers?.Authorization
               if (typeof url === 'string' && token) {
@@ -47,7 +47,7 @@ const magicHookConstr = (() => {
                   l[type]?.(token)
                 }
               }
-              return fn(url, init)
+              return fetch(url, init)
             }
           })
         }
