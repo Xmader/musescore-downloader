@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.21.0
+// @version      0.21.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -15,13 +15,46 @@
 // @grant        unsafeWindow
 // @grant        GM.registerMenuCommand
 // @grant        GM.addElement
+// @grant        GM.openInTab
 // @run-at       document-start
 // ==/UserScript==
 
 (function () {
     'use strict';
 
-    const w=typeof unsafeWindow=='object'?unsafeWindow:window;const gmId=''+Math.random();w[gmId]=typeof GM=='object'?GM:undefined;new Promise(resolve=>{const id=''+Math.random();w[id]=resolve;setTimeout(`(function a(){window['${id}'](new Image())})()//# sourceURL=${location.href}`)}).then(d=>{d.style.display='none';d.src='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';d.once=false;d.setAttribute('onload',`if(this.once)return;this.once=true;this.remove();const GM=window['${gmId}'];(` + function a () {
+    /* eslint-disable */
+    const w = typeof unsafeWindow == 'object' ? unsafeWindow : window;
+
+    // GM APIs glue
+    const _GM = typeof GM == 'object' ? GM : undefined;
+    const gmId = '' + Math.random();
+    w[gmId] = _GM;
+
+    if (_GM && _GM.registerMenuCommand && _GM.openInTab) {
+      // add buttons to the userscript manager menu
+      _GM.registerMenuCommand(
+        '** Source Code **',
+        () => _GM.openInTab(_GM.info.script.homepage, { active: true })
+      )
+
+      _GM.registerMenuCommand(
+        '** Discord **',
+        () => _GM.openInTab("https://discord.gg/DKu7cUZ4XQ", { active: true })
+      )
+    }
+
+    // script loader
+    new Promise(resolve => {
+      const id = '' + Math.random();
+      w[id] = resolve;
+      setTimeout(`(function a(){window['${id}'](new Image());delete window['${id}'];})()//# sourceURL=${location.href}`)
+    }).then(d => {
+      d.style.display = 'none';
+      d.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+      d.once = false;
+      d.setAttribute('onload', `if(this.once)return;this.once=true;this.remove();const GM=window['${gmId}'];delete window['${gmId}'];(` + function a () {
+      /** script code here */
+
 
     function __awaiter(thisArg, _arguments, P, generator) {
         function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -26522,15 +26555,6 @@ Please pipe the document into a Node stream.\
      */
     const magicHookConstr = (() => {
         const l = {};
-        // get rid of `Disable Tampermonkey`
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach(x => [...x.addedNodes].forEach(e => {
-                if (!document.querySelector('.js-page')) {
-                    e.replaceWith(...x.removedNodes);
-                }
-            }));
-        });
-        observer.observe(document, { childList: true, subtree: true });
         try {
             const p = Object.getPrototypeOf(document.body);
             Object.setPrototypeOf(document.body, null);
