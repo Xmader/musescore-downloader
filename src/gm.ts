@@ -12,7 +12,7 @@ declare const GM: {
   /** https://github.com/Tampermonkey/tampermonkey/issues/881#issuecomment-639705679 */
   addElement<K extends keyof HTMLElementTagNameMap> (tagName: K, properties: Record<string, any>): Promise<HTMLElementTagNameMap[K]>;
 }
-export const _GM = GM
+export const _GM = (typeof GM === 'object' ? GM : undefined) as GM
 
 type GM = typeof GM
 
