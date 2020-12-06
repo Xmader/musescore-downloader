@@ -14,16 +14,6 @@ const TYPE_REG = /id=(\d+)&type=(img|mp3|midi)/
 const magicHookConstr = (() => {
   const l = {}
 
-  // get rid of `Disable Tampermonkey`
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach(x => [...x.addedNodes].forEach(e => {
-      if (!document.querySelector('.js-page')) {
-        (e as HTMLElement).replaceWith(...x.removedNodes)
-      }
-    }))
-  })
-  observer.observe(document, { childList: true, subtree: true })
-
   try {
     const p = Object.getPrototypeOf(document.body)
     Object.setPrototypeOf(document.body, null)
