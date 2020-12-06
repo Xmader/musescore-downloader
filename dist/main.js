@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.20.8
+// @version      0.21.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -13,13 +13,15 @@
 // @license      MIT
 // @copyright    Copyright (c) 2019-2020 Xmader
 // @grant        unsafeWindow
+// @grant        GM.registerMenuCommand
+// @grant        GM.addElement
 // @run-at       document-start
 // ==/UserScript==
 
 (function () {
     'use strict';
 
-    new Promise(resolve=>{const id=''+Math.random();(typeof unsafeWindow=='object'?unsafeWindow:window)[id]=resolve;setTimeout(`(function a(){window['${id}'](new Image())})()//# sourceURL=${location.href}`)}).then(d=>{d.style.display='none';d.src='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';d.once=false;d.setAttribute('onload','if(this.once)return;this.once=true;this.remove();(' + function a () {
+    const w=typeof unsafeWindow=='object'?unsafeWindow:window;const gmId=''+Math.random();w[gmId]=typeof GM=='object'?GM:undefined;new Promise(resolve=>{const id=''+Math.random();w[id]=resolve;setTimeout(`(function a(){window['${id}'](new Image())})()//# sourceURL=${location.href}`)}).then(d=>{d.style.display='none';d.src='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';d.once=false;d.setAttribute('onload',`if(this.once)return;this.once=true;this.remove();const GM=window['${gmId}'];(` + function a () {
 
     function __awaiter(thisArg, _arguments, P, generator) {
         function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -272,6 +274,12 @@
     // Only Node.JS has a process variable that is of [[Class]] process
     var detectNode = Object.prototype.toString.call(typeof process$1 !== 'undefined' ? process$1 : 0) === '[object process]';
 
+    const _GM = GM;
+    const isGmAvailable = (requiredMethod = 'info') => {
+        return typeof GM !== 'undefined' &&
+            typeof GM[requiredMethod] !== 'undefined';
+    };
+
     const escapeFilename = (s) => {
         return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_');
     };
@@ -316,6 +324,12 @@
     const getSandboxWindowAsync = (targetEl = undefined) => __awaiter(void 0, void 0, void 0, function* () {
         if (typeof document === 'undefined')
             return {};
+        if (isGmAvailable('addElement')) {
+            // create iframe using GM_addElement API
+            const iframe = yield _GM.addElement('iframe', {});
+            iframe.style.display = 'none';
+            return iframe.contentWindow;
+        }
         if (!targetEl) {
             return new Promise((resolve) => {
                 // You need ads in your pages, right?
@@ -26526,7 +26540,7 @@ Please pipe the document into a Node stream.\
                     if (nodes[0].nodeName === 'IFRAME') {
                         const iframe = nodes[0];
                         const w = iframe.contentWindow;
-                        hookNative(w, 'fetch', (fn) => {
+                        hookNative(w, 'fetch', () => {
                             return function (url, init) {
                                 var _a, _b;
                                 const token = (_a = init === null || init === void 0 ? void 0 : init.headers) === null || _a === void 0 ? void 0 : _a.Authorization;
@@ -26538,7 +26552,7 @@ Please pipe the document into a Node stream.\
                                         (_b = l[type]) === null || _b === void 0 ? void 0 : _b.call(l, token);
                                     }
                                 }
-                                return fn(url, init);
+                                return fetch(url, init);
                             };
                         });
                     }
@@ -26953,6 +26967,13 @@ Please pipe the document into a Node stream.\
             }
             if (options.tooltip) {
                 btnTpl.title = options.tooltip;
+            }
+            // add buttons to the userscript manager menu
+            if (isGmAvailable('registerMenuCommand')) {
+                // eslint-disable-next-line no-void
+                void _GM.registerMenuCommand(options.name, () => {
+                    options.action(options.name, btnTpl, () => undefined);
+                });
             }
             return btnTpl;
         }
