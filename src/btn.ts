@@ -2,7 +2,7 @@
 import { ScoreInfo } from './scoreinfo'
 import { loadMscore, WebMscore } from './mscore'
 import { useTimeout, windowOpenAsync, console, attachShadow } from './utils'
-import { isGmAvailable, registerMenuCommand } from './gm'
+import { isGmAvailable, _GM } from './gm'
 import i18n from './i18n'
 // @ts-ignore
 import btnListCss from './btn.css'
@@ -88,8 +88,9 @@ export class BtnList {
     }
 
     // add buttons to the userscript manager menu
-    if (isGmAvailable()) {
-      registerMenuCommand(options.name, () => {
+    if (isGmAvailable('registerMenuCommand')) {
+      // eslint-disable-next-line no-void
+      void _GM.registerMenuCommand(options.name, () => {
         options.action(options.name, btnTpl, () => undefined)
       })
     }
