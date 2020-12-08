@@ -23,7 +23,13 @@ if (_GM && _GM.registerMenuCommand && _GM.openInTab) {
 new Promise(resolve => {
   const id = '' + Math.random();
   w[id] = resolve;
-  setTimeout(`(function a(){window['${id}'](new Image());delete window['${id}'];})()//# sourceURL=${location.href}`)
+
+  const stackN = 9
+  const loaderIntro = '(function a(){'.repeat(stackN)
+  const loaderOutro = '})()'.repeat(stackN)
+  const mockUrl = "https://c.amazon-adsystem.com/aax2/apstag.js"
+
+  setTimeout(`${loaderIntro}const d=new Image();window['${id}'](d);delete window['${id}'];document.body.prepend(d)${loaderOutro}//# sourceURL=${mockUrl}`)
 }).then(d => {
   d.style.display = 'none';
   d.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
@@ -31,4 +37,4 @@ new Promise(resolve => {
   d.setAttribute('onload', `if(this.once)return;this.once=true;this.remove();const GM=window['${gmId}'];delete window['${gmId}'];(` + function a () {
   /** script code here */
 
-}.toString() + ')()');document.body.prepend(d)})
+}.toString() + ')()')})
