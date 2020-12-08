@@ -13,12 +13,16 @@ on:
       ref:
         description: 'The branch, tag or SHA to release from'
         required: false
+      chrome_ext_url:
+        description: 'URL to the Chrome Extension crx'
+        required: true
 
 env:
   VERSION: ${{ github.event.inputs.version }}
   NPM_TAG: ${{ github.event.inputs.npm_tag }}
   REF: ${{ github.event.inputs.ref || github.sha }}
   ARTIFACTS_DIR: ./.artifacts
+  CHROME_EXT_URL: ${{ github.event.inputs.chrome_ext_url }}
 
 jobs:
   release:
@@ -64,6 +68,7 @@ jobs:
           mkdir -p $ARTIFACTS_DIR
           cp dist/main.js $ARTIFACTS_DIR/musescore-downloader.user.js
           cp dist/ext.zip $ARTIFACTS_DIR/musescore-downloader.webextension.zip
+          wget -q $CHROME_EXT_URL -P $ARTIFACTS_DIR/
       - run: bash ./.github/workflows/get-signed-ext.sh
         env:
           EXT_ID: musescore-downloader
