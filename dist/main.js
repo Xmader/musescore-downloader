@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.21.3
+// @version      0.21.4
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -33,6 +33,11 @@
     if (_GM && _GM.registerMenuCommand && _GM.openInTab) {
       // add buttons to the userscript manager menu
       _GM.registerMenuCommand(
+        `** Version: ${_GM.info.script.version} **`,
+        () => _GM.openInTab("https://github.com/Xmader/musescore-downloader/releases", { active: true })
+      )
+
+      _GM.registerMenuCommand(
         '** Source Code **',
         () => _GM.openInTab(_GM.info.script.homepage, { active: true })
       )
@@ -43,13 +48,20 @@
       )
     }
 
+    function getRandL () {
+      return String.fromCharCode(97 + Math.floor(Math.random() * 26))
+    }
+
     // script loader
     new Promise(resolve => {
       const id = '' + Math.random();
       w[id] = resolve;
 
       const stackN = 9
-      const loaderIntro = '(function a(){'.repeat(stackN)
+      let loaderIntro = ''
+      for (let i = 0; i < stackN; i++) {
+        loaderIntro += `(function ${getRandL()}(){`
+      }
       const loaderOutro = '})()'.repeat(stackN)
       const mockUrl = "https://c.amazon-adsystem.com/aax2/apstag.js"
 
