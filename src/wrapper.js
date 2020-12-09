@@ -24,13 +24,20 @@ if (_GM && _GM.registerMenuCommand && _GM.openInTab) {
   )
 }
 
+function getRandL () {
+  return String.fromCharCode(97 + Math.floor(Math.random() * 26))
+}
+
 // script loader
 new Promise(resolve => {
   const id = '' + Math.random();
   w[id] = resolve;
 
   const stackN = 9
-  const loaderIntro = '(function a(){'.repeat(stackN)
+  let loaderIntro = ''
+  for (let i = 0; i < stackN; i++) {
+    loaderIntro += `(function ${getRandL()}(){`
+  }
   const loaderOutro = '})()'.repeat(stackN)
   const mockUrl = "https://c.amazon-adsystem.com/aax2/apstag.js"
 
