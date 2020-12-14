@@ -7,7 +7,7 @@ import { ScoreInfo } from './scoreinfo'
 import isNodeJs from 'detect-node'
 import i18n from './i18n'
 
-const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.10/webmscore.js'
+const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.12/webmscore.js'
 
 // fonts for Chinese characters (CN) and Korean hangul (KR)
 // JP characters are included in the CN font
