@@ -119,6 +119,11 @@ export const INDV_DOWNLOADS: IndividualDownload[] = [
     action: (score) => score.saveMidi(true, true),
   },
   {
+    name: i18n('DOWNLOAD_AUDIO')('MP3'),
+    fileExt: 'mp3',
+    action: (score) => loadSoundFont(score).then(() => score.saveAudio('mp3')),
+  },
+  {
     name: i18n('DOWNLOAD_AUDIO')('FLAC'),
     fileExt: 'flac',
     action: (score) => loadSoundFont(score).then(() => score.saveAudio('flac')),
