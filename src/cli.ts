@@ -13,6 +13,7 @@ import i18n from './i18n'
 const inquirer: typeof import('inquirer') = require('inquirer')
 const ora: typeof import('ora') = require('ora')
 const chalk: typeof import('chalk') = require('chalk')
+const os: typeof import('os') = require('os');
 
 const SCORE_URL_PREFIX = 'https://(s.)musescore.com/'
 const SCORE_URL_REG = /https:\/\/(s\.)?musescore\.com\//
@@ -27,6 +28,15 @@ interface Params {
 }
 
 void (async () => {
+  // Determine platform and paste message
+  const platform = os.platform();
+  let pasteMessage = '';
+  if (platform === 'win32') {
+    pasteMessage = 'right-click to paste';
+  } else if (platform === 'linux') {
+    pasteMessage = 'usually Ctrl+Shift+V to paste';
+  }
+
   let scoreinfo: ScoreInfo
   // ask for the page url or path to local file
   const { fileInit } = await inquirer.prompt<Params>({
@@ -35,7 +45,7 @@ void (async () => {
     message: 'Score URL or path to local MSCZ file:',
     suffix: '\n  ' +
       `(starts with "${SCORE_URL_PREFIX}" or local filepath ends with "${EXT}") ` +
-      `${chalk.bgGray`right-click to paste`}\n `,
+      `${chalk.bgGray(pasteMessage)}\n `,
     validate (input: string) {
       return input &&
         (
