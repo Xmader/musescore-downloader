@@ -1,5 +1,6 @@
 
-import { getFetch, escapeFilename } from './utils'
+import { getFetch, escapeFilename, assertRes } from './utils'
+import { getMainCid } from './mscz'
 
 export abstract class ScoreInfo {
   private readonly RADIX = 20;
@@ -117,18 +118,24 @@ export const getActualId = async (scoreinfo: ScoreInfoInPage | ScoreInfoHtml, _f
     return scoreinfo.id
   }
 
-  const jsonPUrl = new URL(`${scoreinfo.baseUrl}space.jsonp`)
-  jsonPUrl.hostname = 's.musescore.com'
+  const mainCid = await getMainCid(scoreinfo, _fetch)
+  const ref = `${mainCid}/sid2id/${scoreinfo.id}`
+  const url = `https://ipfs.infura.io:5001/api/v0/dag/get?arg=${ref}`
 
-  const r = await _fetch(jsonPUrl.href)
-  const text = await r.text()
+  const r0 = await _fetch(url)
+  if (r0.status !== 500) {
+    assertRes(r0)
+  }
+  const res: { Message: string } | number = await r0.json()
+  if (typeof res !== 'number') {
+    // read further error msg
+    throw new Error(res.Message)
+  }
 
-  const m = text.match(/^jsonp(\d+)/) as RegExpMatchArray
-  const id = +m[1]
-
+  // assign the actual id back to scoreinfo
   Object.defineProperty(scoreinfo, 'id', {
-    get () { return id },
+    get () { return res },
   })
 
-  return id
+  return res
 }
