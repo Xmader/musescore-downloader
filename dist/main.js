@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.22.0
+// @version      0.22.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -27229,16 +27229,23 @@ Please pipe the document into a Node stream.\
             // actual id already
             return scoreinfo.id;
         }
-        const jsonPUrl = new URL(`${scoreinfo.baseUrl}space.jsonp`);
-        jsonPUrl.hostname = 's.musescore.com';
-        const r = yield _fetch(jsonPUrl.href);
-        const text = yield r.text();
-        const m = text.match(/^jsonp(\d+)/);
-        const id = +m[1];
+        const mainCid = yield getMainCid(scoreinfo, _fetch);
+        const ref = `${mainCid}/sid2id/${scoreinfo.id}`;
+        const url = `https://ipfs.infura.io:5001/api/v0/dag/get?arg=${ref}`;
+        const r0 = yield _fetch(url);
+        if (r0.status !== 500) {
+            assertRes(r0);
+        }
+        const res = yield r0.json();
+        if (typeof res !== 'number') {
+            // read further error msg
+            throw new Error(res.Message);
+        }
+        // assign the actual id back to scoreinfo
         Object.defineProperty(scoreinfo, 'id', {
-            get() { return id; },
+            get() { return res; },
         });
-        return id;
+        return res;
     });
 
     const { saveAs } = FileSaver_min;
