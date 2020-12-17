@@ -4,6 +4,7 @@
 
 import fs from 'fs'
 import path from 'path'
+import os from 'os'
 import { fetchMscz, setMscz, MSCZ_URL_SYM } from './mscz'
 import { loadMscore, INDV_DOWNLOADS, WebMscore } from './mscore'
 import { ScoreInfo, ScoreInfoHtml, ScoreInfoObj, getActualId } from './scoreinfo'
@@ -13,7 +14,6 @@ import i18n from './i18n'
 const inquirer: typeof import('inquirer') = require('inquirer')
 const ora: typeof import('ora') = require('ora')
 const chalk: typeof import('chalk') = require('chalk')
-const os: typeof import('os') = require('os');
 
 const SCORE_URL_PREFIX = 'https://(s.)musescore.com/'
 const SCORE_URL_REG = /https:\/\/(s\.)?musescore\.com\//
@@ -29,13 +29,13 @@ interface Params {
 
 void (async () => {
   // Determine platform and paste message
-  const platform = os.platform();
-  let pasteMessage = '';
+  const platform = os.platform()
+  let pasteMessage = ''
   if (platform === 'win32') {
-    pasteMessage = 'right-click to paste';
+    pasteMessage = 'right-click to paste'
   } else if (platform === 'linux') {
-    pasteMessage = 'usually Ctrl+Shift+V to paste';
-  }
+    pasteMessage = 'usually Ctrl+Shift+V to paste'
+  } // For MacOS, no hint is needed because the paste shortcut is universal.
 
   let scoreinfo: ScoreInfo
   // ask for the page url or path to local file
