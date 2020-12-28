@@ -150,7 +150,7 @@ export const waitForSheetLoaded = (): Promise<void> => {
           observer.disconnect()
         }
       })
-      observer.observe(document.body, { childList: true, subtree: true })
+      observer.observe(document, { childList: true, subtree: true })
     })
   } else {
     return Promise.resolve()
