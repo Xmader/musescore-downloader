@@ -136,3 +136,23 @@ export const waitForDocumentLoaded = (): Promise<void> => {
     return Promise.resolve()
   }
 }
+
+/**
+ * Run script before the page is fully loaded
+ */
+export const waitForSheetLoaded = (): Promise<void> => {
+  if (document.readyState !== 'complete') {
+    return new Promise(resolve => {
+      const observer = new MutationObserver(() => {
+        const img = document.querySelector('img')
+        if (img) {
+          resolve()
+          observer.disconnect()
+        }
+      })
+      observer.observe(document.body, { childList: true, subtree: true })
+    })
+  } else {
+    return Promise.resolve()
+  }
+}

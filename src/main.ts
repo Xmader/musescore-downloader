@@ -1,7 +1,7 @@
 import './meta'
 
 import FileSaver from 'file-saver'
-import { waitForDocumentLoaded, console } from './utils'
+import { waitForSheetLoaded, console } from './utils'
 import { downloadPDF } from './pdf'
 import { downloadMscz } from './mscz'
 import { getFileUrl } from './file'
@@ -143,4 +143,4 @@ const main = (): void => {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
-waitForDocumentLoaded().then(main)
+waitForSheetLoaded().then(main)
