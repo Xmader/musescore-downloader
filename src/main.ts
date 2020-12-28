@@ -6,7 +6,8 @@ import { downloadPDF } from './pdf'
 import { downloadMscz } from './mscz'
 import { getFileUrl } from './file'
 import { INDV_DOWNLOADS } from './mscore'
-import { BtnList, BtnAction, BtnListMode } from './btn'
+import { getLibreScoreLink } from './librescore-link'
+import { BtnList, BtnAction, BtnListMode, ICON } from './btn'
 import { ScoreInfoInPage, SheetInfoInPage, getActualId } from './scoreinfo'
 import i18n from './i18n'
 
@@ -129,6 +130,13 @@ const main = (): void => {
         initBtn()
       }
     }),
+  })
+
+  btnList.add({
+    name: 'View in LibreScore',
+    action: BtnAction.openUrl(() => getLibreScoreLink(scoreinfo)),
+    tooltip: 'BETA',
+    icon: ICON.LIBRESCORE,
   })
 
   btnList.commit(BtnListMode.InPage)

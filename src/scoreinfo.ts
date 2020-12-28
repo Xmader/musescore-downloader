@@ -4,6 +4,7 @@ import { getMainCid } from './mscz'
 
 export abstract class ScoreInfo {
   private readonly RADIX = 20;
+  private readonly INDEX_RADIX = 40;
 
   abstract id: number;
   abstract title: string;
@@ -24,6 +25,10 @@ export abstract class ScoreInfo {
 
   public getMsczCidUrl (mainCid: string): string {
     return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.getMsczIpfsRef(mainCid)}`
+  }
+
+  public getScorepackRef (mainCid: string): string {
+    return `/ipfs/${mainCid}/index/${(+this.id) % this.INDEX_RADIX}/${this.id}/scorepack`
   }
 }
 

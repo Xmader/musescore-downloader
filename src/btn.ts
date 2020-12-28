@@ -9,6 +9,11 @@ import btnListCss from './btn.css'
 
 type BtnElement = HTMLButtonElement
 
+export enum ICON {
+  DOWNLOAD = 'M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z',
+  LIBRESCORE = 'm5.4837 4.4735v10.405c-1.25-0.89936-3.0285-0.40896-4.1658 0.45816-1.0052 0.76659-1.7881 2.3316-0.98365 3.4943 1 1.1346 2.7702 0.70402 3.8817-0.02809 1.0896-0.66323 1.9667-1.8569 1.8125-3.1814v-5.4822h8.3278v9.3865h9.6438v-2.6282h-6.4567v-12.417c-4.0064-0.015181-8.0424-0.0027-12.06-0.00676zm0.54477 2.2697h8.3278v1.1258h-8.3278v-1.1258z',
+}
+
 const getBtnContainer = (): HTMLDivElement => {
   const els = [...document.querySelectorAll('*')].reverse()
   const el = els.find(b => {
@@ -20,7 +25,7 @@ const getBtnContainer = (): HTMLDivElement => {
   return btnParent
 }
 
-const buildDownloadBtn = () => {
+const buildDownloadBtn = (icon: ICON) => {
   const btn = document.createElement('button')
   btn.type = 'button'
 
@@ -28,7 +33,7 @@ const buildDownloadBtn = () => {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   svg.setAttribute('viewBox', '0 0 24 24')
   const svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-  svgPath.setAttribute('d', 'M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z')
+  svgPath.setAttribute('d', icon)
   svgPath.setAttribute('fill', '#fff')
   svg.append(svgPath)
 
@@ -49,6 +54,7 @@ interface BtnOptions {
   readonly action: BtnAction;
   readonly disabled?: boolean;
   readonly tooltip?: string;
+  readonly icon?: ICON;
 }
 
 export enum BtnListMode {
@@ -62,7 +68,7 @@ export class BtnList {
   constructor (private getBtnParent: () => HTMLDivElement = getBtnContainer) { }
 
   add (options: BtnOptions): BtnElement {
-    const btnTpl = buildDownloadBtn()
+    const btnTpl = buildDownloadBtn(options.icon ?? ICON.DOWNLOAD)
     const setText = (btn: BtnElement) => {
       const textNode = btn.querySelector('span')
       return (str: string): void => {
@@ -186,9 +192,12 @@ export namespace BtnAction {
       const _url = await normalizeUrlInput(url)
       const a = document.createElement('a')
       a.href = _url
+      a.target = '_blank'
       a.dispatchEvent(new MouseEvent('click'))
     }, fallback, timeout)
   }
+
+  export const openUrl = download
 
   export const mscoreWindow = (scoreinfo: ScoreInfo, fn: (w: Window, score: WebMscore, processingTextEl: ChildNode) => any): BtnAction => {
     return async (btnName, btn, setText) => {
