@@ -192,17 +192,19 @@ export namespace BtnAction {
     else return url
   }
 
-  export const download = (url: UrlInput, fallback?: () => Promisable<void>, timeout?: number): BtnAction => {
+  export const download = (url: UrlInput, fallback?: () => Promisable<void>, timeout?: number, target?: '_blank'): BtnAction => {
     return process(async (): Promise<void> => {
       const _url = await normalizeUrlInput(url)
       const a = document.createElement('a')
       a.href = _url
-      a.target = '_blank'
+      if (target) a.target = target
       a.dispatchEvent(new MouseEvent('click'))
     }, fallback, timeout)
   }
 
-  export const openUrl = download
+  export const openUrl = (url: UrlInput, fallback?: () => Promisable<void>, timeout?: number): BtnAction => {
+    return download(url, fallback, timeout, '_blank')
+  }
 
   export const mscoreWindow = (scoreinfo: ScoreInfo, fn: (w: Window, score: WebMscore, processingTextEl: ChildNode) => any): BtnAction => {
     return async (btnName, btn, setText) => {
