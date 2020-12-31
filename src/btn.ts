@@ -104,6 +104,16 @@ export class BtnList {
     return btnTpl
   }
 
+  private _positionBtns (newParent: HTMLDivElement) {
+    try {
+      const anchorDiv = this.getBtnParent()
+      const { top } = anchorDiv.getBoundingClientRect()
+      newParent.style.top = `${top}px`
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   private _commit () {
     const btnParent = document.querySelector('div') as HTMLDivElement
     const shadow = attachShadow(btnParent)
@@ -121,13 +131,10 @@ export class BtnList {
     newParent.append(...this.list.map(e => cloneBtn(e)))
     shadow.append(newParent)
 
-    try {
-      const anchorDiv = this.getBtnParent()
-      const { top } = anchorDiv.getBoundingClientRect()
-      newParent.style.top = `${top}px`
-    } catch (err) {
-      console.error(err)
-    }
+    const pos = () => this._positionBtns(newParent)
+    pos()
+    document.addEventListener('readystatechange', pos)
+    window.addEventListener('resize', pos)
 
     return btnParent
   }
