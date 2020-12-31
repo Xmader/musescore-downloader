@@ -123,10 +123,8 @@ export class BtnList {
 
     try {
       const anchorDiv = this.getBtnParent()
-      const { width, top, left } = anchorDiv.getBoundingClientRect()
-      newParent.style.width = `${width}px`
+      const { top } = anchorDiv.getBoundingClientRect()
       newParent.style.top = `${top}px`
-      newParent.style.left = `${left}px`
     } catch (err) {
       console.error(err)
     }

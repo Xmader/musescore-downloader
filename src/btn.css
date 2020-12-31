@@ -1,12 +1,21 @@
 div {
-  flex-wrap: wrap;
-  display: flex;
+  width: 422px;
+  right: 0;
+  margin: 0 18px 18px 0;
+
+  text-align: center;
   align-items: center;
   font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;
   position: absolute;
   z-index: 9999;
   background: #f6f6f6;
   min-width: 230px;
+}
+
+@media screen and (max-width: 950px) {
+  div {
+    width: auto !important;
+  }
 }
 
 button {
