@@ -49,6 +49,14 @@ const cloneBtn = (btn: HTMLButtonElement) => {
   return n
 }
 
+function getScrollParent (node: HTMLElement): HTMLElement {
+  if (node.scrollHeight > node.clientHeight) {
+    return node
+  } else {
+    return getScrollParent(node.parentNode as HTMLElement)
+  }
+}
+
 interface BtnOptions {
   readonly name: string;
   readonly action: BtnAction;
@@ -104,13 +112,10 @@ export class BtnList {
     return btnTpl
   }
 
-  private _positionBtns (newParent: HTMLDivElement) {
-    try {
-      const anchorDiv = this.getBtnParent()
-      const { top } = anchorDiv.getBoundingClientRect()
+  private _positionBtns (anchorDiv: HTMLDivElement, newParent: HTMLDivElement) {
+    const { top } = anchorDiv.getBoundingClientRect()
+    if (top > 0) {
       newParent.style.top = `${top}px`
-    } catch (err) {
-      console.error(err)
     }
   }
 
@@ -131,10 +136,21 @@ export class BtnList {
     newParent.append(...this.list.map(e => cloneBtn(e)))
     shadow.append(newParent)
 
-    const pos = () => this._positionBtns(newParent)
-    pos()
-    document.addEventListener('readystatechange', pos)
-    window.addEventListener('resize', pos)
+    try {
+      const anchorDiv = this.getBtnParent()
+      const pos = () => this._positionBtns(anchorDiv, newParent)
+      pos()
+      document.addEventListener('readystatechange', pos)
+
+      // reposition btns when window resizes
+      window.addEventListener('resize', pos)
+
+      // reposition btns when scrolling
+      const scroll = getScrollParent(anchorDiv)
+      scroll.addEventListener('scroll', pos)
+    } catch (err) {
+      console.error(err)
+    }
 
     return btnParent
   }
