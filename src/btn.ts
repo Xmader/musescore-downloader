@@ -218,9 +218,7 @@ export namespace BtnAction {
     }, fallback, timeout)
   }
 
-  export const openUrl = (url: UrlInput, fallback?: () => Promisable<void>, timeout?: number): BtnAction => {
-    return download(url, fallback, timeout, '_blank')
-  }
+  export const openUrl = download
 
   export const mscoreWindow = (scoreinfo: ScoreInfo, fn: (w: Window, score: WebMscore, processingTextEl: ChildNode) => any): BtnAction => {
     return async (btnName, btn, setText) => {
