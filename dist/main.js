@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.22.1
+// @version      0.23.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -422,16 +422,20 @@
     const attachShadow = (el) => {
         return Element.prototype.attachShadow.call(el, { mode: 'closed' });
     };
-    const waitForDocumentLoaded = () => {
+    /**
+     * Run script before the page is fully loaded
+     */
+    const waitForSheetLoaded = () => {
         if (document.readyState !== 'complete') {
             return new Promise(resolve => {
-                const cb = () => {
-                    if (document.readyState === 'complete') {
+                const observer = new MutationObserver(() => {
+                    const img = document.querySelector('img');
+                    if (img) {
                         resolve();
-                        document.removeEventListener('readystatechange', cb);
+                        observer.disconnect();
                     }
-                };
-                document.addEventListener('readystatechange', cb);
+                });
+                observer.observe(document, { childList: true, subtree: true });
             });
         }
         else {
@@ -26950,8 +26954,32 @@ Please pipe the document into a Node stream.\
         },
     ];
 
-    var btnListCss = "div {\n  flex-wrap: wrap;\n  display: flex;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n  position: absolute;\n  z-index: 9999;\n  background: #f6f6f6;\n  min-width: 230px;\n}\n\nbutton {\n  width: 205px !important;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
+    const _getLink = (scorepack) => {
+        return `https://librescore.org/score/${scorepack}`;
+    };
+    const getLibreScoreLink = (scoreinfo, _fetch = getFetch()) => __awaiter(void 0, void 0, void 0, function* () {
+        const mainCid = yield getMainCid(scoreinfo, _fetch);
+        const ref = scoreinfo.getScorepackRef(mainCid);
+        const url = `https://ipfs.infura.io:5001/api/v0/dag/get?arg=${ref}`;
+        const r0 = yield _fetch(url);
+        if (r0.status !== 500) {
+            assertRes(r0);
+        }
+        const res = yield r0.json();
+        if (typeof res !== 'string') {
+            // read further error msg
+            throw new Error(res.Message);
+        }
+        return _getLink(res);
+    });
 
+    var btnListCss = "div {\n  width: 422px;\n  right: 0;\n  margin: 0 18px 18px 0;\n\n  text-align: center;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n  position: absolute;\n  z-index: 9999;\n  background: #f6f6f6;\n  min-width: 230px;\n}\n\n@media screen and (max-width: 950px) {\n  div {\n    width: auto !important;\n  }\n}\n\nbutton {\n  width: 205px !important;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
+
+    var ICON;
+    (function (ICON) {
+        ICON["DOWNLOAD"] = "M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z";
+        ICON["LIBRESCORE"] = "m5.4837 4.4735v10.405c-1.25-0.89936-3.0285-0.40896-4.1658 0.45816-1.0052 0.76659-1.7881 2.3316-0.98365 3.4943 1 1.1346 2.7702 0.70402 3.8817-0.02809 1.0896-0.66323 1.9667-1.8569 1.8125-3.1814v-5.4822h8.3278v9.3865h9.6438v-2.6282h-6.4567v-12.417c-4.0064-0.015181-8.0424-0.0027-12.06-0.00676zm0.54477 2.2697h8.3278v1.1258h-8.3278v-1.1258z";
+    })(ICON || (ICON = {}));
     const getBtnContainer = () => {
         var _a;
         const els = [...document.querySelectorAll('*')].reverse();
@@ -26965,14 +26993,14 @@ Please pipe the document into a Node stream.\
             throw new Error('btn parent not found');
         return btnParent;
     };
-    const buildDownloadBtn = () => {
+    const buildDownloadBtn = (icon) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         // build icon svg element
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('viewBox', '0 0 24 24');
         const svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        svgPath.setAttribute('d', 'M9.6 2.4h4.8V12h2.784l-5.18 5.18L6.823 12H9.6V2.4zM19.2 19.2H4.8v2.4h14.4v-2.4z');
+        svgPath.setAttribute('d', icon);
         svgPath.setAttribute('fill', '#fff');
         svg.append(svgPath);
         const textNode = document.createElement('span');
@@ -26984,6 +27012,14 @@ Please pipe the document into a Node stream.\
         n.onclick = btn.onclick;
         return n;
     };
+    function getScrollParent(node) {
+        if (node.scrollHeight > node.clientHeight) {
+            return node;
+        }
+        else {
+            return getScrollParent(node.parentNode);
+        }
+    }
     var BtnListMode;
     (function (BtnListMode) {
         BtnListMode[BtnListMode["InPage"] = 0] = "InPage";
@@ -26995,7 +27031,8 @@ Please pipe the document into a Node stream.\
             this.list = [];
         }
         add(options) {
-            const btnTpl = buildDownloadBtn();
+            var _a;
+            const btnTpl = buildDownloadBtn((_a = options.icon) !== null && _a !== void 0 ? _a : ICON.DOWNLOAD);
             const setText = (btn) => {
                 const textNode = btn.querySelector('span');
                 return (str) => {
@@ -27024,6 +27061,12 @@ Please pipe the document into a Node stream.\
             }
             return btnTpl;
         }
+        _positionBtns(anchorDiv, newParent) {
+            const { top } = anchorDiv.getBoundingClientRect();
+            if (top > 0) {
+                newParent.style.top = `${top}px`;
+            }
+        }
         _commit() {
             const btnParent = document.querySelector('div');
             const shadow = attachShadow(btnParent);
@@ -27039,10 +27082,14 @@ Please pipe the document into a Node stream.\
             shadow.append(newParent);
             try {
                 const anchorDiv = this.getBtnParent();
-                const { width, top, left } = anchorDiv.getBoundingClientRect();
-                newParent.style.width = `${width}px`;
-                newParent.style.top = `${top}px`;
-                newParent.style.left = `${left}px`;
+                const pos = () => this._positionBtns(anchorDiv, newParent);
+                pos();
+                document.addEventListener('readystatechange', pos);
+                // reposition btns when window resizes
+                window.addEventListener('resize', pos);
+                // reposition btns when scrolling
+                const scroll = getScrollParent(anchorDiv);
+                scroll.addEventListener('scroll', pos);
             }
             catch (err) {
                 console$1.error(err);
@@ -27098,14 +27145,17 @@ Please pipe the document into a Node stream.\
             else
                 return url;
         };
-        BtnAction.download = (url, fallback, timeout) => {
+        BtnAction.download = (url, fallback, timeout, target) => {
             return BtnAction.process(() => __awaiter(this, void 0, void 0, function* () {
                 const _url = yield normalizeUrlInput(url);
                 const a = document.createElement('a');
                 a.href = _url;
+                if (target)
+                    a.target = target;
                 a.dispatchEvent(new MouseEvent('click'));
             }), fallback, timeout);
         };
+        BtnAction.openUrl = BtnAction.download;
         BtnAction.mscoreWindow = (scoreinfo, fn) => {
             return (btnName, btn, setText) => __awaiter(this, void 0, void 0, function* () {
                 const _onclick = btn.onclick;
@@ -27167,6 +27217,7 @@ Please pipe the document into a Node stream.\
     class ScoreInfo {
         constructor() {
             this.RADIX = 20;
+            this.INDEX_RADIX = 40;
             this.store = new Map();
         }
         get idLastDigit() {
@@ -27180,6 +27231,9 @@ Please pipe the document into a Node stream.\
         }
         getMsczCidUrl(mainCid) {
             return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.getMsczIpfsRef(mainCid)}`;
+        }
+        getScorepackRef(mainCid) {
+            return `/ipfs/${mainCid}/index/${(+this.id) % this.INDEX_RADIX}/${this.id}/scorepack`;
         }
     }
     class ScoreInfoInPage extends ScoreInfo {
@@ -27344,10 +27398,16 @@ Please pipe the document into a Node stream.\
                 }
             })),
         });
+        btnList.add({
+            name: 'View in LibreScore',
+            action: BtnAction.openUrl(() => getLibreScoreLink(scoreinfo)),
+            tooltip: 'BETA',
+            icon: ICON.LIBRESCORE,
+        });
         btnList.commit(BtnListMode.InPage);
     };
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    waitForDocumentLoaded().then(main);
+    waitForSheetLoaded().then(main);
 
     }.toString() + ')()')})
 
