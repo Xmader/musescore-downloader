@@ -10,7 +10,7 @@ export default createLocale({
   },
 
   'DEPRECATION_NOTICE' (btnName: string) {
-    return `¡OBSOLETO!\nUtiliza \`${btnName}\` dentro de \`Partes Indivduales\` en su lugar.\n(Esto todavía puede funcionar. Pulsa \`Aceptar\` para continuar.)` as const
+    return `¡OBSOLETO!\nUtilizar \`${btnName}\` dentro de \`Partes Indivduales\` en su lugar.\n(Esto todavía puede funcionar. Pulsa \`Aceptar\` para continuar.)` as const
   },
 
   'DOWNLOAD' <T extends string> (fileType: T) {
