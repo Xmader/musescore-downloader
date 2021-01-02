@@ -27,6 +27,10 @@ export default createLocale({
     return 'Download individual parts (BETA)' as const
   },
 
+  'VIEW_IN_LIBRESCORE' () {
+    return 'View in LibreScore' as const
+  },
+
   'FULL_SCORE' () {
     return 'Full score' as const
   },

@@ -17,6 +17,8 @@ export interface LOCALE {
   'IND_PARTS_TOOLTIP' (): string;
 
   'FULL_SCORE' (): string;
+
+  'VIEW_IN_LIBRESCORE' (): string;
 }
 
 const locales = (<L extends { [n: string]: LOCALE } /** type checking */> (l: L) => Object.freeze(l))({

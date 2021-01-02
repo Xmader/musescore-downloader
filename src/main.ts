@@ -133,7 +133,7 @@ const main = (): void => {
   })
 
   btnList.add({
-    name: 'View in LibreScore',
+    name: i18n('VIEW_IN_LIBRESCORE')(),
     action: BtnAction.openUrl(() => getLibreScoreLink(scoreinfo)),
     tooltip: 'BETA',
     icon: ICON.LIBRESCORE,

@@ -114,7 +114,7 @@ void (async () => {
     }
     if (librescoreLink) {
       try {
-        spinner.info(`View in LibreScore: ${await librescoreLink}`)
+        spinner.info(`${i18n('VIEW_IN_LIBRESCORE')()}: ${await librescoreLink}`)
       } catch { } // it doesn't affect the main feature
     }
     spinner.start()
