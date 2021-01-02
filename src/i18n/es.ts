@@ -10,7 +10,7 @@ export default createLocale({
   },
 
   'DEPRECATION_NOTICE' (btnName: string) {
-    return `¡OBSOLETO!\nParecer ser que \`${btnName}\` no funciona correctamente, use \`Partes Indivduales\` en su lugar.\n(Esto todavía puede funcionar. Haga click en \`Aceptar\` para continuar.)` as const
+    return `¡OBSOLETO!\nUtiliza \`${btnName}\` dentro de \`Partes Indivduales\` en su lugar.\n(Esto todavía puede funcionar. Pulsa \`Aceptar\` para continuar.)` as const
   },
 
   'DOWNLOAD' <T extends string> (fileType: T) {
@@ -28,7 +28,7 @@ export default createLocale({
   },
 
   'VIEW_IN_LIBRESCORE' () {
-    return 'Ver en LibreScore' as const
+    return 'Visualizar en LibreScore' as const
   },
 
   'FULL_SCORE' () {

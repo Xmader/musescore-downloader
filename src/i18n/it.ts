@@ -10,7 +10,7 @@ export default createLocale({
   },
 
   'DEPRECATION_NOTICE' (btnName: string) {
-    return `Attenzione!\nSembra che \`${btnName}\` non funzioni correttamente. Usa \`Parti Singole\`.\n(Potrebbe funzionare. Clicca \`OK\` per continuare.)` as const
+    return `¡DEPRECATO!\nUtilizza invece \`${btnName}\` all'interno di \`Parti Indivduali\`.\n(Qusto potrebbe funzionare. Clicca \`Ok\` per continuare.)` as const
   },
 
   'DOWNLOAD' <T extends string> (fileType: T) {
@@ -27,7 +27,11 @@ export default createLocale({
     return 'Scarica Parti Singole (BETA)' as const
   },
 
+  'VIEW_IN_LIBRESCORE' () {
+    return 'Visualizzare in LibreScore' as const
+  },
+
   'FULL_SCORE' () {
-    return 'Spartito Completato' as const
+    return 'Spartito Completo' as const
   },
 })
