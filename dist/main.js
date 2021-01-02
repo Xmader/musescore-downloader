@@ -5,13 +5,13 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.23.0
+// @version      0.23.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
 // @match        https://s.musescore.com/*/*
 // @license      MIT
-// @copyright    Copyright (c) 2019-2020 Xmader
+// @copyright    Copyright (c) 2019-2021 Xmader
 // @grant        unsafeWindow
 // @grant        GM.registerMenuCommand
 // @grant        GM.addElement
@@ -26790,6 +26790,9 @@ Please pipe the document into a Node stream.\
         'IND_PARTS_TOOLTIP'() {
             return 'Download individual parts (BETA)';
         },
+        'VIEW_IN_LIBRESCORE'() {
+            return 'View in LibreScore';
+        },
         'FULL_SCORE'() {
             return 'Full score';
         },
@@ -26803,7 +26806,7 @@ Please pipe the document into a Node stream.\
             return '❌¡Descarga Fallida!';
         },
         'DEPRECATION_NOTICE'(btnName) {
-            return `¡OBSOLETO!\nParecer ser que \`${btnName}\` no funciona correctamente, use \`Partes Indivduales\` en su lugar.\n(Esto todavía puede funcionar. Haga click en \`Aceptar\` para continuar.)`;
+            return `¡OBSOLETO!\nUtilizar \`${btnName}\` dentro de \`Partes Indivduales\` en su lugar.\n(Esto todavía puede funcionar. Pulsa \`Aceptar\` para continuar.)`;
         },
         'DOWNLOAD'(fileType) {
             return `Descargar ${fileType}`;
@@ -26817,14 +26820,79 @@ Please pipe the document into a Node stream.\
         'IND_PARTS_TOOLTIP'() {
             return 'Descargar partes individuales (BETA)';
         },
+        'VIEW_IN_LIBRESCORE'() {
+            return 'Visualizar en LibreScore';
+        },
         'FULL_SCORE'() {
             return 'Partitura Completa';
+        },
+    });
+
+    var it = createLocale({
+        'PROCESSING'() {
+            return 'Caricamento…';
+        },
+        'BTN_ERROR'() {
+            return '❌Download Fallito!';
+        },
+        'DEPRECATION_NOTICE'(btnName) {
+            return `¡DEPRECATO!\nUtilizzare \`${btnName}\` all'interno di \`Parti Indivduali\`.\n(Qusto potrebbe funzionare. Cliccare \`Ok\` per continuare.)`;
+        },
+        'DOWNLOAD'(fileType) {
+            return `Scaricare ${fileType}`;
+        },
+        'DOWNLOAD_AUDIO'(fileType) {
+            return `Scaricare ${fileType} Audio`;
+        },
+        'IND_PARTS'() {
+            return 'Parti Singole';
+        },
+        'IND_PARTS_TOOLTIP'() {
+            return 'Scaricare Parti Singole (BETA)';
+        },
+        'VIEW_IN_LIBRESCORE'() {
+            return 'Visualizzare in LibreScore';
+        },
+        'FULL_SCORE'() {
+            return 'Spartito Completo';
+        },
+    });
+
+    var zh = createLocale({
+        'PROCESSING'() {
+            return '处理中…';
+        },
+        'BTN_ERROR'() {
+            return '❌下载失败!';
+        },
+        'DEPRECATION_NOTICE'(btnName) {
+            return `不建议使用\n请使用 \`单独分谱\` 里的 \`${btnName}\` 按钮代替\n（这也许仍会起作用。单击\`确定\`以继续。）`;
+        },
+        'DOWNLOAD'(fileType) {
+            return `下载 ${fileType}`;
+        },
+        'DOWNLOAD_AUDIO'(fileType) {
+            return `下载 ${fileType} 音频`;
+        },
+        'IND_PARTS'() {
+            return '单独分谱';
+        },
+        'IND_PARTS_TOOLTIP'() {
+            return '下载单独分谱 (BETA)';
+        },
+        'VIEW_IN_LIBRESCORE'() {
+            return '在 LibreScore 中查看';
+        },
+        'FULL_SCORE'() {
+            return '完整乐谱';
         },
     });
 
     const locales = ((l) => Object.freeze(l))({
         en,
         es,
+        it,
+        zh,
     });
     // detect browser language
     const lang = (() => {
@@ -27399,7 +27467,7 @@ Please pipe the document into a Node stream.\
             })),
         });
         btnList.add({
-            name: 'View in LibreScore',
+            name: i18n('VIEW_IN_LIBRESCORE')(),
             action: BtnAction.openUrl(() => getLibreScoreLink(scoreinfo)),
             tooltip: 'BETA',
             icon: ICON.LIBRESCORE,
