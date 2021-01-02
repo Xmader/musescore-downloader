@@ -3,6 +3,7 @@ import isNodeJs from 'detect-node'
 
 import en from './en'
 import es from './es'
+import it from './it'
 
 export interface LOCALE {
   'PROCESSING' (): string;
@@ -24,6 +25,7 @@ export interface LOCALE {
 const locales = (<L extends { [n: string]: LOCALE } /** type checking */> (l: L) => Object.freeze(l))({
   en,
   es,
+  it,
 })
 
 // detect browser language
