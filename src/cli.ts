@@ -8,6 +8,7 @@ import os from 'os'
 import { fetchMscz, setMscz, MSCZ_URL_SYM } from './mscz'
 import { loadMscore, INDV_DOWNLOADS, WebMscore } from './mscore'
 import { ScoreInfo, ScoreInfoHtml, ScoreInfoObj, getActualId } from './scoreinfo'
+import { getLibreScoreLink } from './librescore-link'
 import { escapeFilename } from './utils'
 import i18n from './i18n'
 
@@ -38,6 +39,7 @@ void (async () => {
   } // For MacOS, no hint is needed because the paste shortcut is universal.
 
   let scoreinfo: ScoreInfo
+  let librescoreLink: Promise<string> | undefined
   // ask for the page url or path to local file
   const { fileInit } = await inquirer.prompt<Params>({
     type: 'input',
@@ -77,7 +79,12 @@ void (async () => {
       default: true,
     })
     if (!confirmed) return
-    console.log() // print a blank line to the terminal
+
+    // initiate LibreScore link request
+    librescoreLink = getLibreScoreLink(scoreinfo)
+
+    // print a blank line to the terminal
+    console.log()
   } else {
     scoreinfo = new ScoreInfoObj(0, path.basename(fileInit, EXT))
   }
@@ -104,6 +111,11 @@ void (async () => {
     spinner.info('MSCZ file loaded')
     if (!isLocalFile) {
       spinner.info(`File URL: ${scoreinfo.store.get(MSCZ_URL_SYM) as string}`)
+    }
+    if (librescoreLink) {
+      try {
+        spinner.info(`View in LibreScore: ${await librescoreLink}`)
+      } catch { } // it doesn't affect the main feature
     }
     spinner.start()
 
