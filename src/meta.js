@@ -11,7 +11,7 @@
 // @match        https://musescore.com/*/*
 // @match        https://s.musescore.com/*/*
 // @license      MIT
-// @copyright    Copyright (c) 2019-2020 Xmader
+// @copyright    Copyright (c) 2019-2021 Xmader
 // @grant        unsafeWindow
 // @grant        GM.registerMenuCommand
 // @grant        GM.addElement
