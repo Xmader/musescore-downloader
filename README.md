@@ -1,7 +1,7 @@
   
 # musescore-downloader
 
-**English** | [简体中文](#musescore-downloader-1)  | [Español](#musescore-downloader-2) 
+**English** | [简体中文](#musescore-downloader-1)  | [Español](#musescore-downloader-2)  | [Italian](#musescore-downloader-3) 
 
 > download sheet music from musescore.com for free, no login or Musescore Pro required
 
@@ -243,6 +243,7 @@ En tercer lugar, la propiedad de los derechos de autor de los contenidos de muse
 
 Si no podemos ver pruebas de que musescore.com realmente paga la tarifa de licencia a los propietarios de los derechos de autor, podemos pensar que es solo una excusa para obtener ganancias robando.
 
+
 > utilizo ilegalmente nuestra API privada con contenido de música licenciada.
 
 No, el documento de la API está en https://developers.musescore.com/.
@@ -251,3 +252,123 @@ No, el documento de la API está en https://developers.musescore.com/.
 **Lanzaré una alternativa de código abierto (GPLv3), sin servidor, offline, y totalmente gratuita a musescore.com, [LibreScore](https://github.com/LibreScore). ETodos son bienvenidos a unirse al desarrollo del proyecto abriendo un problema o [enviándome un correo electrónico.](mailto:i@xmader.com).**
 
 **Además, estoy desarrollando musescore.js. Podría convertir un archivo mscz en cualquier formato que admita el software Musescore, y en el navegador.** Dado que el software Musescore es de código abierto bajo [GPL](https://github.com/musescore/MuseScore/blob/master/LICENSE.GPL), Podría traducir el código fuente a js o compilarlo en asm.js/WASM.
+
+---
+
+# musescore-downloader
+
+[English](#musescore-downloader) | [简体中文](#musescore-downloader-1) | [Español](#musescore-downloader-2) | **Italian**
+
+> Scarica spartiti da musescore.com gratuitamente, non è richisto login o Musescore Pro.
+
+**Avvia questo progetto su [Github](https://github.com/Xmader/musescore-downloader) e [Gitlab](https://gitlab.com/Xmader/musescore-downloader)** (Mirror)   
+
+[![Discord](https://img.shields.io/discord/774491656643674122?color=7289da&label=Discord&logo=discord)](https://discord.gg/DKu7cUZ4XQ)
+
+Hai bisogno di datset di musescore.com per l'analisi/machine learning? Prova [musescore-dataset](https://github.com/Xmader/musescore-dataset).
+
+![](https://cdn.statically.io/gh/Xmader/musescore-downloader/master/screenshot.png?env=dev)
+
+## Utilizzo leale
+
+Solo per scopi di ricerca e studio
+
+## In breve
+
+Di recente è necessario un account Musescore Pro ($6,99/mese) per scaricare spartiti da musescore.com.
+(Tuttavia, alcuni mesi fa, era possibile scaricare gratuitamente.)
+
+La società Musescore ha affermato che a causa di copyright e licenze, devono pagare i proprietari del copyright.
+
+Molte musiche su musescore.com sono già di **Pubblico Dominio**, il che significa che o l'autore le ha pubblicate in pubblico dominio o l'autore è morto da oltre 70 anni.
+Devono pagare anche i compositori che sono morti centinaia di anni fa?
+*Aggiornamento: gli spartiti di Dominio Pubblico, ora possono essere scaricati senza Musescore Pro, ma hai ancora bisogno di un account per poter scaricare.*
+
+
+Inoltre, ci sono molti autori di spartiti su musescore.com che hanno creato le proprie canzoni e le hanno pubblicate sotto licenza [CC-BY-**NC** (Creative Commons Attribution-**NonCommercial**)](https://creativecommons.org/licenses/by-nc/4.0/).  
+È illegale venderli **a scopo di lucro**? 
+*Nota: Mettere annunci (per vendere Musescore Pro) sul sito web significa anche che lo usano per generare entrate.*
+
+Questo è assolutamente inaccettabile e l'unico scopo è trarre profitto dal furto.
+
+C'è un articolo sul loro sito web: [Il download degli spartiti diventa parte dell'abbonamento Pro](https://musescore.com/groups/improving-musescore-com/discuss/5044610)
+
+## Installazione
+
+### Utilizzo della CLI
+
+(consigliato)
+
+1. Installa Node.js LTS (https://nodejs.org/)
+2. Apri il terminale CMD o Powershell
+3. Digita `npx msdl`, e premi invio  
+  (`npx msdl` eseguirà sempre l'ultima versione)
+4. Seguire le istruzioni
+
+[codice sorgente](/src/cli.ts)
+
+### Installa come Userscript
+
+Questo script è disponibile come [Userscript](https://en.wikipedia.org/wiki/Userscript). Per utilizzare questo Userscript, è necessario prima installare un [gestore di script utente].(https://greasyfork.org/en/help/installing-user-scripts), come Tampermonkey.
+
+1. Installa [Tampermonkey](https://www.tampermonkey.net/)
+
+2. ~~Installa da [Greasy Fork](https://greasyfork.org/scripts/391931).~~   [#42](https://github.com/Xmader/musescore-downloader/issues/42)  
+Installa lo script da <https://msdl.librescore.org/install.user.js>
+
+### Installa come estensione web
+
+Il metodo alternativo consiste nell'installare questo script come estensione per Chrome o Firefox.
+
+Puoi installare l'estensione del browser direttamente da [addons.mozilla.org (per Firefox)](https://addons.mozilla.org/en-US/firefox/addon/musescore-downloader/) o dal [web store di Chrome (per browser basati su Chrome e Chromium)](https://chrome.google.com/webstore/detail/mhdlcdhakmmikknpefblmnhdhjloanjc).
+
+La versione aggiornata può essere trovata nella pagina [Github Releases](https://github.com/Xmader/musescore-downloader/releases).
+
+## Istruzioni per il building
+
+Assicurati di avere installato [Node.js](https://nodejs.org/en/).
+
+```bash
+npm install
+npm run build     # build come script utente
+npm run pack:ext  # pack Web Extension
+```
+
+## Mirrors
+
+* Visualizza questo progetto su [Github](https://github.com/Xmader/musescore-downloader) (Repo principale) | [Gitlab](https://gitlab.com/Xmader/musescore-downloader) (Mirror)
+
+* Questo repo è disponibile anche su IPFS per evitare la rimozione DMCA: [ipns://msdl.librescore.org](https://ipfs.io/ipns/msdl.librescore.org/)
+
+## Feedback
+
+[Problemi con GitHub](https://github.com/Xmader/musescore-downloader/issues)
+
+## Licenza
+
+MIT
+
+## Informazioni sulla richiesta di rimozione
+
+Ho ricevuto un'e-mail di [richiesta di rimozione](https://github.com/Xmader/musescore-downloader/issues/5)da uno degli sviluppatori di Musescore, ma ho qualcosa da ridire.
+
+> Non tutti i contenuti di pubblico dominio su musescore.com sono concessi in licenza dai principali editori musicali (Alfred, EMI, Sony, ecc.). State distribuendo gratuitamente contenuti musicali con licenza da Musescore.com violando i loro diritti.
+
+In primo luogo, se violi i diritti dei principali editori musicali, la richiesta di rimozione dovrebbe essere inviata da loro invece che dagli sviluppatori di Musescore.
+
+In secondo luogo, musescore.com non è un semplice sito di condivisione di musica. Gli autori di spartiti devono trascrivere e riorganizzare le canzoni originali in spartiti, non solo copiare file da qualche altra parte su musescore.com. Di conseguenza, la licenza dovrebbe concentrarsi sui diritti di trascrizione / riorganizzazione degli autori di spartiti, invece che sui diritti di condivisione della musica su alcuni siti web.
+
+In terzo luogo, la proprietà del copyright dei contenuti su musescore.com non è chiara. Non tutte le canzoni di pubblico dominio su musescore.com sono di proprietà dei principali editori musicali. Ci sono molti piccoli editori musicali e cantautori indipendenti. Le canzoni potrebbero essere concesse in licenza con licenze gratuite come Creative Commons. Inoltre, ci sono molti autori che hanno creato le proprie canzoni e pubblicato gli spartiti su musescore.com; Musescore.com paga questi autori?
+
+Se ci sono prove che musescore.com paga davvero la tassa di licenza ai proprietari del copyright, potremmo pensare che sia solo una scusa per ottenere profitto dal furto.
+
+> utilizzi illegalmente la nostra API privata con contenuti musicali con licenza.
+
+No, il documento API è su https://developers.musescore.com/.
+
+
+**Avvierò un'alternativa open source (GPLv3), serverless, offline-first, frontend-first e totalmente gratuita a musescore.com, [LibreScore](https://github.com/LibreScore). Tutti sono invitati a partecipare allo sviluppo del progetto aprendo una issue o [inviandomi un'e-mail](mailto:i@xmader.com).**
+
+**Inoltre, sto sviluppando musescore.js. Potrebbe convertire un file mscz in qualsiasi formato supportato dal software Musescore e nel browser.** Poiché il software Musescore è open source sotto [GPL](https://github.com/musescore/MuseScore/blob/master/LICENSE.GPL), potrei tradurre il codice sorgente in js o compilarlo in asm.js/WASM.
+
+---
