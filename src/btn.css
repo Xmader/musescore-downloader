@@ -10,6 +10,9 @@ div {
   z-index: 9999;
   background: #f6f6f6;
   min-width: 230px;
+
+  /* pass the scroll event through the btns background */
+  pointer-events: none;
 }
 
 @media screen and (max-width: 950px) {
@@ -26,6 +29,7 @@ button {
   background: #1f74bd;
 
   cursor: pointer;
+  pointer-events: auto;
 
   margin-bottom: 4px;
   margin-right: 4px;
