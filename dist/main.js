@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.23.1
+// @version      0.23.2
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26919,7 +26919,7 @@ Please pipe the document into a Node stream.\
     }
 
     /* eslint-disable @typescript-eslint/no-var-requires */
-    const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.12/webmscore.js';
+    const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.16/webmscore.js';
     // fonts for Chinese characters (CN) and Korean hangul (KR)
     // JP characters are included in the CN font
     const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts/SourceHanSans${l}-Regular.woff2`);
@@ -27041,7 +27041,7 @@ Please pipe the document into a Node stream.\
         return _getLink(res);
     });
 
-    var btnListCss = "div {\n  width: 422px;\n  right: 0;\n  margin: 0 18px 18px 0;\n\n  text-align: center;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n  position: absolute;\n  z-index: 9999;\n  background: #f6f6f6;\n  min-width: 230px;\n}\n\n@media screen and (max-width: 950px) {\n  div {\n    width: auto !important;\n  }\n}\n\nbutton {\n  width: 205px !important;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
+    var btnListCss = "div {\n  width: 422px;\n  right: 0;\n  margin: 0 18px 18px 0;\n\n  text-align: center;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n  position: absolute;\n  z-index: 9999;\n  background: #f6f6f6;\n  min-width: 230px;\n\n  /* pass the scroll event through the btns background */\n  pointer-events: none;\n}\n\n@media screen and (max-width: 950px) {\n  div {\n    width: auto !important;\n  }\n}\n\nbutton {\n  width: 205px !important;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n  pointer-events: auto;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
 
     var ICON;
     (function (ICON) {
@@ -27130,9 +27130,13 @@ Please pipe the document into a Node stream.\
             return btnTpl;
         }
         _positionBtns(anchorDiv, newParent) {
-            const { top } = anchorDiv.getBoundingClientRect();
+            let { top } = anchorDiv.getBoundingClientRect();
+            top += window.scrollY; // relative to the entire document instead of viewport
             if (top > 0) {
                 newParent.style.top = `${top}px`;
+            }
+            else {
+                newParent.style.top = '0px';
             }
         }
         _commit() {
@@ -27152,12 +27156,11 @@ Please pipe the document into a Node stream.\
                 const anchorDiv = this.getBtnParent();
                 const pos = () => this._positionBtns(anchorDiv, newParent);
                 pos();
-                document.addEventListener('readystatechange', pos);
                 // reposition btns when window resizes
-                window.addEventListener('resize', pos);
+                window.addEventListener('resize', pos, { passive: true });
                 // reposition btns when scrolling
                 const scroll = getScrollParent(anchorDiv);
-                scroll.addEventListener('scroll', pos);
+                scroll.addEventListener('scroll', pos, { passive: true });
             }
             catch (err) {
                 console$1.error(err);
