@@ -113,9 +113,12 @@ export class BtnList {
   }
 
   private _positionBtns (anchorDiv: HTMLDivElement, newParent: HTMLDivElement) {
-    const { top } = anchorDiv.getBoundingClientRect()
+    let { top } = anchorDiv.getBoundingClientRect()
+    top += window.scrollY // relative to the entire document instead of viewport
     if (top > 0) {
       newParent.style.top = `${top}px`
+    } else {
+      newParent.style.top = '0px'
     }
   }
 
@@ -140,7 +143,6 @@ export class BtnList {
       const anchorDiv = this.getBtnParent()
       const pos = () => this._positionBtns(anchorDiv, newParent)
       pos()
-      document.addEventListener('readystatechange', pos, { passive: true })
 
       // reposition btns when window resizes
       window.addEventListener('resize', pos, { passive: true })
