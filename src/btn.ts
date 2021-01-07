@@ -140,14 +140,14 @@ export class BtnList {
       const anchorDiv = this.getBtnParent()
       const pos = () => this._positionBtns(anchorDiv, newParent)
       pos()
-      document.addEventListener('readystatechange', pos)
+      document.addEventListener('readystatechange', pos, { passive: true })
 
       // reposition btns when window resizes
-      window.addEventListener('resize', pos)
+      window.addEventListener('resize', pos, { passive: true })
 
       // reposition btns when scrolling
       const scroll = getScrollParent(anchorDiv)
-      scroll.addEventListener('scroll', pos)
+      scroll.addEventListener('scroll', pos, { passive: true })
     } catch (err) {
       console.error(err)
     }
