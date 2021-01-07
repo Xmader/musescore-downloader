@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.23.2
+// @version      0.23.3
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26919,7 +26919,7 @@ Please pipe the document into a Node stream.\
     }
 
     /* eslint-disable @typescript-eslint/no-var-requires */
-    const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.16/webmscore.js';
+    const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.16.2/webmscore.js';
     // fonts for Chinese characters (CN) and Korean hangul (KR)
     // JP characters are included in the CN font
     const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts/SourceHanSans${l}-Regular.woff2`);
