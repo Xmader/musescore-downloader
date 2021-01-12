@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.23.3
+// @version      0.23.4
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -27288,7 +27288,7 @@ Please pipe the document into a Node stream.\
     class ScoreInfo {
         constructor() {
             this.RADIX = 20;
-            this.INDEX_RADIX = 40;
+            this.INDEX_RADIX = 128;
             this.store = new Map();
         }
         get idLastDigit() {
