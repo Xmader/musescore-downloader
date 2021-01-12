@@ -4,7 +4,7 @@ import { getMainCid } from './mscz'
 
 export abstract class ScoreInfo {
   private readonly RADIX = 20;
-  private readonly INDEX_RADIX = 40;
+  private readonly INDEX_RADIX = 128;
 
   abstract id: number;
   abstract title: string;
