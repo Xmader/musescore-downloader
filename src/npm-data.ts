@@ -8,9 +8,14 @@ export async function isNpx() {
   return output.stdout.includes('(empty)');
 }
 
-export async function isLatest() {
-  const version = (/musescore-downloader@([\d\.]+)/).exec((await exec('npm list -g musescore-downloader')).stdout)![1]
-  const latest = (await exec('npm info musescore-downloader version')).stdout.trim()
+export async function installedVersion() {
+  return (/musescore-downloader@([\d\.]+)/).exec((await exec('npm list -g musescore-downloader')).stdout)![1].trim()
+}
 
-  return version.trim() === latest
+export async function latestVersion() {
+  return (await exec('npm info musescore-downloader version')).stdout.trim()
+}
+
+export async function isLatest() {
+  return await installedVersion() === await latestVersion()
 }
