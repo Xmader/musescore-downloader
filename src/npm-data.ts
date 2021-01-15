@@ -1,11 +1,11 @@
-import { exec as _exec } from 'child_process';
-import { promisify } from 'util';
+import { exec as _exec } from 'child_process'
+import { promisify } from 'util'
 
-const exec = promisify(_exec);
+const exec = promisify(_exec)
 
 export async function isNpx() {
   const output = await exec('npm list -g musescore-downloader')
-  return output.stdout.includes('(empty)');
+  return output.stdout.includes('(empty)')
 }
 
 export async function installedVersion() {
