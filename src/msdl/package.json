@@ -1,0 +1,19 @@
+{
+  "name": "msdl",
+  "version": "%VERSION%",
+  "author": "Xmader",
+  "bin": "cli.js",
+  "description": "Alias for musescore-downloader",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xmader/musescore-downloader.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Xmader/musescore-downloader/issues"
+  },
+  "homepage": "https://github.com/Xmader/musescore-downloader#readme",
+  "license": "MIT",
+  "dependencies": {
+    "musescore-downloader": "%VERSION%"
+  }
+}
