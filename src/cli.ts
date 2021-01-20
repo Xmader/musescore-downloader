@@ -10,6 +10,7 @@ import { loadMscore, INDV_DOWNLOADS, WebMscore } from './mscore'
 import { ScoreInfo, ScoreInfoHtml, ScoreInfoObj, getActualId } from './scoreinfo'
 import { getLibreScoreLink } from './librescore-link'
 import { escapeFilename } from './utils'
+import { isNpx, isLatest, installedVersion, latestVersion } from './npm-data'
 import i18n from './i18n'
 
 const inquirer: typeof import('inquirer') = require('inquirer')
@@ -184,4 +185,12 @@ void (async () => {
     }),
   )
   spinner.succeed('OK')
+
+  if (!(await isNpx())) {
+    const installed = await installedVersion()
+    const latest = await latestVersion()
+    if (!isLatest(installed, latest)) {
+      console.log(chalk.yellowBright(`Your installed version (${installed}) of the musescore-downloader CLI is not the latest one (${latest})!\nRun npm i -g musescore-downloader to update.`))
+    }
+  }
 })()
