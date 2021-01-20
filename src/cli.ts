@@ -186,7 +186,11 @@ void (async () => {
   )
   spinner.succeed('OK')
 
-  if (!(await isNpx()) && !(await isLatest())) {
-    console.log(chalk.yellowBright(`Your installed version (${await installedVersion()}) of the musescore-downloader CLI is not the latest one (${await latestVersion()})!\nRun npm i -g musescore-downloader to update.`))
+  if (!(await isNpx())) {
+    const installed = await installedVersion()
+    const latest = await latestVersion()
+    if (!isLatest(installed, latest)) {
+      console.log(chalk.yellowBright(`Your installed version (${installed}) of the musescore-downloader CLI is not the latest one (${latest})!\nRun npm i -g musescore-downloader to update.`))
+    }
   }
 })()
