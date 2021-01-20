@@ -186,7 +186,7 @@ void (async () => {
   )
   spinner.succeed('OK')
 
-  if (!(await isNpx())) {
+  if (!isNpx()) {
     const { installed, latest, isLatest } = await getVerInfo()
     if (!isLatest) {
       console.log(chalk.yellowBright(`\nYour installed version (${installed}) of the musescore-downloader CLI is not the latest one (${latest})!\nRun npm i -g musescore-downloader to update.`))

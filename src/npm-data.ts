@@ -1,22 +1,26 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 
-import { exec as _exec } from 'child_process'
-import { promisify } from 'util'
-import { version } from '../package.json'
+import { name as pkgName, version as pkgVer } from '../package.json'
+import { getFetch } from './utils'
 
-const exec = promisify(_exec)
+const IS_NPX_REG = /_npx(\/|\\)\d+\1/
+const NPM_REGISTRY = 'https://registry.npmjs.org'
 
-export async function isNpx (): Promise<boolean> {
-  const output = await exec('npm list -g musescore-downloader')
-  return output.stdout.includes('(empty)')
+export function isNpx (): boolean {
+  // file is in a npx cache dir
+  // TODO: installed locally?
+  return __dirname.match(IS_NPX_REG) !== null
 }
 
 export function getInstalledVer (): string {
-  return version
+  return pkgVer
 }
 
-export async function getLatestVer (): Promise<string> {
-  return (await exec('npm info musescore-downloader version')).stdout.trim()
+export async function getLatestVer (_fetch = getFetch()): Promise<string> {
+  // fetch pkg info from the npm registry
+  const r = await _fetch(`${NPM_REGISTRY}/${pkgName}`)
+  const json = await r.json()
+  return json['dist-tags'].latest as string
 }
 
 export async function getVerInfo () {
