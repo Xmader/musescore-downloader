@@ -9,7 +9,7 @@ export async function isNpx() {
 }
 
 export async function installedVersion() {
-  return (/musescore-downloader@([\d\.]+)/).exec((await exec('npm list -g musescore-downloader')).stdout)![1].trim()
+  return require('../package.json').version
 }
 
 export async function latestVersion() {
