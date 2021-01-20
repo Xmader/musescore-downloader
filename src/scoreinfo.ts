@@ -106,7 +106,7 @@ export class SheetInfoInPage extends SheetInfo {
   constructor (private document: Document) { super() }
 
   get pageCount (): number {
-    return this.document.querySelectorAll('.gXB83').length
+    return this.document.querySelectorAll('._2uWw4').length
   }
 
   get thumbnailUrl (): string {
