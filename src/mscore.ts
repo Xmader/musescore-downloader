@@ -6,14 +6,15 @@ import { fetchData } from './utils'
 import { ScoreInfo } from './scoreinfo'
 import isNodeJs from 'detect-node'
 import i18n from './i18n'
+import { dependencies as depVers } from '../package.json'
 
-const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.16.2/webmscore.js'
+const WEBMSCORE_URL = `https://cdn.jsdelivr.net/npm/webmscore@${depVers.webmscore}/webmscore.js`
 
 // fonts for Chinese characters (CN) and Korean hangul (KR)
 // JP characters are included in the CN font
-const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts/SourceHanSans${l}-Regular.woff2`)
+const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts@${depVers['@librescore/fonts']}/SourceHanSans${l}-Regular.woff2`)
 
-const SF3_URL = 'https://cdn.jsdelivr.net/npm/@librescore/sf3/FluidR3Mono_GM.sf3'
+const SF3_URL = `https://cdn.jsdelivr.net/npm/@librescore/sf3@${depVers['@librescore/sf3']}/FluidR3Mono_GM.sf3`
 const SOUND_FONT_LOADED = Symbol('SoundFont loaded')
 
 export type WebMscore = import('webmscore').default
