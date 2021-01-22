@@ -10,7 +10,7 @@ import { loadMscore, INDV_DOWNLOADS, WebMscore } from './mscore'
 import { ScoreInfo, ScoreInfoHtml, ScoreInfoObj, getActualId } from './scoreinfo'
 import { getLibreScoreLink } from './librescore-link'
 import { escapeFilename } from './utils'
-import { isNpx, getVerInfo } from './npm-data'
+import { isNpx, getVerInfo, getSelfVer } from './npm-data'
 import i18n from './i18n'
 
 const inquirer: typeof import('inquirer') = require('inquirer')
@@ -30,6 +30,12 @@ interface Params {
 }
 
 void (async () => {
+  const arg = process.argv[2]
+  if (['-v', '--version'].includes(arg)) { // ran with flag -v or --version, `msdl -v`
+    console.log(getSelfVer()) // print musescore-downloader version
+    return // exit process
+  }
+
   // Determine platform and paste message
   const platform = os.platform()
   let pasteMessage = ''
@@ -56,7 +62,7 @@ void (async () => {
           (input.endsWith(EXT) && fs.statSync(input).isFile())
         )
     },
-    default: process.argv[2],
+    default: arg,
   })
 
   const isLocalFile = fileInit.endsWith(EXT)

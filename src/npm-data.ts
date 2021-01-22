@@ -12,7 +12,7 @@ export function isNpx (): boolean {
   return __dirname.match(IS_NPX_REG) !== null
 }
 
-export function getInstalledVer (): string {
+export function getSelfVer (): string {
   return pkgVer
 }
 
@@ -24,7 +24,7 @@ export async function getLatestVer (_fetch = getFetch()): Promise<string> {
 }
 
 export async function getVerInfo () {
-  const installed = getInstalledVer()
+  const installed = getSelfVer()
   const latest = await getLatestVer()
   return {
     installed,
