@@ -15,13 +15,13 @@ export enum ICON {
 }
 
 const getBtnContainer = (): HTMLDivElement => {
-  const els = [...document.querySelectorAll('*')].reverse()
+  const els = [...document.querySelectorAll('span')]
   const el = els.find(b => {
     const text = b?.textContent?.replace(/\s/g, '') || ''
     return text.includes('Download') || text.includes('Print')
   }) as HTMLDivElement | null
   const btnParent = el?.parentElement?.parentElement as HTMLDivElement | undefined
-  if (!btnParent) throw new Error('btn parent not found')
+  if (!btnParent || !(btnParent instanceof HTMLDivElement)) throw new Error('btn parent not found')
   return btnParent
 }
 
@@ -139,6 +139,8 @@ export class BtnList {
     newParent.append(...this.list.map(e => cloneBtn(e)))
     shadow.append(newParent)
 
+    // default position 
+    newParent.style.top = '0px'
     try {
       const anchorDiv = this.getBtnParent()
       const pos = () => this._positionBtns(anchorDiv, newParent)
