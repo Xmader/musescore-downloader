@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.23.5
+// @version      0.23.6
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26918,12 +26918,22 @@ Please pipe the document into a Node stream.\
         return locale[key];
     }
 
+    var dependencies = {
+    	"@librescore/fonts": "^0.2.1",
+    	"@librescore/sf3": "^0.3.0",
+    	"detect-node": "^2.0.4",
+    	inquirer: "^7.3.3",
+    	"node-fetch": "^2.6.1",
+    	ora: "^5.1.0",
+    	webmscore: "^0.18.0"
+    };
+
     /* eslint-disable @typescript-eslint/no-var-requires */
-    const WEBMSCORE_URL = 'https://cdn.jsdelivr.net/npm/webmscore@0.16.2/webmscore.js';
+    const WEBMSCORE_URL = `https://cdn.jsdelivr.net/npm/webmscore@${dependencies.webmscore}/webmscore.js`;
     // fonts for Chinese characters (CN) and Korean hangul (KR)
     // JP characters are included in the CN font
-    const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts/SourceHanSans${l}-Regular.woff2`);
-    const SF3_URL = 'https://cdn.jsdelivr.net/npm/@librescore/sf3/FluidR3Mono_GM.sf3';
+    const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts@${dependencies['@librescore/fonts']}/SourceHanSans${l}-Regular.woff2`);
+    const SF3_URL = `https://cdn.jsdelivr.net/npm/@librescore/sf3@${dependencies['@librescore/sf3']}/FluidR3Mono_GM.sf3`;
     const SOUND_FONT_LOADED = Symbol('SoundFont loaded');
     const initMscore = (w) => __awaiter(void 0, void 0, void 0, function* () {
         if (!detectNode) { // attached to a page
@@ -27050,14 +27060,14 @@ Please pipe the document into a Node stream.\
     })(ICON || (ICON = {}));
     const getBtnContainer = () => {
         var _a;
-        const els = [...document.querySelectorAll('*')].reverse();
+        const els = [...document.querySelectorAll('span')];
         const el = els.find(b => {
             var _a;
             const text = ((_a = b === null || b === void 0 ? void 0 : b.textContent) === null || _a === void 0 ? void 0 : _a.replace(/\s/g, '')) || '';
             return text.includes('Download') || text.includes('Print');
         });
         const btnParent = (_a = el === null || el === void 0 ? void 0 : el.parentElement) === null || _a === void 0 ? void 0 : _a.parentElement;
-        if (!btnParent)
+        if (!btnParent || !(btnParent instanceof HTMLDivElement))
             throw new Error('btn parent not found');
         return btnParent;
     };
@@ -27152,6 +27162,8 @@ Please pipe the document into a Node stream.\
             const newParent = document.createElement('div');
             newParent.append(...this.list.map(e => cloneBtn(e)));
             shadow.append(newParent);
+            // default position 
+            newParent.style.top = '0px';
             try {
                 const anchorDiv = this.getBtnParent();
                 const pos = () => this._positionBtns(anchorDiv, newParent);
