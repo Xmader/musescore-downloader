@@ -105,9 +105,12 @@ export abstract class SheetInfo {
 export class SheetInfoInPage extends SheetInfo {
   constructor (private document: Document) { super() }
 
+  private get sheet0Img (): HTMLImageElement | null {
+    return this.document.querySelector('img[src*=score_]')
+  }
+
   get pageCount (): number {
-    const sheet0Img = this.document.querySelector('img[src*=score_]')
-    const sheet0Div = sheet0Img?.parentElement
+    const sheet0Div = this.sheet0Img?.parentElement
     if (!sheet0Div) {
       throw new Error('no sheet images found')
     }
@@ -116,8 +119,8 @@ export class SheetInfoInPage extends SheetInfo {
 
   get thumbnailUrl (): string {
     // url to the image of the first page
-    const el = this.document.querySelector('link[as=image]') as HTMLLinkElement
-    const url = el.href
+    const el = this.document.querySelector<HTMLLinkElement>('link[as=image]')
+    const url = (el?.href || this.sheet0Img?.src) as string
     return url.split('@')[0]
   }
 }
