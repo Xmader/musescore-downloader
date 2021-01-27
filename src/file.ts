@@ -78,7 +78,7 @@ const getApiAuth = async (type: FileType, index: number): Promise<string> => {
     // force to retrieve the MAGIC
     switch (type) {
       case 'midi': {
-        const el = document.querySelectorAll('.uPjTb > button')[3] as HTMLButtonElement
+        const el = document.querySelector('button[hasaccess]') as HTMLButtonElement
         el.click()
         break
       }
