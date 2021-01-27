@@ -106,7 +106,12 @@ export class SheetInfoInPage extends SheetInfo {
   constructor (private document: Document) { super() }
 
   get pageCount (): number {
-    return this.document.querySelectorAll('._2uWw4').length
+    const sheet0Img = this.document.querySelector('img[src*=score_]')
+    const sheet0Div = sheet0Img?.parentElement
+    if (!sheet0Div) {
+      throw new Error('no sheet images found')
+    }
+    return this.document.getElementsByClassName(sheet0Div.className).length
   }
 
   get thumbnailUrl (): string {
