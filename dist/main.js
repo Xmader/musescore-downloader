@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.23.6
+// @version      0.23.7
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26633,7 +26633,7 @@ Please pipe the document into a Node stream.\
             // force to retrieve the MAGIC
             switch (type) {
                 case 'midi': {
-                    const el = document.querySelectorAll('.uPjTb > button')[3];
+                    const el = document.querySelector('button[hasaccess]');
                     el.click();
                     break;
                 }
@@ -27351,13 +27351,22 @@ Please pipe the document into a Node stream.\
             super();
             this.document = document;
         }
+        get sheet0Img() {
+            return this.document.querySelector('img[src*=score_]');
+        }
         get pageCount() {
-            return this.document.querySelectorAll('._2uWw4').length;
+            var _a;
+            const sheet0Div = (_a = this.sheet0Img) === null || _a === void 0 ? void 0 : _a.parentElement;
+            if (!sheet0Div) {
+                throw new Error('no sheet images found');
+            }
+            return this.document.getElementsByClassName(sheet0Div.className).length;
         }
         get thumbnailUrl() {
+            var _a;
             // url to the image of the first page
             const el = this.document.querySelector('link[as=image]');
-            const url = el.href;
+            const url = ((el === null || el === void 0 ? void 0 : el.href) || ((_a = this.sheet0Img) === null || _a === void 0 ? void 0 : _a.src));
             return url.split('@')[0];
         }
     }
