@@ -24,13 +24,12 @@ const readData = (blob: Blob, type: DataResultType): Promise<string> => {
   })
 }
 
-const fetchData = async (imgUrl: string, type: DataResultType): Promise<string> => {
+const fetchBlob = async (imgUrl: string): Promise<Blob> => {
   const r = await fetch(imgUrl)
-  const blob = await r.blob()
-  return readData(blob, type)
+  return r.blob()
 }
 
-const generatePDF = async (imgURLs: string[], imgType: ImgType, width: number, height: number): Promise<ArrayBuffer> => {
+const generatePDF = async (imgBlobs: Blob[], imgType: ImgType, width: number, height: number): Promise<ArrayBuffer> => {
   // @ts-ignore
   const pdf = new (PDFDocument as typeof import('pdfkit'))({
     // compress: true,
@@ -41,7 +40,7 @@ const generatePDF = async (imgURLs: string[], imgType: ImgType, width: number, h
   })
 
   if (imgType === 'png') {
-    const imgDataUrlList: string[] = await Promise.all(imgURLs.map(url => fetchData(url, 'dataUrl')))
+    const imgDataUrlList: string[] = await Promise.all(imgBlobs.map(b => readData(b, 'dataUrl')))
 
     imgDataUrlList.forEach((data) => {
       pdf.addPage()
@@ -51,7 +50,7 @@ const generatePDF = async (imgURLs: string[], imgType: ImgType, width: number, h
       })
     })
   } else { // imgType == "svg"
-    const svgList = await Promise.all(imgURLs.map(url => fetchData(url, 'text')))
+    const svgList = await Promise.all(imgBlobs.map(b => readData(b, 'text')))
 
     svgList.forEach((svg) => {
       pdf.addPage()
@@ -71,14 +70,16 @@ export type PDFWorkerMessage = [string[], ImgType, number, number];
 
 onmessage = async (e): Promise<void> => {
   const [
-    imgURLs,
+    imgUrls,
     imgType,
     width,
     height,
   ] = e.data as PDFWorkerMessage
 
+  const imgBlobs = await Promise.all(imgUrls.map(url => fetchBlob(url)))
+
   const pdfBuf = await generatePDF(
-    imgURLs,
+    imgBlobs,
     imgType,
     width,
     height,
