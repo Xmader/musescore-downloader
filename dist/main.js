@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.23.7
+// @version      0.23.8
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26439,7 +26439,7 @@ Please pipe the document into a Node stream.\
         });
 
         /// <reference lib="webworker" />
-        const getDataURL = (blob) => {
+        const readData = (blob, type) => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = () => {
@@ -26447,19 +26447,21 @@ Please pipe the document into a Node stream.\
                     resolve(result);
                 };
                 reader.onerror = reject;
-                reader.readAsDataURL(blob);
+                if (type === 'dataUrl') {
+                    reader.readAsDataURL(blob);
+                }
+                else {
+                    reader.readAsText(blob);
+                }
             });
         };
-        const fetchDataURL = (imgUrl) => __awaiter(void 0, void 0, void 0, function* () {
-            const r = yield fetch(imgUrl);
-            const blob = yield r.blob();
-            return getDataURL(blob);
+        const fetchBlob = (imgUrl) => __awaiter(void 0, void 0, void 0, function* () {
+            const r = yield fetch(imgUrl, {
+                cache: 'no-cache',
+            });
+            return r.blob();
         });
-        const fetchText = (imgUrl) => __awaiter(void 0, void 0, void 0, function* () {
-            const r = yield fetch(imgUrl);
-            return r.text();
-        });
-        const generatePDF = (imgURLs, imgType, width, height) => __awaiter(void 0, void 0, void 0, function* () {
+        const generatePDF = (imgBlobs, imgType, width, height) => __awaiter(void 0, void 0, void 0, function* () {
             // @ts-ignore
             const pdf = new PDFDocument({
                 // compress: true,
@@ -26469,7 +26471,7 @@ Please pipe the document into a Node stream.\
                 layout: 'portrait',
             });
             if (imgType === 'png') {
-                const imgDataUrlList = yield Promise.all(imgURLs.map(fetchDataURL));
+                const imgDataUrlList = yield Promise.all(imgBlobs.map(b => readData(b, 'dataUrl')));
                 imgDataUrlList.forEach((data) => {
                     pdf.addPage();
                     pdf.image(data, {
@@ -26479,7 +26481,7 @@ Please pipe the document into a Node stream.\
                 });
             }
             else { // imgType == "svg"
-                const svgList = yield Promise.all(imgURLs.map(fetchText));
+                const svgList = yield Promise.all(imgBlobs.map(b => readData(b, 'text')));
                 svgList.forEach((svg) => {
                     pdf.addPage();
                     source(pdf, svg, 0, 0, {
@@ -26492,8 +26494,9 @@ Please pipe the document into a Node stream.\
             return buf.buffer;
         });
         onmessage = (e) => __awaiter(void 0, void 0, void 0, function* () {
-            const [imgURLs, imgType, width, height,] = e.data;
-            const pdfBuf = yield generatePDF(imgURLs, imgType, width, height);
+            const [imgUrls, imgType, width, height,] = e.data;
+            const imgBlobs = yield Promise.all(imgUrls.map(url => fetchBlob(url)));
+            const pdfBuf = yield generatePDF(imgBlobs, imgType, width, height);
             postMessage(pdfBuf, [pdfBuf]);
         });
 
