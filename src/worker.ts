@@ -25,7 +25,9 @@ const readData = (blob: Blob, type: DataResultType): Promise<string> => {
 }
 
 const fetchBlob = async (imgUrl: string): Promise<Blob> => {
-  const r = await fetch(imgUrl)
+  const r = await fetch(imgUrl, {
+    cache: 'no-cache',
+  })
   return r.blob()
 }
 
