@@ -48,6 +48,11 @@ button {
   font-family: inherit;
 }
 
+/* fix `View in LibreScore` button text overflow */
+button:last-of-type {
+  width: unset !important;
+}
+
 svg {
   display: inline-block;
   margin-right: 5px;
