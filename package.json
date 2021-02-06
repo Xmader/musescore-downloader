@@ -37,7 +37,7 @@
     "dist/main.js"
   ],
   "dependencies": {
-    "@librescore/fonts": "^0.2.1",
+    "@librescore/fonts": "^0.4.0",
     "@librescore/sf3": "^0.3.0",
     "detect-node": "^2.0.4",
     "inquirer": "^7.3.3",

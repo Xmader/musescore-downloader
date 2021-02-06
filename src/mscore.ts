@@ -12,7 +12,7 @@ const WEBMSCORE_URL = `https://cdn.jsdelivr.net/npm/webmscore@${depVers.webmscor
 
 // fonts for Chinese characters (CN) and Korean hangul (KR)
 // JP characters are included in the CN font
-const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts@${depVers['@librescore/fonts']}/SourceHanSans${l}-Regular.woff2`)
+const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts@${depVers['@librescore/fonts']}/SourceHanSans${l}.min.woff2`)
 
 const SF3_URL = `https://cdn.jsdelivr.net/npm/@librescore/sf3@${depVers['@librescore/sf3']}/FluidR3Mono_GM.sf3`
 const SOUND_FONT_LOADED = Symbol('SoundFont loaded')
