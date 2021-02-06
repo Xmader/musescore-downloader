@@ -23,6 +23,7 @@ div {
 
 button {
   width: 205px !important;
+  min-width: 205px;
   height: 38px;
 
   color: #fff;
