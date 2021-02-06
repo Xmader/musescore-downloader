@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.23.8
+// @version      0.23.9
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26922,7 +26922,7 @@ Please pipe the document into a Node stream.\
     }
 
     var dependencies = {
-    	"@librescore/fonts": "^0.2.1",
+    	"@librescore/fonts": "^0.4.0",
     	"@librescore/sf3": "^0.3.0",
     	"detect-node": "^2.0.4",
     	inquirer: "^7.3.3",
@@ -26935,7 +26935,7 @@ Please pipe the document into a Node stream.\
     const WEBMSCORE_URL = `https://cdn.jsdelivr.net/npm/webmscore@${dependencies.webmscore}/webmscore.js`;
     // fonts for Chinese characters (CN) and Korean hangul (KR)
     // JP characters are included in the CN font
-    const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts@${dependencies['@librescore/fonts']}/SourceHanSans${l}-Regular.woff2`);
+    const FONT_URLS = ['CN', 'KR'].map(l => `https://cdn.jsdelivr.net/npm/@librescore/fonts@${dependencies['@librescore/fonts']}/SourceHanSans${l}.min.woff2`);
     const SF3_URL = `https://cdn.jsdelivr.net/npm/@librescore/sf3@${dependencies['@librescore/sf3']}/FluidR3Mono_GM.sf3`;
     const SOUND_FONT_LOADED = Symbol('SoundFont loaded');
     const initMscore = (w) => __awaiter(void 0, void 0, void 0, function* () {
@@ -27054,7 +27054,7 @@ Please pipe the document into a Node stream.\
         return _getLink(res);
     });
 
-    var btnListCss = "div {\n  width: 422px;\n  right: 0;\n  margin: 0 18px 18px 0;\n\n  text-align: center;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n  position: absolute;\n  z-index: 9999;\n  background: #f6f6f6;\n  min-width: 230px;\n\n  /* pass the scroll event through the btns background */\n  pointer-events: none;\n}\n\n@media screen and (max-width: 950px) {\n  div {\n    width: auto !important;\n  }\n}\n\nbutton {\n  width: 205px !important;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n  pointer-events: auto;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
+    var btnListCss = "div {\n  width: 422px;\n  right: 0;\n  margin: 0 18px 18px 0;\n\n  text-align: center;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n  position: absolute;\n  z-index: 9999;\n  background: #f6f6f6;\n  min-width: 230px;\n\n  /* pass the scroll event through the btns background */\n  pointer-events: none;\n}\n\n@media screen and (max-width: 950px) {\n  div {\n    width: auto !important;\n  }\n}\n\nbutton {\n  width: 205px !important;\n  min-width: 205px;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n  pointer-events: auto;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\n/* fix `View in LibreScore` button text overflow */\nbutton:last-of-type {\n  width: unset !important;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
 
     var ICON;
     (function (ICON) {
