@@ -48,7 +48,7 @@ export const loadMsczUrl = async (scoreinfo: ScoreInfo, _fetch = getFetch()): Pr
     // read further error msg
     const err = cidRes.Message
     if (err.includes('no link named')) { // file not found
-      throw new Error('score not in dataset')
+      throw new Error('Score not in dataset')
     } else {
       throw new Error(err)
     }

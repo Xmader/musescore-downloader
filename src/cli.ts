@@ -88,7 +88,7 @@ void (async () => {
     if (!confirmed) return
 
     // initiate LibreScore link request
-    librescoreLink = getLibreScoreLink(scoreinfo)
+    librescoreLink = getLibreScoreLink(scoreinfo, true)
 
     // print a blank line to the terminal
     console.log()
@@ -133,6 +133,7 @@ void (async () => {
     spinner.info('Score loaded by webmscore')
   } catch (err) {
     spinner.fail(err.message)
+    spinner.info('Send your URL to the #dataset-bugs channel in the LibreScore Community Discord server');
     return
   }
   spinner.succeed('OK\n')
