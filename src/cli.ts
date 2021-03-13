@@ -133,7 +133,8 @@ void (async () => {
     spinner.info('Score loaded by webmscore')
   } catch (err) {
     spinner.fail(err.message)
-    spinner.info('Send your URL to the #dataset-bugs channel in the LibreScore Community Discord server');
+    spinner.info(
+        "Send your URL to the #dataset-bugs channel in the LibreScore Community Discord server:\n  https://discord.gg/kTyx6nUjMv");
     return
   }
   spinner.succeed('OK\n')
