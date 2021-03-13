@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.23.9
+// @version      0.23.10
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26734,7 +26734,7 @@ Please pipe the document into a Node stream.\
             // read further error msg
             const err = cidRes.Message;
             if (err.includes('no link named')) { // file not found
-                throw new Error('score not in dataset');
+                throw new Error('Score not in dataset');
             }
             else {
                 throw new Error(err);
