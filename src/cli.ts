@@ -88,7 +88,8 @@ void (async () => {
     if (!confirmed) return
 
     // initiate LibreScore link request
-    librescoreLink = getLibreScoreLink(scoreinfo, true)
+    librescoreLink = getLibreScoreLink(scoreinfo)
+    librescoreLink.catch(() => '') // silence this unhandled Promise rejection
 
     // print a blank line to the terminal
     console.log()
@@ -134,7 +135,9 @@ void (async () => {
   } catch (err) {
     spinner.fail(err.message)
     spinner.info(
-        "Send your URL to the #dataset-bugs channel in the LibreScore Community Discord server:\n  https://discord.gg/kTyx6nUjMv");
+      'Send your URL to the #dataset-bugs channel in the LibreScore Community Discord server:\n  ' +
+      'https://discord.gg/kTyx6nUjMv',
+    )
     return
   }
   spinner.succeed('OK\n')
