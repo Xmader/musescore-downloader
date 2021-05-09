@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.23.10
+// @version      0.23.11
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -331,6 +331,7 @@
             typeof GM[requiredMethod] !== 'undefined';
     };
 
+    const DISCORD_URL = 'https://discord.gg/kTyx6nUjMv';
     const escapeFilename = (s) => {
         return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_');
     };
@@ -27286,6 +27287,15 @@ Please pipe the document into a Node stream.\
                     }
                     else {
                         setText(i18n('BTN_ERROR')());
+                        // ask user to send Discord message
+                        alert('❌Download Failed!\n\n' +
+                            'Send your URL to the #dataset-bugs channel \n   ' +
+                            'in the LibreScore Community Discord server: ' + DISCORD_URL);
+                        // open Discord on 'OK'
+                        const a = document.createElement('a');
+                        a.href = DISCORD_URL;
+                        a.target = '_blank';
+                        a.dispatchEvent(new MouseEvent('click'));
                     }
                 }
                 btn.onclick = _onclick;
