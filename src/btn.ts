@@ -1,7 +1,7 @@
 
 import { ScoreInfo } from './scoreinfo'
 import { loadMscore, WebMscore } from './mscore'
-import { useTimeout, windowOpenAsync, console, attachShadow } from './utils'
+import { useTimeout, windowOpenAsync, console, attachShadow, DISCORD_URL } from './utils'
 import { isGmAvailable, _GM } from './gm'
 import i18n from './i18n'
 // @ts-ignore
@@ -277,11 +277,11 @@ export namespace BtnAction {
           alert(
             '❌Download Failed!\n\n' +
             'Send your URL to the #dataset-bugs channel \n   ' +
-            'in the LibreScore Community Discord server: https://discord.gg/kTyx6nUjMv',
+            'in the LibreScore Community Discord server: ' + DISCORD_URL,
           )
           // open Discord on 'OK'
           const a = document.createElement('a')
-          a.href = 'https://discord.gg/kTyx6nUjMv'
+          a.href = DISCORD_URL
           a.target = '_blank'
           a.dispatchEvent(new MouseEvent('click'))
         }

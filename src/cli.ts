@@ -9,7 +9,7 @@ import { fetchMscz, setMscz, MSCZ_URL_SYM } from './mscz'
 import { loadMscore, INDV_DOWNLOADS, WebMscore } from './mscore'
 import { ScoreInfo, ScoreInfoHtml, ScoreInfoObj, getActualId } from './scoreinfo'
 import { getLibreScoreLink } from './librescore-link'
-import { escapeFilename } from './utils'
+import { escapeFilename, DISCORD_URL } from './utils'
 import { isNpx, getVerInfo, getSelfVer } from './npm-data'
 import i18n from './i18n'
 
@@ -136,7 +136,7 @@ void (async () => {
     spinner.fail(err.message)
     spinner.info(
       'Send your URL to the #dataset-bugs channel in the LibreScore Community Discord server:\n  ' +
-      'https://discord.gg/kTyx6nUjMv',
+      DISCORD_URL,
     )
     return
   }

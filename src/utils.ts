@@ -2,6 +2,8 @@
 import isNodeJs from 'detect-node'
 import { isGmAvailable, _GM } from './gm'
 
+export const DISCORD_URL = 'https://discord.gg/kTyx6nUjMv'
+
 export const escapeFilename = (s: string): string => {
   return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_')
 }
