@@ -273,6 +273,17 @@ export namespace BtnAction {
           setText(name)
         } else {
           setText(i18n('BTN_ERROR')())
+          // ask user to send Discord message
+          alert(
+            '❌Download Failed!\n\n' +
+            'Send your URL to the #dataset-bugs channel \n   ' +
+            'in the LibreScore Community Discord server: https://discord.gg/kTyx6nUjMv',
+          )
+          // open Discord on 'OK'
+          const a = document.createElement('a')
+          a.href = 'https://discord.gg/kTyx6nUjMv'
+          a.target = '_blank'
+          a.dispatchEvent(new MouseEvent('click'))
         }
       }
 
