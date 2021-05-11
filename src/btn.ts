@@ -276,8 +276,8 @@ export namespace BtnAction {
           // ask user to send Discord message
           alert(
             '❌Download Failed!\n\n' +
-            'Send your URL to the #dataset-bugs channel \n   ' +
-            'in the LibreScore Community Discord server: ' + DISCORD_URL,
+            'Send your URL to the #dataset-bugs channel ' +
+            'in the LibreScore Community Discord server:\n' + DISCORD_URL,
           )
           // open Discord on 'OK'
           const a = document.createElement('a')
