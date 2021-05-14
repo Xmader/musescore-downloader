@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.23.13
+// @version      0.23.15
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -331,7 +331,7 @@
             typeof GM[requiredMethod] !== 'undefined';
     };
 
-    const DISCORD_URL = 'https://discord.gg/kTyx6nUjMv';
+    const DISCORD_URL = 'https://discord.gg/gSsTUvJmD8';
     const escapeFilename = (s) => {
         return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_');
     };
@@ -27036,7 +27036,8 @@ Please pipe the document into a Node stream.\
         },
     ];
 
-    const _getLink = (scorepack) => {
+    const _getLink = (indexingInfo) => {
+        const { scorepack } = JSON.parse(indexingInfo);
         return `https://librescore.org/score/${scorepack}`;
     };
     const getLibreScoreLink = (scoreinfo, _fetch = getFetch()) => __awaiter(void 0, void 0, void 0, function* () {
@@ -27313,7 +27314,7 @@ Please pipe the document into a Node stream.\
     class ScoreInfo {
         constructor() {
             this.RADIX = 20;
-            this.INDEX_RADIX = 128;
+            this.INDEX_RADIX = 32;
             this.store = new Map();
         }
         get idLastDigit() {
@@ -27329,7 +27330,7 @@ Please pipe the document into a Node stream.\
             return `https://ipfs.infura.io:5001/api/v0/block/stat?arg=${this.getMsczIpfsRef(mainCid)}`;
         }
         getScorepackRef(mainCid) {
-            return `/ipfs/${mainCid}/index/${(+this.id) % this.INDEX_RADIX}/${this.id}/scorepack`;
+            return `/ipfs/${mainCid}/index/${(+this.id) % this.INDEX_RADIX}/${this.id}`;
         }
     }
     class ScoreInfoInPage extends ScoreInfo {
