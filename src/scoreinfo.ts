@@ -4,7 +4,7 @@ import { getMainCid } from './mscz'
 
 export abstract class ScoreInfo {
   private readonly RADIX = 20;
-  private readonly INDEX_RADIX = 128;
+  private readonly INDEX_RADIX = 32;
 
   abstract id: number;
   abstract title: string;
@@ -28,7 +28,7 @@ export abstract class ScoreInfo {
   }
 
   public getScorepackRef (mainCid: string): string {
-    return `/ipfs/${mainCid}/index/${(+this.id) % this.INDEX_RADIX}/${this.id}/scorepack`
+    return `/ipfs/${mainCid}/index/${(+this.id) % this.INDEX_RADIX}/${this.id}`
   }
 }
 

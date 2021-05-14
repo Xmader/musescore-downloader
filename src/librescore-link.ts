@@ -2,8 +2,9 @@ import { assertRes, getFetch } from './utils'
 import { getMainCid } from './mscz'
 import { ScoreInfo } from './scoreinfo'
 
-const _getLink = (scorepack: string) => {
-  return `https://librescore.org/score/${scorepack}`
+const _getLink = (indexingInfo: string) => {
+  const { scorepack } = JSON.parse(indexingInfo)
+  return `https://librescore.org/score/${scorepack as string}`
 }
 
 export const getLibreScoreLink = async (scoreinfo: ScoreInfo, _fetch = getFetch()): Promise<string> => {
