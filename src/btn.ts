@@ -34,7 +34,7 @@ const buildDownloadBtn = (icon: ICON) => {
   svg.setAttribute('viewBox', '0 0 24 24')
   const svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
   svgPath.setAttribute('d', icon)
-  svgPath.setAttribute('fill', '#fff')
+  svgPath.setAttribute('fill', icon === ICON.DOWNLOAD ? '#fff' : '#2e68c0')
   svg.append(svgPath)
 
   const textNode = document.createElement('span')
