@@ -52,15 +52,19 @@ button {
 /* fix `View in LibreScore` button text overflow */
 button:last-of-type {
   width: unset !important;
-  color: #2e68c0;
-  background: #e1effe;
 }
 
 button:hover {
   background: #1a4f9f;
 }
 
-button:last-of-type:hover {
+/* light theme btn */
+button.light {
+  color: #2e68c0;
+  background: #e1effe;
+}
+
+button.light:hover {
   background: #c3ddfd;
 }
 

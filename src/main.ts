@@ -137,8 +137,10 @@ const main = (): void => {
     action: BtnAction.openUrl(() => getLibreScoreLink(scoreinfo)),
     tooltip: 'BETA',
     icon: ICON.LIBRESCORE,
+    lightTheme: true,
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   btnList.commit(BtnListMode.InPage)
 }
 

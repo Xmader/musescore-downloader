@@ -25,16 +25,17 @@ const getBtnContainer = (): HTMLDivElement => {
   return btnParent
 }
 
-const buildDownloadBtn = (icon: ICON) => {
+const buildDownloadBtn = (icon: ICON, lightTheme = false) => {
   const btn = document.createElement('button')
   btn.type = 'button'
+  if (lightTheme) btn.className = 'light'
 
   // build icon svg element
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   svg.setAttribute('viewBox', '0 0 24 24')
   const svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
   svgPath.setAttribute('d', icon)
-  svgPath.setAttribute('fill', icon === ICON.DOWNLOAD ? '#fff' : '#2e68c0')
+  svgPath.setAttribute('fill', lightTheme ? '#2e68c0' : '#fff')
   svg.append(svgPath)
 
   const textNode = document.createElement('span')
@@ -63,6 +64,7 @@ interface BtnOptions {
   readonly disabled?: boolean;
   readonly tooltip?: string;
   readonly icon?: ICON;
+  readonly lightTheme?: boolean;
 }
 
 export enum BtnListMode {
@@ -76,7 +78,7 @@ export class BtnList {
   constructor (private getBtnParent: () => HTMLDivElement = getBtnContainer) { }
 
   add (options: BtnOptions): BtnElement {
-    const btnTpl = buildDownloadBtn(options.icon ?? ICON.DOWNLOAD)
+    const btnTpl = buildDownloadBtn(options.icon ?? ICON.DOWNLOAD, options.lightTheme)
     const setText = (btn: BtnElement) => {
       const textNode = btn.querySelector('span')
       return (str: string): void => {
