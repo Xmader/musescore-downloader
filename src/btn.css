@@ -5,7 +5,7 @@ div {
 
   text-align: center;
   align-items: center;
-  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;
+  font-family: 'Inter', 'Helvetica neue', Helvetica, sans-serif;
   position: absolute;
   z-index: 9999;
   background: #f6f6f6;
@@ -22,25 +22,25 @@ div {
 }
 
 button {
-  width: 205px !important;
-  min-width: 205px;
-  height: 38px;
+  width: 178px !important;
+  min-width: 178px;
+  height: 40px;
 
   color: #fff;
-  background: #1f74bd;
+  background: #2e68c0;
 
   cursor: pointer;
   pointer-events: auto;
 
-  margin-bottom: 4px;
-  margin-right: 4px;
+  margin-bottom: 8px;
+  margin-right: 8px;
   padding: 4px 12px;
 
   justify-content: start;
   align-self: center;
 
   font-size: 16px;
-  border-radius: 2px;
+  border-radius: 6px;
   border: 0;
 
   display: inline-flex;
@@ -52,6 +52,10 @@ button {
 /* fix `View in LibreScore` button text overflow */
 button:last-of-type {
   width: unset !important;
+}
+
+button:hover {
+  background: #1a4f9f;
 }
 
 svg {

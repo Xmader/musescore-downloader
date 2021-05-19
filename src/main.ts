@@ -38,7 +38,7 @@ const main = (): void => {
   })
 
   btnList.add({
-    name: i18n('DOWNLOAD')('MusicXML'),
+    name: i18n('DOWNLOAD')('MXL'),
     action: BtnAction.mscoreWindow(scoreinfo, async (w, score) => {
       const mxl = await score.saveMxl()
       const data = new Blob([mxl])
