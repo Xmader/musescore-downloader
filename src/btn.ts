@@ -58,6 +58,21 @@ function getScrollParent (node: HTMLElement): HTMLElement {
   }
 }
 
+function onPageRendered (getEl: () => HTMLElement) {
+  return new Promise<HTMLElement>((resolve) => {
+    const observer = new MutationObserver(() => {
+      try {
+        const el = getEl()
+        if (el) {
+          observer.disconnect()
+          resolve(el)
+        }
+      } catch { }
+    })
+    observer.observe(document.querySelector('div > section') ?? document.body, { childList: true, subtree: true })
+  })
+}
+
 interface BtnOptions {
   readonly name: string;
   readonly action: BtnAction;
@@ -141,8 +156,10 @@ export class BtnList {
     newParent.append(...this.list.map(e => cloneBtn(e)))
     shadow.append(newParent)
 
-    try {
-      const anchorDiv = this.getBtnParent()
+    // default position
+    newParent.style.top = `${window.innerHeight - newParent.getBoundingClientRect().height}px`
+
+    void onPageRendered(this.getBtnParent).then((anchorDiv: HTMLDivElement) => {
       const pos = () => this._positionBtns(anchorDiv, newParent)
       pos()
 
@@ -152,11 +169,7 @@ export class BtnList {
       // reposition btns when scrolling
       const scroll = getScrollParent(anchorDiv)
       scroll.addEventListener('scroll', pos, { passive: true })
-    } catch (err) {
-      console.error(err)
-      // default position
-      newParent.style.top = `${window.innerHeight - newParent.getBoundingClientRect().height}px`
-    }
+    })
 
     return btnParent
   }
