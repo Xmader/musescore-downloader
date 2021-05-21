@@ -20,6 +20,8 @@
         "no-useless-constructor": "off",
         "@typescript-eslint/no-useless-constructor": "error",
         "no-dupe-class-members": "off",
+        "no-void": "off",
+        "no-use-before-define": "off",
         "@typescript-eslint/no-dupe-class-members": "error",
         "@typescript-eslint/no-floating-promises": "warn",
         "@typescript-eslint/member-delimiter-style": "warn",
