@@ -78,7 +78,7 @@ jobs:
           cp dist/main.js $ARTIFACTS_DIR/musescore-downloader.user.js
           cp dist/ext.zip $ARTIFACTS_DIR/musescore-downloader.webextension.zip
           wget -q $CHROME_EXT_URL -P $ARTIFACTS_DIR/
-          wget -q https://github.com/Xmader/musescore-downloader/archive/$REF.tar.gz -P $ARTIFACTS_DIR/
+          wget -q https://github.com/Xmader/musescore-downloader/archive/$REF.tar.gz -O $ARTIFACTS_DIR/source.tar.gz
       - run: bash ./.github/workflows/get-signed-ext.sh
         env:
           EXT_ID: musescore-downloader
