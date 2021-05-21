@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.23.15
+// @version      0.24.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -27056,7 +27056,7 @@ Please pipe the document into a Node stream.\
         return _getLink(res);
     });
 
-    var btnListCss = "div {\n  width: 422px;\n  right: 0;\n  margin: 0 18px 18px 0;\n\n  text-align: center;\n  align-items: center;\n  font-family: 'Open Sans', 'Roboto', 'Helvetica neue', Helvetica, sans-serif;\n  position: absolute;\n  z-index: 9999;\n  background: #f6f6f6;\n  min-width: 230px;\n\n  /* pass the scroll event through the btns background */\n  pointer-events: none;\n}\n\n@media screen and (max-width: 950px) {\n  div {\n    width: auto !important;\n  }\n}\n\nbutton {\n  width: 205px !important;\n  min-width: 205px;\n  height: 38px;\n\n  color: #fff;\n  background: #1f74bd;\n\n  cursor: pointer;\n  pointer-events: auto;\n\n  margin-bottom: 4px;\n  margin-right: 4px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 2px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\n/* fix `View in LibreScore` button text overflow */\nbutton:last-of-type {\n  width: unset !important;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
+    var btnListCss = "div {\n  width: 422px;\n  right: 0;\n  margin: 0 18px 18px 0;\n\n  text-align: center;\n  align-items: center;\n  font-family: 'Inter', 'Helvetica neue', Helvetica, sans-serif;\n  position: absolute;\n  z-index: 9999;\n  background: #f6f6f6;\n  min-width: 230px;\n\n  /* pass the scroll event through the btns background */\n  pointer-events: none;\n}\n\n@media screen and (max-width: 950px) {\n  div {\n    width: auto !important;\n  }\n}\n\nbutton {\n  width: 178px !important;\n  min-width: 178px;\n  height: 40px;\n\n  color: #fff;\n  background: #2e68c0;\n\n  cursor: pointer;\n  pointer-events: auto;\n\n  margin-bottom: 8px;\n  margin-right: 8px;\n  padding: 4px 12px;\n\n  justify-content: start;\n  align-self: center;\n\n  font-size: 16px;\n  border-radius: 6px;\n  border: 0;\n\n  display: inline-flex;\n  position: relative;\n\n  font-family: inherit;\n}\n\n/* fix `View in LibreScore` button text overflow */\nbutton:last-of-type {\n  width: unset !important;\n}\n\nbutton:hover {\n  background: #1a4f9f;\n}\n\n/* light theme btn */\nbutton.light {\n  color: #2e68c0;\n  background: #e1effe;\n}\n\nbutton.light:hover {\n  background: #c3ddfd;\n}\n\nsvg {\n  display: inline-block;\n  margin-right: 5px;\n  width: 20px;\n  height: 20px;\n  margin-top: auto;\n  margin-bottom: auto;\n}\n\nspan {\n  margin-top: auto;\n  margin-bottom: auto;\n}";
 
     var ICON;
     (function (ICON) {
@@ -27076,15 +27076,17 @@ Please pipe the document into a Node stream.\
             throw new Error('btn parent not found');
         return btnParent;
     };
-    const buildDownloadBtn = (icon) => {
+    const buildDownloadBtn = (icon, lightTheme = false) => {
         const btn = document.createElement('button');
         btn.type = 'button';
+        if (lightTheme)
+            btn.className = 'light';
         // build icon svg element
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('viewBox', '0 0 24 24');
         const svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         svgPath.setAttribute('d', icon);
-        svgPath.setAttribute('fill', '#fff');
+        svgPath.setAttribute('fill', lightTheme ? '#2e68c0' : '#fff');
         svg.append(svgPath);
         const textNode = document.createElement('span');
         btn.append(svg, textNode);
@@ -27103,6 +27105,22 @@ Please pipe the document into a Node stream.\
             return getScrollParent(node.parentNode);
         }
     }
+    function onPageRendered(getEl) {
+        return new Promise((resolve) => {
+            var _a;
+            const observer = new MutationObserver(() => {
+                try {
+                    const el = getEl();
+                    if (el) {
+                        observer.disconnect();
+                        resolve(el);
+                    }
+                }
+                catch (_a) { }
+            });
+            observer.observe((_a = document.querySelector('div > section')) !== null && _a !== void 0 ? _a : document.body, { childList: true, subtree: true });
+        });
+    }
     var BtnListMode;
     (function (BtnListMode) {
         BtnListMode[BtnListMode["InPage"] = 0] = "InPage";
@@ -27115,7 +27133,7 @@ Please pipe the document into a Node stream.\
         }
         add(options) {
             var _a;
-            const btnTpl = buildDownloadBtn((_a = options.icon) !== null && _a !== void 0 ? _a : ICON.DOWNLOAD);
+            const btnTpl = buildDownloadBtn((_a = options.icon) !== null && _a !== void 0 ? _a : ICON.DOWNLOAD, options.lightTheme);
             const setText = (btn) => {
                 const textNode = btn.querySelector('span');
                 return (str) => {
@@ -27167,10 +27185,9 @@ Please pipe the document into a Node stream.\
             const newParent = document.createElement('div');
             newParent.append(...this.list.map(e => cloneBtn(e)));
             shadow.append(newParent);
-            // default position 
-            newParent.style.top = '0px';
-            try {
-                const anchorDiv = this.getBtnParent();
+            // default position
+            newParent.style.top = `${window.innerHeight - newParent.getBoundingClientRect().height}px`;
+            void onPageRendered(this.getBtnParent).then((anchorDiv) => {
                 const pos = () => this._positionBtns(anchorDiv, newParent);
                 pos();
                 // reposition btns when window resizes
@@ -27178,10 +27195,7 @@ Please pipe the document into a Node stream.\
                 // reposition btns when scrolling
                 const scroll = getScrollParent(anchorDiv);
                 scroll.addEventListener('scroll', pos, { passive: true });
-            }
-            catch (err) {
-                console$1.error(err);
-            }
+            });
             return btnParent;
         }
         /**
@@ -27429,7 +27443,7 @@ Please pipe the document into a Node stream.\
             action: BtnAction.process(() => downloadPDF(scoreinfo, new SheetInfoInPage(document)), fallback, 3 * 60 * 1000 /* 3min */),
         });
         btnList.add({
-            name: i18n('DOWNLOAD')('MusicXML'),
+            name: i18n('DOWNLOAD')('MXL'),
             action: BtnAction.mscoreWindow(scoreinfo, (w, score) => __awaiter(void 0, void 0, void 0, function* () {
                 const mxl = yield score.saveMxl();
                 const data = new Blob([mxl]);
@@ -27509,7 +27523,9 @@ Please pipe the document into a Node stream.\
             action: BtnAction.openUrl(() => getLibreScoreLink(scoreinfo)),
             tooltip: 'BETA',
             icon: ICON.LIBRESCORE,
+            lightTheme: true,
         });
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         btnList.commit(BtnListMode.InPage);
     };
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
