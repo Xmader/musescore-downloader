@@ -141,8 +141,6 @@ export class BtnList {
     newParent.append(...this.list.map(e => cloneBtn(e)))
     shadow.append(newParent)
 
-    // default position 
-    newParent.style.top = '0px'
     try {
       const anchorDiv = this.getBtnParent()
       const pos = () => this._positionBtns(anchorDiv, newParent)
@@ -156,6 +154,8 @@ export class BtnList {
       scroll.addEventListener('scroll', pos, { passive: true })
     } catch (err) {
       console.error(err)
+      // default position
+      newParent.style.top = `${window.innerHeight - newParent.getBoundingClientRect().height}px`
     }
 
     return btnParent
