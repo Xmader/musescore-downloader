@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.24.0
+// @version      0.24.1
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @match        https://musescore.com/*/*
@@ -26575,7 +26575,7 @@ Please pipe the document into a Node stream.\
     }
 
     /* eslint-disable no-extend-native */
-    const TYPE_REG = /id=(\d+)&type=(img|mp3|midi)/;
+    const TYPE_REG = /type=(img|mp3|midi)/;
     /**
      * I know this is super hacky.
      */
@@ -26596,8 +26596,9 @@ Please pipe the document into a Node stream.\
                                 const token = (_a = init === null || init === void 0 ? void 0 : init.headers) === null || _a === void 0 ? void 0 : _a.Authorization;
                                 if (typeof url === 'string' && token) {
                                     const m = url.match(TYPE_REG);
+                                    console$1.debug(url, token, m);
                                     if (m) {
-                                        const type = m[2];
+                                        const type = m[1];
                                         // eslint-disable-next-line no-unused-expressions
                                         (_b = l[type]) === null || _b === void 0 ? void 0 : _b.call(l, token);
                                     }
