@@ -6,7 +6,7 @@ import { console } from './utils'
 
 type FileType = 'img' | 'mp3' | 'midi'
 
-const TYPE_REG = /id=(\d+)&type=(img|mp3|midi)/
+const TYPE_REG = /type=(img|mp3|midi)/
 
 /**
  * I know this is super hacky.
@@ -31,8 +31,9 @@ const magicHookConstr = (() => {
               const token = init?.headers?.Authorization
               if (typeof url === 'string' && token) {
                 const m = url.match(TYPE_REG)
+                console.debug(url, token, m)
                 if (m) {
-                  const type = m[2]
+                  const type = m[1]
                   // eslint-disable-next-line no-unused-expressions
                   l[type]?.(token)
                 }
