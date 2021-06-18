@@ -8,6 +8,7 @@
 // @version      %VERSION%
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
+// @icon         https://librescore.org/img/icons/logo.svg
 // @match        https://musescore.com/*/*
 // @match        https://s.musescore.com/*/*
 // @license      MIT
