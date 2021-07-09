@@ -119,6 +119,7 @@ No, the API document is on https://developers.musescore.com/.
 # musescore-downloader
 
 [English](#musescore-downloader) | **简体中文**  | [Español](#musescore-downloader-2) | [Italian](#musescore-downloader-3)
+
 *中英文版本项目 README 分开撰写，中文版较不完整。如果有能力，请阅读英文版。*
 
 > 免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
