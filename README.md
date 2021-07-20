@@ -63,9 +63,9 @@ Install this script from <https://msdl.librescore.org/install.user.js>
 
 The alternative method is to install this script as a Chrome or Firefox extension.
 
-You may install the browser extension directly from [addons.mozilla.org (for Firefox)](https://addons.mozilla.org/en-US/firefox/addon/musescore-downloader/) or [chrome web store (for Chrome and Chromium based browsers)](https://chrome.google.com/webstore/detail/mhdlcdhakmmikknpefblmnhdhjloanjc).
+You may install the Firefox extension directly from [addons.mozilla.org (for Firefox)](https://addons.mozilla.org/en-US/firefox/addon/musescore-downloader/).
 
-The up-to-date version can be found on the [Github Releases](https://github.com/Xmader/musescore-downloader/releases) page.
+The up-to-date versions of the Chrome and Firefox extensions can be found on the [Github Releases](https://github.com/Xmader/musescore-downloader/releases) page.
 
 ## Building Instructions
 
@@ -112,13 +112,14 @@ No, the API document is on https://developers.musescore.com/.
 
 **I will launch an open source (GPLv3), serverless, offline-first, frontend-first, and totally free alternative to musescore.com, [LibreScore](https://github.com/LibreScore). Everyone is welcome to join the project development by opening an issue or [emailing me](mailto:i@xmader.com).**
 
-**Also, I'm developing musescore.js. It could convert a mscz file into any format that the Musescore software supports, and in the browser.** Because the Musescore software is open source under [GPL](https://github.com/musescore/MuseScore/blob/master/LICENSE.GPL), I could translate the source code to js, or compile it into asm.js/WASM.
+**Also, I'm developing [webmscore](https://github.com/LibreScore/webmscore). It could convert a mscz file into any format that the Musescore software supports, and in the browser.** Because the Musescore software is open source under [GPL](https://github.com/musescore/MuseScore/blob/master/LICENSE.GPL), I could translate the source code to js, or compile it into asm.js/WASM.
 
 ---
 
 # musescore-downloader
 
-[English](#musescore-downloader) | **简体中文**  | [Español](#musescore-downloader-2) 
+[English](#musescore-downloader) | **简体中文**  | [Español](#musescore-downloader-2) | [Italian](#musescore-downloader-3)
+
 *中英文版本项目 README 分开撰写，中文版较不完整。如果有能力，请阅读英文版。*
 
 > 免登录、免 Musescore Pro，下载 musescore.com 上的曲谱
@@ -151,7 +152,7 @@ MIT
 
 # musescore-downloader
 
-[English](#musescore-downloader) | [简体中文](#musescore-downloader-1)  | **Español**
+[English](#musescore-downloader) | [简体中文](#musescore-downloader-1)  | **Español** | [Italian](#musescore-downloader-3) 
 
 > descarga partituras de musescore.com de forma gratuita, no se requiere iniciar sesión o Musescore Pro
 
@@ -199,9 +200,9 @@ Instale este script desde <https://msdl.librescore.org/install.user.js>
 
 ### Instalar como Extensión Web
 
-El método alternativo es instalar este script como una extensión de Chrome o Firefox.
+El método alternativo es instalar este script como una extensión de Firefox.
 
-Puedes instalar la extensión del navegador directamente desde [addons.mozilla.org (para Firefox)](https://addons.mozilla.org/en-US/firefox/addon/musescore-downloader/) o [chrome web store (para Chrome y navegadores basados en Chromium)](https://chrome.google.com/webstore/detail/fmmnkcdlphpgbdcdfnjkldfljedbbokp).
+Puedes instalar la extensión del navegador directamente desde [addons.mozilla.org (para Firefox)](https://addons.mozilla.org/en-US/firefox/addon/musescore-downloader/).
 
 La versión más reciente se puede encontrar en la página de [Github Releases](https://github.com/Xmader/musescore-downloader/releases).
 
@@ -251,7 +252,7 @@ No, el documento de la API está en https://developers.musescore.com/.
 
 **Lanzaré una alternativa de código abierto (GPLv3), sin servidor, offline, y totalmente gratuita a musescore.com, [LibreScore](https://github.com/LibreScore). ETodos son bienvenidos a unirse al desarrollo del proyecto abriendo un problema o [enviándome un correo electrónico.](mailto:i@xmader.com).**
 
-**Además, estoy desarrollando musescore.js. Podría convertir un archivo mscz en cualquier formato que admita el software Musescore, y en el navegador.** Dado que el software Musescore es de código abierto bajo [GPL](https://github.com/musescore/MuseScore/blob/master/LICENSE.GPL), Podría traducir el código fuente a js o compilarlo en asm.js/WASM.
+**Además, estoy desarrollando [webmscore](https://github.com/LibreScore/webmscore). Podría convertir un archivo mscz en cualquier formato que admita el software Musescore, y en el navegador.** Dado que el software Musescore es de código abierto bajo [GPL](https://github.com/musescore/MuseScore/blob/master/LICENSE.GPL), Podría traducir el código fuente a js o compilarlo en asm.js/WASM.
 
 ---
 
@@ -320,7 +321,7 @@ Installa lo script da <https://msdl.librescore.org/install.user.js>
 
 Il metodo alternativo consiste nell'installare questo script come estensione per Chrome o Firefox.
 
-Puoi installare l'estensione del browser direttamente da [addons.mozilla.org (per Firefox)](https://addons.mozilla.org/en-US/firefox/addon/musescore-downloader/) o dal [web store di Chrome (per browser basati su Chrome e Chromium)](https://chrome.google.com/webstore/detail/mhdlcdhakmmikknpefblmnhdhjloanjc).
+Puoi installare l'estensione del browser direttamente da [addons.mozilla.org (per Firefox)](https://addons.mozilla.org/en-US/firefox/addon/musescore-downloader/).
 
 La versione aggiornata può essere trovata nella pagina [Github Releases](https://github.com/Xmader/musescore-downloader/releases).
 
@@ -369,6 +370,6 @@ No, il documento API è su https://developers.musescore.com/.
 
 **Avvierò un'alternativa open source (GPLv3), serverless, offline-first, frontend-first e totalmente gratuita a musescore.com, [LibreScore](https://github.com/LibreScore). Tutti sono invitati a partecipare allo sviluppo del progetto aprendo una issue o [inviandomi un'e-mail](mailto:i@xmader.com).**
 
-**Inoltre, sto sviluppando musescore.js. Potrebbe convertire un file mscz in qualsiasi formato supportato dal software Musescore e nel browser.** Poiché il software Musescore è open source sotto [GPL](https://github.com/musescore/MuseScore/blob/master/LICENSE.GPL), potrei tradurre il codice sorgente in js o compilarlo in asm.js/WASM.
+**Inoltre, sto sviluppando [webmscore](https://github.com/LibreScore/webmscore). Potrebbe convertire un file mscz in qualsiasi formato supportato dal software Musescore e nel browser.** Poiché il software Musescore è open source sotto [GPL](https://github.com/musescore/MuseScore/blob/master/LICENSE.GPL), potrei tradurre il codice sorgente in js o compilarlo in asm.js/WASM.
 
 ---
