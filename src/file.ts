@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
 import { hookNative } from './anti-detection'
-import { console } from './utils'
+import { console, useTimeout } from './utils'
 
 type FileType = 'img' | 'mp3' | 'midi'
 
@@ -97,7 +97,17 @@ const getApiAuth = async (type: FileType, index: number): Promise<string> => {
     }
   }
 
-  return magic
+  try {
+    return await useTimeout(magic, 5 * 1000 /* 5s */)
+  } catch {
+    console.error(type, 'token timeout')
+    switch (type) {
+      // try hard-coded tokens
+      case 'img': return '8c022bdef45341074ce876ae57a48f64b86cdcf5'
+      case 'midi': return '38fb9efaae51b0c83b5bb5791a698b48292129e7'
+      case 'mp3': return '63794e5461e4cfa046edfbdddfccc1ac16daffd2'
+    }
+  }
 }
 
 export const getFileUrl = async (id: number, type: FileType, index = 0): Promise<string> => {
