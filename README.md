@@ -105,7 +105,7 @@ Thirdly, the copyright ownership of contents on musescore.com is not clear. Not 
 
 If we can't see proof that musescore.com really pays license fees to the copyright owners, we may think it is just an excuse to get profit from stealing.
 
-> you illegally use our private API with licensed music content.
+> you illegaly [sic] use our private API with licensed music content. (https://github.com/Xmader/musescore-downloader/issues/5)
 
 No, the API documentation is on https://developers.musescore.com/.
 
