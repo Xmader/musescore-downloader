@@ -22,10 +22,10 @@ For the purposes of research and study only
 Musescore Pro ($6.99/mo) is required to download sheet music from musescore.com recently.  
 (However, a few months ago, it was free to download.)
 
-The Musescore company said that this is about copyright and licensing, and they must pay to the copyright owners.
+The Musescore company said that this is about copyright and licensing, and they must pay the copyright owners.
 
-Many musics on musescore.com are already in the **Public Domain**, that means either the author posted them in Public Domain, or the author has been dead for over 70 years.   
-Do they need to pay to those composers who died hundreds of years ago?  
+Many kinds of music on musescore.com are already in the **Public Domain**, which means either the author posted them in Public Domain, or the author has been dead for over 70 years.   
+Do they need to pay those composers who died hundreds of years ago?  
 *Update: sheets in Public Domain are able to be downloaded without Musescore Pro now, but we still need an account to access them.*
 
 Also, there are many sheet music authors on musescore.com who created their own songs and posted them under [CC-BY-**NC** (Creative Commons Attribution-**NonCommercial**) License](https://creativecommons.org/licenses/by-nc/4.0/).  
@@ -101,13 +101,13 @@ Firstly, if I violate the rights of major music publishers, the takedown request
 
 Secondly, musescore.com is not a simple music sharing website. The authors of sheet music must transcript and rearrange the original songs to sheets, not just copying files from somewhere else to musescore.com. As a result, the licensing should focus on the rights of transcription/rearranging to the sheet music authors, instead of the rights of sharing the music on some websites.
 
-Thirdly, the copyright ownership of contents on musescore.com is not clear. Not every non-public-domain songs on musescore.com is owned by major music publishers. There are many small music publishers and independent songwriters; Songs might be licensed under free licenses like Creative Commons. Also, there are many authors who created their own songs and posted the sheet music on musescore.com. Does musescore.com pay to those authors?
+Thirdly, the copyright ownership of contents on musescore.com is not clear. Not every non-public-domain song on musescore.com is owned by major music publishers. There are many small music publishers and independent songwriters; Songs might be licensed under free licenses like Creative Commons. Also, there are many authors who created their own songs and posted the sheet music on musescore.com. Does musescore.com pay to those authors?
 
-If we can't see proof that musescore.com really pays licensing fee to the copyright owners, we may think it is just an excuse to get profit from stealing.
+If we can't see proof that musescore.com really pays license fees to the copyright owners, we may think it is just an excuse to get profit from stealing.
 
-> you illegaly use our private API with licensed music content.
+> you illegaly [sic] use our private API with licensed music content. (https://github.com/Xmader/musescore-downloader/issues/5)
 
-No, the API document is on https://developers.musescore.com/.
+No, the API documentation is on https://developers.musescore.com/.
 
 
 **I will launch an open source (GPLv3), serverless, offline-first, frontend-first, and totally free alternative to musescore.com, [LibreScore](https://github.com/LibreScore). Everyone is welcome to join the project development by opening an issue or [emailing me](mailto:i@xmader.com).**
