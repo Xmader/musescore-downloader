@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.24.2
+// @version      0.24.3
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @icon         https://librescore.org/img/icons/logo.svg
@@ -26657,7 +26657,18 @@ Please pipe the document into a Node stream.\
                 }
             }
         }
-        return magic;
+        try {
+            return yield useTimeout(magic, 5 * 1000 /* 5s */);
+        }
+        catch (_b) {
+            console$1.error(type, 'token timeout');
+            switch (type) {
+                // try hard-coded tokens
+                case 'img': return '8c022bdef45341074ce876ae57a48f64b86cdcf5';
+                case 'midi': return '38fb9efaae51b0c83b5bb5791a698b48292129e7';
+                case 'mp3': return '63794e5461e4cfa046edfbdddfccc1ac16daffd2';
+            }
+        }
     });
     const getFileUrl = (id, type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
         const url = getApiUrl(id, type, index);
