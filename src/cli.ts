@@ -135,7 +135,7 @@ void (async () => {
   } catch (err) {
     spinner.fail(err.message)
     spinner.info(
-      'Send your URL to the #dataset-bugs channel in the LibreScore Community Discord server:\n  ' +
+      'Send your URL to the #dataset-patcher channel in the LibreScore Community Discord server:\n  ' +
       DISCORD_URL,
     )
     return
