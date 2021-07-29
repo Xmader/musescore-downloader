@@ -276,9 +276,27 @@ export namespace BtnAction {
         fn(w, score, txt)
       } catch (err) {
         console.error(err)
-        // close the new tab & show error msg
+        // close the new tab & show error popup
         w.close()
+        BtnAction.errorPopup()(btnName, btn, setText)
       }
+    }
+  }
+
+  export const errorPopup = (): BtnAction => {
+    return (btnName: unknown, btn: unknown, setText) => {
+      setText(i18n('BTN_ERROR')())
+      // ask user to send Discord message
+      alert(
+        '❌Download Failed!\n\n' +
+        'Send your URL to the #dataset-patcher channel ' +
+        'in the LibreScore Community Discord server:\n' + DISCORD_URL,
+      )
+      // open Discord on 'OK'
+      const a = document.createElement('a')
+      a.href = DISCORD_URL
+      a.target = '_blank'
+      a.dispatchEvent(new MouseEvent('click'))
     }
   }
 
@@ -299,18 +317,7 @@ export namespace BtnAction {
           await fallback()
           setText(name)
         } else {
-          setText(i18n('BTN_ERROR')())
-          // ask user to send Discord message
-          alert(
-            '❌Download Failed!\n\n' +
-            'Send your URL to the #dataset-patcher channel ' +
-            'in the LibreScore Community Discord server:\n' + DISCORD_URL,
-          )
-          // open Discord on 'OK'
-          const a = document.createElement('a')
-          a.href = DISCORD_URL
-          a.target = '_blank'
-          a.dispatchEvent(new MouseEvent('click'))
+          BtnAction.errorPopup()(name, btn, setText)
         }
       }
 
