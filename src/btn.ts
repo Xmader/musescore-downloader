@@ -241,17 +241,21 @@ export namespace BtnAction {
 
   export const mscoreWindow = (scoreinfo: ScoreInfo, fn: (w: Window, score: WebMscore, processingTextEl: ChildNode) => any): BtnAction => {
     return async (btnName, btn, setText) => {
+      // save btn event for later use
       const _onclick = btn.onclick
+      // clear btn event
       btn.onclick = null
+      // set btn text to "PROCESSING"
       setText(i18n('PROCESSING')())
 
+      // open a new tab
       const w = await windowOpenAsync(btn, '') as Window
+      // add texts to the new tab
       const txt = document.createTextNode(i18n('PROCESSING')())
       w.document.body.append(txt)
 
-      // set page hooks
-      // eslint-disable-next-line prefer-const
-      let score: WebMscore
+      // set page hooks that the new tab also closes as the og tab closes
+      let score: WebMscore // eslint-disable-line prefer-const
       const destroy = (): void => {
         score && score.destroy()
         w.close()
@@ -260,13 +264,21 @@ export namespace BtnAction {
       w.addEventListener('beforeunload', () => {
         score && score.destroy()
         window.removeEventListener('unload', destroy)
+        // reset btn text
         setText(btnName)
+        // reinstate btn event
         btn.onclick = _onclick
       })
 
-      score = await loadMscore(scoreinfo, w)
-
-      fn(w, score, txt)
+      try {
+        // fetch mscz & process using mscore
+        score = await loadMscore(scoreinfo, w)
+        fn(w, score, txt)
+      } catch (err) {
+        console.error(err)
+        // close the new tab & show error msg
+        w.close()
+      }
     }
   }
 
