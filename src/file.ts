@@ -83,7 +83,7 @@ const useBuiltinAuth = (type: FileType): string => {
 
 const getApiAuth = async (type: FileType, index: number): Promise<string> => {
   // eslint-disable-next-line no-void
-  void index
+  void index // unused
 
   const magic = magics[type]
   if (magic instanceof Promise) {
@@ -123,11 +123,11 @@ const getApiAuth = async (type: FileType, index: number): Promise<string> => {
   }
 }
 
-export const getFileUrl = async (id: number, type: FileType, index = 0): Promise<string> => {
+export const getFileUrl = async (id: number, type: FileType, index = 0, _fetch = getFetch()): Promise<string> => {
   const url = getApiUrl(id, type, index)
   const auth = await getApiAuth(type, index)
 
-  const r = await fetch(url, {
+  const r = await _fetch(url, {
     headers: {
       Authorization: auth,
     },
