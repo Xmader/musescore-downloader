@@ -1,4 +1,5 @@
 
+import isNodeJs from 'detect-node'
 import { hookNative } from './anti-detection'
 import type { FileType } from './file'
 
@@ -9,6 +10,10 @@ const TYPE_REG = /type=(img|mp3|midi)/
  */
 const magicHookConstr = (() => {
   const l = {}
+
+  if (isNodeJs) { // noop in CLI
+    return () => Promise.resolve('')
+  }
 
   try {
     const p = Object.getPrototypeOf(document.body)

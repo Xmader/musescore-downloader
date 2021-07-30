@@ -30,6 +30,9 @@ export const getFetch = (): typeof fetch => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const nodeFetch = require('node-fetch')
     return (input: RequestInfo, init?: RequestInit) => {
+      if (typeof input === 'string' && !input.startsWith('http')) { // fix: Only absolute URLs are supported
+        input = 'https://musescore.com' + input
+      }
       init = Object.assign({ headers: NODE_FETCH_HEADERS }, init)
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return nodeFetch(input, init)
@@ -113,7 +116,7 @@ export const getUnsafeWindow = (): Window => {
   return window.eval('window') as Window
 }
 
-export const console: Console = (window || global).console // Object.is(window.console, unsafeWindow.console) == false
+export const console: Console = (typeof window !== 'undefined' ? window : global).console // Object.is(window.console, unsafeWindow.console) == false
 
 export const windowOpenAsync = (targetEl: Element | undefined, ...args: Parameters<Window['open']>): Promise<Window | null> => {
   return getSandboxWindowAsync(targetEl).then(w => w.open(...args))

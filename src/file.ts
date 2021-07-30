@@ -1,7 +1,8 @@
 /* eslint-disable no-extend-native */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
-import { console, useTimeout, getFetch } from './utils'
+import isNodeJs from 'detect-node'
+import { useTimeout, getFetch } from './utils'
 import { magics } from './file-magics'
 
 export type FileType = 'img' | 'mp3' | 'midi'
@@ -24,6 +25,11 @@ const useBuiltinAuth = (type: FileType): string => {
 const getApiAuth = async (type: FileType, index: number): Promise<string> => {
   // eslint-disable-next-line no-void
   void index // unused
+
+  if (isNodeJs) {
+    // we cannot intercept API requests in Node.js (as no requests are sent), so go straightforward to the hard-coded tokens
+    return useBuiltinAuth(type)
+  }
 
   const magic = magics[type]
   if (magic instanceof Promise) {

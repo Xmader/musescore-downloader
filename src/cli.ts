@@ -11,6 +11,7 @@ import { ScoreInfo, ScoreInfoHtml, ScoreInfoObj, getActualId } from './scoreinfo
 import { getLibreScoreLink } from './librescore-link'
 import { escapeFilename, DISCORD_URL } from './utils'
 import { isNpx, getVerInfo, getSelfVer } from './npm-data'
+import { getFileUrl, FileType } from './file'
 import i18n from './i18n'
 
 const inquirer: typeof import('inquirer') = require('inquirer')
@@ -24,9 +25,47 @@ const EXT = '.mscz'
 interface Params {
   fileInit: string;
   confirmed: boolean;
+  useExpDL: boolean;
+  expDlType: FileType;
   part: number;
   types: number[];
   dest: string;
+}
+
+/**
+ * Prompt for destination directory
+ */
+const promptDest = async () => {
+  const { dest } = await inquirer.prompt<Params>({
+    type: 'input',
+    name: 'dest',
+    message: 'Destination Directory:',
+    validate (input: string) {
+      return input && fs.statSync(input).isDirectory()
+    },
+    default: process.cwd(),
+  })
+  return dest
+}
+
+/**
+ * MIDI/MP3 express download using the file API (./file.ts)
+ * @todo PDF
+ */
+const expDL = async (scoreinfo: ScoreInfo) => {
+  // print a blank line
+  console.log()
+
+  // filetype selection
+  const { expDlType } = await inquirer.prompt<Params>({
+    type: 'list',
+    name: 'expDlType',
+    message: 'Filetype Selection',
+    choices: ['midi', 'mp3'] as FileType[],
+  })
+
+  const fileUrl = await getFileUrl(scoreinfo.id, expDlType)
+  console.log(`${chalk.blueBright('ℹ')} File URL: ${fileUrl} ${chalk.bgGray('click to open in browser')}`)
 }
 
 void (async () => {
@@ -86,6 +125,20 @@ void (async () => {
       default: true,
     })
     if (!confirmed) return
+
+    // print a blank line
+    console.log()
+
+    // ask for express download
+    const { useExpDL } = await inquirer.prompt<Params>({
+      type: 'confirm',
+      name: 'useExpDL',
+      prefix: `${chalk.blueBright('ℹ')} ` +
+        'MIDI/MP3 express download is now available.\n ',
+      message: '🚀 Give it a try?',
+      default: true,
+    })
+    if (useExpDL) return expDL(scoreinfo)
 
     // initiate LibreScore link request
     librescoreLink = getLibreScoreLink(scoreinfo)
@@ -172,15 +225,7 @@ void (async () => {
   const filetypes = types.map(i => INDV_DOWNLOADS[i])
 
   // destination directory
-  const { dest } = await inquirer.prompt<Params>({
-    type: 'input',
-    name: 'dest',
-    message: 'Destination Directory:',
-    validate (input: string) {
-      return input && fs.statSync(input).isDirectory()
-    },
-    default: process.cwd(),
-  })
+  const dest = await promptDest()
 
   // export files
   const fileName = scoreinfo.fileName || await score.titleFilenameSafe()
