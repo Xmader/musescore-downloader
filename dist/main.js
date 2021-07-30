@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.24.3
+// @version      0.25.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @icon         https://librescore.org/img/icons/logo.svg
@@ -348,6 +348,9 @@
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const nodeFetch = require('node-fetch');
             return (input, init) => {
+                if (typeof input === 'string' && !input.startsWith('http')) { // fix: Only absolute URLs are supported
+                    input = 'https://musescore.com' + input;
+                }
                 init = Object.assign({ headers: NODE_FETCH_HEADERS }, init);
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-return
                 return nodeFetch(input, init);
@@ -417,7 +420,7 @@
             targetEl.setAttribute(eventName, `this['${id}'](document.createElement('iframe'))`);
         });
     });
-    const console$1 = (window || global).console; // Object.is(window.console, unsafeWindow.console) == false
+    const console$1 = (typeof window !== 'undefined' ? window : global).console; // Object.is(window.console, unsafeWindow.console) == false
     const windowOpenAsync = (targetEl, ...args) => {
         return getSandboxWindowAsync(targetEl).then(w => w.open(...args));
     };
@@ -26575,13 +26578,15 @@ Please pipe the document into a Node stream.\
         }
     }
 
-    /* eslint-disable no-extend-native */
     const TYPE_REG = /type=(img|mp3|midi)/;
     /**
      * I know this is super hacky.
      */
     const magicHookConstr = (() => {
         const l = {};
+        if (detectNode) { // noop in CLI
+            return () => Promise.resolve('');
+        }
         try {
             const p = Object.getPrototypeOf(document.body);
             Object.setPrototypeOf(document.body, null);
@@ -26597,7 +26602,7 @@ Please pipe the document into a Node stream.\
                                 const token = (_a = init === null || init === void 0 ? void 0 : init.headers) === null || _a === void 0 ? void 0 : _a.Authorization;
                                 if (typeof url === 'string' && token) {
                                     const m = url.match(TYPE_REG);
-                                    console$1.debug(url, token, m);
+                                    console.debug(url, token, m);
                                     if (m) {
                                         const type = m[1];
                                         // eslint-disable-next-line no-unused-expressions
@@ -26613,7 +26618,7 @@ Please pipe the document into a Node stream.\
             Object.setPrototypeOf(document.body, p);
         }
         catch (err) {
-            console$1.error(err);
+            console.error(err);
         }
         return (type) => __awaiter(void 0, void 0, void 0, function* () {
             return new Promise((resolve) => {
@@ -26629,51 +26634,70 @@ Please pipe the document into a Node stream.\
         midi: magicHookConstr('midi'),
         mp3: magicHookConstr('mp3'),
     };
+
+    /* eslint-disable no-extend-native */
     const getApiUrl = (id, type, index) => {
         return `/api/jmuse?id=${id}&type=${type}&index=${index}&v2=1`;
     };
+    /**
+     * hard-coded auth tokens
+     */
+    const useBuiltinAuth = (type) => {
+        switch (type) {
+            case 'img': return '8c022bdef45341074ce876ae57a48f64b86cdcf5';
+            case 'midi': return '38fb9efaae51b0c83b5bb5791a698b48292129e7';
+            case 'mp3': return '63794e5461e4cfa046edfbdddfccc1ac16daffd2';
+        }
+    };
     const getApiAuth = (type, index) => __awaiter(void 0, void 0, void 0, function* () {
-        var _a;
+        var _a, _b, _c;
+        if (detectNode) {
+            // we cannot intercept API requests in Node.js (as no requests are sent), so go straightforward to the hard-coded tokens
+            return useBuiltinAuth(type);
+        }
         const magic = magics[type];
         if (magic instanceof Promise) {
             // force to retrieve the MAGIC
-            switch (type) {
-                case 'midi': {
-                    const el = document.querySelector('button[hasaccess]');
-                    el.click();
-                    break;
+            try {
+                switch (type) {
+                    case 'midi': {
+                        const fsBtn = document.querySelector('button[title="Toggle Fullscreen"]');
+                        const el = (_b = (_a = fsBtn.parentElement) === null || _a === void 0 ? void 0 : _a.parentElement) === null || _b === void 0 ? void 0 : _b.querySelector('button');
+                        el.click();
+                        break;
+                    }
+                    case 'mp3': {
+                        const el = document.querySelector('button[title="Toggle Play"]');
+                        el.click();
+                        break;
+                    }
+                    case 'img': {
+                        const imgE = document.querySelector('img[src*=score_]');
+                        const nextE = (_c = imgE === null || imgE === void 0 ? void 0 : imgE.parentElement) === null || _c === void 0 ? void 0 : _c.nextElementSibling;
+                        if (nextE)
+                            nextE.scrollIntoView();
+                        break;
+                    }
                 }
-                case 'mp3': {
-                    const el = document.querySelector('button[title="Toggle Play"]');
-                    el.click();
-                    break;
-                }
-                case 'img': {
-                    const imgE = document.querySelector('img[src*=score_]');
-                    const nextE = (_a = imgE === null || imgE === void 0 ? void 0 : imgE.parentElement) === null || _a === void 0 ? void 0 : _a.nextElementSibling;
-                    if (nextE)
-                        nextE.scrollIntoView();
-                    break;
-                }
+            }
+            catch (err) {
+                console.error(err);
+                return useBuiltinAuth(type);
             }
         }
         try {
             return yield useTimeout(magic, 5 * 1000 /* 5s */);
         }
-        catch (_b) {
-            console$1.error(type, 'token timeout');
-            switch (type) {
-                // try hard-coded tokens
-                case 'img': return '8c022bdef45341074ce876ae57a48f64b86cdcf5';
-                case 'midi': return '38fb9efaae51b0c83b5bb5791a698b48292129e7';
-                case 'mp3': return '63794e5461e4cfa046edfbdddfccc1ac16daffd2';
-            }
+        catch (_d) {
+            console.error(type, 'token timeout');
+            // try hard-coded tokens
+            return useBuiltinAuth(type);
         }
     });
-    const getFileUrl = (id, type, index = 0) => __awaiter(void 0, void 0, void 0, function* () {
+    const getFileUrl = (id, type, index = 0, _fetch = getFetch()) => __awaiter(void 0, void 0, void 0, function* () {
         const url = getApiUrl(id, type, index);
         const auth = yield getApiAuth(type);
-        const r = yield fetch(url, {
+        const r = yield _fetch(url, {
             headers: {
                 Authorization: auth,
             },
@@ -27273,15 +27297,19 @@ Please pipe the document into a Node stream.\
         BtnAction.openUrl = BtnAction.download;
         BtnAction.mscoreWindow = (scoreinfo, fn) => {
             return (btnName, btn, setText) => __awaiter(this, void 0, void 0, function* () {
+                // save btn event for later use
                 const _onclick = btn.onclick;
+                // clear btn event
                 btn.onclick = null;
+                // set btn text to "PROCESSING"
                 setText(i18n('PROCESSING')());
+                // open a new tab
                 const w = yield windowOpenAsync(btn, '');
+                // add texts to the new tab
                 const txt = document.createTextNode(i18n('PROCESSING')());
                 w.document.body.append(txt);
-                // set page hooks
-                // eslint-disable-next-line prefer-const
-                let score;
+                // set page hooks that the new tab also closes as the og tab closes
+                let score; // eslint-disable-line prefer-const
                 const destroy = () => {
                     score && score.destroy();
                     w.close();
@@ -27290,12 +27318,37 @@ Please pipe the document into a Node stream.\
                 w.addEventListener('beforeunload', () => {
                     score && score.destroy();
                     window.removeEventListener('unload', destroy);
+                    // reset btn text
                     setText(btnName);
+                    // reinstate btn event
                     btn.onclick = _onclick;
                 });
-                score = yield loadMscore(scoreinfo, w);
-                fn(w, score, txt);
+                try {
+                    // fetch mscz & process using mscore
+                    score = yield loadMscore(scoreinfo, w);
+                    fn(w, score, txt);
+                }
+                catch (err) {
+                    console$1.error(err);
+                    // close the new tab & show error popup
+                    w.close();
+                    BtnAction.errorPopup()(btnName, btn, setText);
+                }
             });
+        };
+        BtnAction.errorPopup = () => {
+            return (btnName, btn, setText) => {
+                setText(i18n('BTN_ERROR')());
+                // ask user to send Discord message
+                alert('❌Download Failed!\n\n' +
+                    'Send your URL to the #dataset-patcher channel ' +
+                    'in the LibreScore Community Discord server:\n' + DISCORD_URL);
+                // open Discord on 'OK'
+                const a = document.createElement('a');
+                a.href = DISCORD_URL;
+                a.target = '_blank';
+                a.dispatchEvent(new MouseEvent('click'));
+            };
         };
         BtnAction.process = (fn, fallback, timeout = 10 * 60 * 1000 /* 10min */) => {
             return (name, btn, setText) => __awaiter(this, void 0, void 0, function* () {
@@ -27314,16 +27367,7 @@ Please pipe the document into a Node stream.\
                         setText(name);
                     }
                     else {
-                        setText(i18n('BTN_ERROR')());
-                        // ask user to send Discord message
-                        alert('❌Download Failed!\n\n' +
-                            'Send your URL to the #dataset-patcher channel ' +
-                            'in the LibreScore Community Discord server:\n' + DISCORD_URL);
-                        // open Discord on 'OK'
-                        const a = document.createElement('a');
-                        a.href = DISCORD_URL;
-                        a.target = '_blank';
-                        a.dispatchEvent(new MouseEvent('click'));
+                        BtnAction.errorPopup()(name, btn, setText);
                     }
                 }
                 btn.onclick = _onclick;
