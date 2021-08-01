@@ -29,7 +29,7 @@ interface Params {
   fileInit: string;
   confirmed: boolean;
   useExpDL: boolean;
-  expDlType: ExpDlType;
+  expDlTypes: ExpDlType[];
   part: number;
   types: number[];
   dest: string;
@@ -60,6 +60,10 @@ const createSpinner = () => {
   }).start()
 }
 
+const checkboxValidate = (input: number[]) => {
+  return input.length >= 1
+}
+
 /**
  * MIDI/MP3/PDF express download using the file API (./file.ts)
  */
@@ -68,40 +72,45 @@ const expDL = async (scoreinfo: ScoreInfoHtml) => {
   console.log()
 
   // filetype selection
-  const { expDlType } = await inquirer.prompt<Params>({
-    type: 'list',
-    name: 'expDlType',
+  const { expDlTypes } = await inquirer.prompt<Params>({
+    type: 'checkbox',
+    name: 'expDlTypes',
     message: 'Filetype Selection',
     choices: ['midi', 'mp3', 'pdf'] as ExpDlType[],
+    validate: checkboxValidate,
   })
 
   // destination directory selection
   const dest = await promptDest()
   const spinner = createSpinner()
 
-  let fileData: Buffer
-  switch (expDlType) {
-    case 'midi':
-    case 'mp3': {
-      const fileUrl = await getFileUrl(scoreinfo.id, expDlType)
-      spinner.info(`File URL: ${fileUrl} ${chalk.bgGray('click to open in browser')}`)
-      fileData = await fetchBuffer(fileUrl)
-      break
-    }
+  await Promise.all(
+    expDlTypes.map(async (type) => {
+      // download/generate file data
+      let fileData: Buffer
+      switch (type) {
+        case 'midi':
+        case 'mp3': {
+          const fileUrl = await getFileUrl(scoreinfo.id, type)
+          fileData = await fetchBuffer(fileUrl)
+          break
+        }
 
-    case 'pdf': {
-      fileData = Buffer.from(
-        await exportPDF(scoreinfo, scoreinfo.sheet),
-      )
-      break
-    }
-  }
+        case 'pdf': {
+          fileData = Buffer.from(
+            await exportPDF(scoreinfo, scoreinfo.sheet),
+          )
+          break
+        }
+      }
 
-  // save to filesystem
-  const f = path.join(dest, `${scoreinfo.fileName}.${expDlType}`)
-  await fs.promises.writeFile(f, fileData)
+      // save to filesystem
+      const f = path.join(dest, `${scoreinfo.fileName}.${type}`)
+      await fs.promises.writeFile(f, fileData)
+      spinner.info(`Saved ${chalk.underline(f)}`)
+    }),
+  )
 
-  spinner.info(`Saved ${chalk.underline(f)}`)
   spinner.succeed('OK')
 }
 
@@ -250,9 +259,7 @@ void (async () => {
     name: 'types',
     message: 'Filetype Selection',
     choices: typeChoices,
-    validate (input: number[]) {
-      return input.length >= 1
-    },
+    validate: checkboxValidate,
   })
   const filetypes = types.map(i => INDV_DOWNLOADS[i])
 
