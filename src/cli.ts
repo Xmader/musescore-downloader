@@ -9,7 +9,7 @@ import { fetchMscz, setMscz, MSCZ_URL_SYM } from './mscz'
 import { loadMscore, INDV_DOWNLOADS, WebMscore } from './mscore'
 import { ScoreInfo, ScoreInfoHtml, ScoreInfoObj, getActualId } from './scoreinfo'
 import { getLibreScoreLink } from './librescore-link'
-import { escapeFilename, DISCORD_URL } from './utils'
+import { escapeFilename, DISCORD_URL, fetchBuffer } from './utils'
 import { isNpx, getVerInfo, getSelfVer } from './npm-data'
 import { getFileUrl } from './file'
 import { exportPDF } from './pdf'
@@ -75,26 +75,34 @@ const expDL = async (scoreinfo: ScoreInfoHtml) => {
     choices: ['midi', 'mp3', 'pdf'] as ExpDlType[],
   })
 
+  // destination directory selection
+  const dest = await promptDest()
+  const spinner = createSpinner()
+
+  let fileData: Buffer
   switch (expDlType) {
     case 'midi':
     case 'mp3': {
       const fileUrl = await getFileUrl(scoreinfo.id, expDlType)
-      console.log(`${chalk.blueBright('ℹ')} File URL: ${fileUrl} ${chalk.bgGray('click to open in browser')}`)
+      spinner.info(`File URL: ${fileUrl} ${chalk.bgGray('click to open in browser')}`)
+      fileData = await fetchBuffer(fileUrl)
       break
     }
 
     case 'pdf': {
-      const dest = await promptDest()
-      const spinner = createSpinner()
-      const pdfData = Buffer.from(
+      fileData = Buffer.from(
         await exportPDF(scoreinfo, scoreinfo.sheet),
       )
-      const f = path.join(dest, `${scoreinfo.fileName}.pdf`)
-      await fs.promises.writeFile(f, pdfData)
-      spinner.succeed('OK')
       break
     }
   }
+
+  // save to filesystem
+  const f = path.join(dest, `${scoreinfo.fileName}.${expDlType}`)
+  await fs.promises.writeFile(f, fileData)
+
+  spinner.info(`Saved ${chalk.underline(f)}`)
+  spinner.succeed('OK')
 }
 
 void (async () => {
