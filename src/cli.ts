@@ -11,7 +11,8 @@ import { ScoreInfo, ScoreInfoHtml, ScoreInfoObj, getActualId } from './scoreinfo
 import { getLibreScoreLink } from './librescore-link'
 import { escapeFilename, DISCORD_URL } from './utils'
 import { isNpx, getVerInfo, getSelfVer } from './npm-data'
-import { getFileUrl, FileType } from './file'
+import { getFileUrl } from './file'
+import { exportPDF } from './pdf'
 import i18n from './i18n'
 
 const inquirer: typeof import('inquirer') = require('inquirer')
@@ -22,11 +23,13 @@ const SCORE_URL_PREFIX = 'https://(s.)musescore.com/'
 const SCORE_URL_REG = /https:\/\/(s\.)?musescore\.com\//
 const EXT = '.mscz'
 
+type ExpDlType = 'midi' | 'mp3' | 'pdf'
+
 interface Params {
   fileInit: string;
   confirmed: boolean;
   useExpDL: boolean;
-  expDlType: FileType;
+  expDlType: ExpDlType;
   part: number;
   types: number[];
   dest: string;
@@ -48,11 +51,19 @@ const promptDest = async () => {
   return dest
 }
 
+const createSpinner = () => {
+  return ora({
+    text: i18n('PROCESSING')(),
+    color: 'blue',
+    spinner: 'bounce',
+    indent: 0,
+  }).start()
+}
+
 /**
- * MIDI/MP3 express download using the file API (./file.ts)
- * @todo PDF
+ * MIDI/MP3/PDF express download using the file API (./file.ts)
  */
-const expDL = async (scoreinfo: ScoreInfo) => {
+const expDL = async (scoreinfo: ScoreInfoHtml) => {
   // print a blank line
   console.log()
 
@@ -61,11 +72,29 @@ const expDL = async (scoreinfo: ScoreInfo) => {
     type: 'list',
     name: 'expDlType',
     message: 'Filetype Selection',
-    choices: ['midi', 'mp3'] as FileType[],
+    choices: ['midi', 'mp3', 'pdf'] as ExpDlType[],
   })
 
-  const fileUrl = await getFileUrl(scoreinfo.id, expDlType)
-  console.log(`${chalk.blueBright('ℹ')} File URL: ${fileUrl} ${chalk.bgGray('click to open in browser')}`)
+  switch (expDlType) {
+    case 'midi':
+    case 'mp3': {
+      const fileUrl = await getFileUrl(scoreinfo.id, expDlType)
+      console.log(`${chalk.blueBright('ℹ')} File URL: ${fileUrl} ${chalk.bgGray('click to open in browser')}`)
+      break
+    }
+
+    case 'pdf': {
+      const dest = await promptDest()
+      const spinner = createSpinner()
+      const pdfData = Buffer.from(
+        await exportPDF(scoreinfo, scoreinfo.sheet),
+      )
+      const f = path.join(dest, `${scoreinfo.fileName}.pdf`)
+      await fs.promises.writeFile(f, pdfData)
+      spinner.succeed('OK')
+      break
+    }
+  }
 }
 
 void (async () => {
@@ -134,11 +163,11 @@ void (async () => {
       type: 'confirm',
       name: 'useExpDL',
       prefix: `${chalk.blueBright('ℹ')} ` +
-        'MIDI/MP3 express download is now available.\n ',
+        'MIDI/MP3/PDF express download is now available.\n ',
       message: '🚀 Give it a try?',
       default: true,
     })
-    if (useExpDL) return expDL(scoreinfo)
+    if (useExpDL) return expDL(scoreinfo as ScoreInfoHtml)
 
     // initiate LibreScore link request
     librescoreLink = getLibreScoreLink(scoreinfo)
@@ -150,12 +179,7 @@ void (async () => {
     scoreinfo = new ScoreInfoObj(0, path.basename(fileInit, EXT))
   }
 
-  const spinner = ora({
-    text: i18n('PROCESSING')(),
-    color: 'blue',
-    spinner: 'bounce',
-    indent: 0,
-  }).start()
+  const spinner = createSpinner()
 
   let score: WebMscore
   let metadata: import('webmscore/schemas').ScoreMetadata

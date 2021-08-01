@@ -82,6 +82,10 @@ export class ScoreInfoHtml extends ScoreInfo {
     return m[1]
   }
 
+  get sheet (): SheetInfo {
+    return new SheetInfoHtml(this.html)
+  }
+
   static async request (url: string, _fetch = getFetch()): Promise<ScoreInfoHtml> {
     const r = await _fetch(url)
     if (!r.ok) return new ScoreInfoHtml('')
@@ -91,9 +95,15 @@ export class ScoreInfoHtml extends ScoreInfo {
   }
 }
 
+export type Dimensions = { width: number; height: number }
+
 export abstract class SheetInfo {
   abstract pageCount: number;
+
+  /** url to the image of the first page */
   abstract thumbnailUrl: string;
+
+  abstract dimensions: Dimensions;
 
   get imgType (): 'svg' | 'png' {
     const thumbnail = this.thumbnailUrl
@@ -118,10 +128,41 @@ export class SheetInfoInPage extends SheetInfo {
   }
 
   get thumbnailUrl (): string {
-    // url to the image of the first page
     const el = this.document.querySelector<HTMLLinkElement>('link[as=image]')
     const url = (el?.href || this.sheet0Img?.src) as string
     return url.split('@')[0]
+  }
+
+  get dimensions (): Dimensions {
+    const { naturalWidth: width, naturalHeight: height } = this.sheet0Img as HTMLImageElement
+    return { width, height }
+  }
+}
+
+export class SheetInfoHtml extends SheetInfo {
+  private readonly PAGE_COUNT_REG = /pages(?:&quot;|"):(\d+),/
+  private readonly THUMBNAIL_REG = /<link (?:.*) href="(.*)" rel="preload" as="image"/
+
+  private readonly DIMENSIONS_REG = /dimensions(?:&quot;|"):(?:&quot;|")(\d+)x(\d+)(?:&quot;|"),/
+
+  constructor (private html: string) { super() }
+
+  get pageCount (): number {
+    const m = this.html.match(this.PAGE_COUNT_REG)
+    if (!m) return NaN
+    return +m[1]
+  }
+
+  get thumbnailUrl (): string {
+    const m = this.html.match(this.THUMBNAIL_REG)
+    if (!m) return ''
+    return m[1].split('@')[0]
+  }
+
+  get dimensions (): Dimensions {
+    const m = this.html.match(this.DIMENSIONS_REG)
+    if (!m) return { width: NaN, height: NaN }
+    return { width: +m[1], height: +m[2] }
   }
 }
 

@@ -1,29 +1,35 @@
 
+import isNodeJs from 'detect-node'
+import { PDFWorker } from '../dist/cache/worker'
 import { PDFWorkerHelper } from './worker-helper'
 import { getFileUrl } from './file'
-import FileSaver from 'file-saver'
-import { ScoreInfo, SheetInfo } from './scoreinfo'
+import { ScoreInfo, SheetInfo, Dimensions } from './scoreinfo'
+import { fetchBuffer } from './utils'
 
-let pdfBlob: Blob
+type _ExFn = (imgURLs: string[], imgType: 'svg' | 'png', dimensions: Dimensions) => Promise<ArrayBuffer>
 
-const _downloadPDF = async (imgURLs: string[], imgType: 'svg' | 'png', name = ''): Promise<void> => {
-  if (pdfBlob) {
-    return FileSaver.saveAs(pdfBlob, `${name}.pdf`)
-  }
-
-  const cachedImg = document.querySelector('img[src*=score_]') as HTMLImageElement
-  const { naturalWidth: width, naturalHeight: height } = cachedImg
-
+const _exportPDFBrowser: _ExFn = async (imgURLs, imgType, dimensions) => {
   const worker = new PDFWorkerHelper()
-  const pdfArrayBuffer = await worker.generatePDF(imgURLs, imgType, width, height)
+  const pdfArrayBuffer = await worker.generatePDF(imgURLs, imgType, dimensions.width, dimensions.height)
   worker.terminate()
-
-  pdfBlob = new Blob([pdfArrayBuffer])
-
-  FileSaver.saveAs(pdfBlob, `${name}.pdf`)
+  return pdfArrayBuffer
 }
 
-export const downloadPDF = async (scoreinfo: ScoreInfo, sheet: SheetInfo): Promise<void> => {
+const _exportPDFNode: _ExFn = async (imgURLs, imgType, dimensions) => {
+  const imgBufs = await Promise.all(imgURLs.map(url => fetchBuffer(url)))
+
+  const { generatePDF } = PDFWorker()
+  const pdfArrayBuffer = await generatePDF(
+    imgBufs,
+    imgType,
+    dimensions.width,
+    dimensions.height,
+  ) as ArrayBuffer
+
+  return pdfArrayBuffer
+}
+
+export const exportPDF = async (scoreinfo: ScoreInfo, sheet: SheetInfo): Promise<ArrayBuffer> => {
   const imgType = sheet.imgType
   const pageCount = sheet.pageCount
 
@@ -36,5 +42,23 @@ export const downloadPDF = async (scoreinfo: ScoreInfo, sheet: SheetInfo): Promi
   })
   const sheetImgURLs = await Promise.all(rs)
 
-  return _downloadPDF(sheetImgURLs, imgType, scoreinfo.fileName)
+  const args = [sheetImgURLs, imgType, sheet.dimensions] as const
+  if (!isNodeJs) {
+    return _exportPDFBrowser(...args)
+  } else {
+    return _exportPDFNode(...args)
+  }
+}
+
+let pdfBlob: Blob
+export const downloadPDF = async (scoreinfo: ScoreInfo, sheet: SheetInfo, saveAs: typeof import('file-saver').saveAs): Promise<void> => {
+  const name = scoreinfo.fileName
+  if (pdfBlob) {
+    return saveAs(pdfBlob, `${name}.pdf`)
+  }
+
+  const pdfArrayBuffer = await exportPDF(scoreinfo, sheet)
+
+  pdfBlob = new Blob([pdfArrayBuffer])
+  saveAs(pdfBlob, `${name}.pdf`)
 }

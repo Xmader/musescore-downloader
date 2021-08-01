@@ -7,6 +7,11 @@ const scriptUrlFromFunction = (fn: () => any): string => {
   return window.URL.createObjectURL(blob)
 }
 
+// Node.js fix
+if (typeof Worker === 'undefined') {
+  globalThis.Worker = class { } as any // noop shim
+}
+
 export class PDFWorkerHelper extends Worker {
   constructor () {
     const url = scriptUrlFromFunction(PDFWorker)

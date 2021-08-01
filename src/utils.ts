@@ -41,9 +41,15 @@ export const getFetch = (): typeof fetch => {
 }
 
 export const fetchData = async (url: string, init?: RequestInit): Promise<Uint8Array> => {
-  const r = await fetch(url, init)
+  const _fetch = getFetch()
+  const r = await _fetch(url, init)
   const data = await r.arrayBuffer()
   return new Uint8Array(data)
+}
+
+export const fetchBuffer = async (url: string, init?: RequestInit): Promise<Buffer> => {
+  const d = await fetchData(url, init)
+  return Buffer.from(d.buffer)
 }
 
 export const assertRes = (r: Response): void => {
