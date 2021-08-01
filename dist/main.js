@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/Xmader/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
-// @version      0.25.0
+// @version      0.26.0
 // @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
 // @author       Xmader
 // @icon         https://librescore.org/img/icons/logo.svg
@@ -358,9 +358,14 @@
         }
     };
     const fetchData = (url, init) => __awaiter(void 0, void 0, void 0, function* () {
-        const r = yield fetch(url, init);
+        const _fetch = getFetch();
+        const r = yield _fetch(url, init);
         const data = yield r.arrayBuffer();
         return new Uint8Array(data);
+    });
+    const fetchBuffer = (url, init) => __awaiter(void 0, void 0, void 0, function* () {
+        const d = yield fetchData(url, init);
+        return Buffer.from(d.buffer);
     });
     const assertRes = (r) => {
         if (!r.ok)
@@ -449,7 +454,7 @@
     };
 
     const PDFWorker = function () { 
-    (function () {
+    var worker = (function (exports) {
 
         function __awaiter(thisArg, _arguments, P, generator) {
             function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -26444,28 +26449,47 @@ Please pipe the document into a Node stream.\
         });
 
         /// <reference lib="webworker" />
-        const readData = (blob, type) => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const result = reader.result;
-                    resolve(result);
-                };
-                reader.onerror = reject;
+        const readData = (data, type) => {
+            if (!(data instanceof Uint8Array)) { // blob
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const result = reader.result;
+                        resolve(result);
+                    };
+                    reader.onerror = reject;
+                    if (type === 'dataUrl') {
+                        reader.readAsDataURL(data);
+                    }
+                    else {
+                        reader.readAsText(data);
+                    }
+                });
+            }
+            else { // buffer
                 if (type === 'dataUrl') {
-                    reader.readAsDataURL(blob);
+                    return 'data:image/png;base64,' + data.toString('base64');
                 }
                 else {
-                    reader.readAsText(blob);
+                    return data.toString('utf-8');
                 }
-            });
+            }
         };
+        /**
+         * @platform browser
+         */
         const fetchBlob = (imgUrl) => __awaiter(void 0, void 0, void 0, function* () {
             const r = yield fetch(imgUrl, {
                 cache: 'no-cache',
             });
             return r.blob();
         });
+        /**
+         * @example
+         * import { PDFWorker } from '../dist/cache/worker'
+         * const { generatePDF } = PDFWorker()
+         * const pdfData = await generatePDF(...)
+         */
         const generatePDF = (imgBlobs, imgType, width, height) => __awaiter(void 0, void 0, void 0, function* () {
             // @ts-ignore
             const pdf = new PDFDocument({
@@ -26498,20 +26522,35 @@ Please pipe the document into a Node stream.\
             const buf = yield pdf.getBuffer();
             return buf.buffer;
         });
-        onmessage = (e) => __awaiter(void 0, void 0, void 0, function* () {
-            const [imgUrls, imgType, width, height,] = e.data;
-            const imgBlobs = yield Promise.all(imgUrls.map(url => fetchBlob(url)));
-            const pdfBuf = yield generatePDF(imgBlobs, imgType, width, height);
-            postMessage(pdfBuf, [pdfBuf]);
-        });
+        /**
+         * @platform browser (web worker)
+         */
+        if (typeof onmessage !== 'undefined') {
+            onmessage = (e) => __awaiter(void 0, void 0, void 0, function* () {
+                const [imgUrls, imgType, width, height,] = e.data;
+                const imgBlobs = yield Promise.all(imgUrls.map(url => fetchBlob(url)));
+                const pdfBuf = yield generatePDF(imgBlobs, imgType, width, height);
+                postMessage(pdfBuf, [pdfBuf]);
+            });
+        }
 
-    }());
+        exports.generatePDF = generatePDF;
+
+        return exports;
+
+    }({}));
+    return worker
     };
 
     const scriptUrlFromFunction = (fn) => {
         const blob = new Blob(['(' + fn.toString() + ')()'], { type: 'application/javascript' });
         return window.URL.createObjectURL(blob);
     };
+    // Node.js fix
+    if (typeof Worker === 'undefined') {
+        globalThis.Worker = class {
+        }; // noop shim
+    }
     class PDFWorkerHelper extends Worker {
         constructor() {
             const url = scriptUrlFromFunction(PDFWorker);
@@ -26706,20 +26745,19 @@ Please pipe the document into a Node stream.\
         return info.url;
     });
 
-    let pdfBlob;
-    const _downloadPDF = (imgURLs, imgType, name = '') => __awaiter(void 0, void 0, void 0, function* () {
-        if (pdfBlob) {
-            return FileSaver_min.saveAs(pdfBlob, `${name}.pdf`);
-        }
-        const cachedImg = document.querySelector('img[src*=score_]');
-        const { naturalWidth: width, naturalHeight: height } = cachedImg;
+    const _exportPDFBrowser = (imgURLs, imgType, dimensions) => __awaiter(void 0, void 0, void 0, function* () {
         const worker = new PDFWorkerHelper();
-        const pdfArrayBuffer = yield worker.generatePDF(imgURLs, imgType, width, height);
+        const pdfArrayBuffer = yield worker.generatePDF(imgURLs, imgType, dimensions.width, dimensions.height);
         worker.terminate();
-        pdfBlob = new Blob([pdfArrayBuffer]);
-        FileSaver_min.saveAs(pdfBlob, `${name}.pdf`);
+        return pdfArrayBuffer;
     });
-    const downloadPDF = (scoreinfo, sheet) => __awaiter(void 0, void 0, void 0, function* () {
+    const _exportPDFNode = (imgURLs, imgType, dimensions) => __awaiter(void 0, void 0, void 0, function* () {
+        const imgBufs = yield Promise.all(imgURLs.map(url => fetchBuffer(url)));
+        const { generatePDF } = PDFWorker();
+        const pdfArrayBuffer = yield generatePDF(imgBufs, imgType, dimensions.width, dimensions.height);
+        return pdfArrayBuffer;
+    });
+    const exportPDF = (scoreinfo, sheet) => __awaiter(void 0, void 0, void 0, function* () {
         const imgType = sheet.imgType;
         const pageCount = sheet.pageCount;
         const rs = Array.from({ length: pageCount }).map((_, i) => {
@@ -26731,7 +26769,23 @@ Please pipe the document into a Node stream.\
             }
         });
         const sheetImgURLs = yield Promise.all(rs);
-        return _downloadPDF(sheetImgURLs, imgType, scoreinfo.fileName);
+        const args = [sheetImgURLs, imgType, sheet.dimensions];
+        if (!detectNode) {
+            return _exportPDFBrowser(...args);
+        }
+        else {
+            return _exportPDFNode(...args);
+        }
+    });
+    let pdfBlob;
+    const downloadPDF = (scoreinfo, sheet, saveAs) => __awaiter(void 0, void 0, void 0, function* () {
+        const name = scoreinfo.fileName;
+        if (pdfBlob) {
+            return saveAs(pdfBlob, `${name}.pdf`);
+        }
+        const pdfArrayBuffer = yield exportPDF(scoreinfo, sheet);
+        pdfBlob = new Blob([pdfArrayBuffer]);
+        saveAs(pdfBlob, `${name}.pdf`);
     });
 
     const MSCZ_BUF_SYM = Symbol('msczBufferP');
@@ -27449,10 +27503,13 @@ Please pipe the document into a Node stream.\
         }
         get thumbnailUrl() {
             var _a;
-            // url to the image of the first page
             const el = this.document.querySelector('link[as=image]');
             const url = ((el === null || el === void 0 ? void 0 : el.href) || ((_a = this.sheet0Img) === null || _a === void 0 ? void 0 : _a.src));
             return url.split('@')[0];
+        }
+        get dimensions() {
+            const { naturalWidth: width, naturalHeight: height } = this.sheet0Img;
+            return { width, height };
         }
     }
     const getActualId = (scoreinfo, _fetch = getFetch()) => __awaiter(void 0, void 0, void 0, function* () {
@@ -27497,7 +27554,7 @@ Please pipe the document into a Node stream.\
         });
         btnList.add({
             name: i18n('DOWNLOAD')('PDF'),
-            action: BtnAction.process(() => downloadPDF(scoreinfo, new SheetInfoInPage(document)), fallback, 3 * 60 * 1000 /* 3min */),
+            action: BtnAction.process(() => downloadPDF(scoreinfo, new SheetInfoInPage(document), saveAs), fallback, 3 * 60 * 1000 /* 3min */),
         });
         btnList.add({
             name: i18n('DOWNLOAD')('MXL'),
