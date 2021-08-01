@@ -76,8 +76,19 @@ const expDL = async (scoreinfo: ScoreInfoHtml) => {
     type: 'checkbox',
     name: 'expDlTypes',
     message: 'Filetype Selection',
-    choices: ['midi', 'mp3', 'pdf'] as ExpDlType[],
+    choices: [
+      'midi', 'mp3', 'pdf', // ExpDlType
+      new inquirer.Separator(),
+      new inquirer.Separator(
+        'Unavailable in express download\n' +
+        ' - MSCZ\n' +
+        ' - MusicXML\n' +
+        ' - FLAC/OGG Audio\n' +
+        ' - Individual Parts',
+      ),
+    ],
     validate: checkboxValidate,
+    pageSize: Infinity,
   })
 
   // destination directory selection
