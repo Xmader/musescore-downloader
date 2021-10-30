@@ -2,7 +2,7 @@
 
 <img src="images/logo.png" width="256" alt="LibreScore logo">
 
-[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/dl-musescore/total.svg)](https://github.com/LibreScore/dl-musescore/releases/latest)
+[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Github All Releases](https://img.shields.io/github/downloads/Xmader/musescore-downloader/total.svg)](https://github.com/LibreScore/dl-musescore/releases/latest)
 
 Download sheet music from Musescore
 
