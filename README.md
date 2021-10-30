@@ -1,8 +1,8 @@
-# musescore-downloader
+# musescore-dl
 
 <img src="images/logo.png" width="256" alt="LibreScore logo">
 
-[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/musescore-downloader/total.svg)](https://github.com/LibreScore/musescore-downloader/releases/latest)
+[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/musescore-dl/total.svg)](https://github.com/LibreScore/musescore-dl/releases/latest)
 
 Download sheet music from Musescore
 
@@ -29,14 +29,14 @@ There are 3 different installable programs:
 ### Browser extension
 
 1. Install [Tampermonkey](https://www.tampermonkey.net)
-2. Go to <https://msdl.librescore.org/install.user.js>
+2. Go to <https://github.com/LibreScore/musescore-dl/install.user.js>
 3. Press the Install button
 
 ### Command-line tool
 
 1. Install [Node.js LTS](https://nodejs.org)
 2. Open a terminal (do _not_ open the Node.js application)
-3. Type `npx msdl`, then press `Enter ↵`
+3. Type `npx ms-dl`, then press `Enter ↵`
 
 ## Building
 

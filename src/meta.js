@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name         musescore-downloader
-// @namespace    https://msdl.librescore.org/
-// @homepageURL  https://github.com/LibreScore/musescore-downloader/
-// @supportURL   https://github.com/LibreScore/musescore-downloader/issues
-// @updateURL    https://msdl.librescore.org/install.user.js
-// @downloadURL  https://msdl.librescore.org/install.user.js
+// @name         musescore-dl
+// @namespace    https://github.com/LibreScore/musescore-dl/
+// @homepageURL  https://github.com/LibreScore/musescore-dl/
+// @supportURL   https://github.com/LibreScore/musescore-dl/issues
+// @updateURL    https://github.com/LibreScore/musescore-dl/install.user.js
+// @downloadURL  https://github.com/LibreScore/musescore-dl/install.user.js
 // @version      %VERSION%
 // @description  Download sheet music from Musescore
 // @author       LibreScore

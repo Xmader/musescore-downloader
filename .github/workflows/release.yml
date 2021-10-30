@@ -49,9 +49,9 @@ jobs:
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # 0301...
 
-            - name: NPM Publish msdl
+            - name: NPM Publish ms-dl
               run: |
-                  cd ./src/msdl
+                  cd ./src/ms-dl
                   sed -i "s/%VERSION%/$VERSION/" package.json
                   npm publish --tag $NPM_TAG
                   cd -

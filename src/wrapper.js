@@ -9,10 +9,9 @@ w[gmId] = _GM;
 if (_GM && _GM.registerMenuCommand && _GM.openInTab) {
     // add buttons to the userscript manager menu
     _GM.registerMenuCommand(`** Version: ${_GM.info.script.version} **`, () =>
-        _GM.openInTab(
-            "https://github.com/LibreScore/musescore-downloader/releases",
-            { active: true }
-        )
+        _GM.openInTab("https://github.com/LibreScore/musescore-dl/releases", {
+            active: true,
+        })
     );
 
     _GM.registerMenuCommand("** Source Code **", () =>

@@ -121,8 +121,8 @@ const expDL = async (scoreinfo: ScoreInfoHtml) => {
 void (async () => {
     const arg = process.argv[2];
     if (["-v", "--version"].includes(arg)) {
-        // ran with flag -v or --version, `msdl -v`
-        console.log(getSelfVer()); // print musescore-downloader version
+        // ran with flag -v or --version, `ms-dl -v`
+        console.log(getSelfVer()); // print musescore-dl version
         return; // exit process
     }
 
@@ -264,7 +264,7 @@ void (async () => {
         if (!isLatest) {
             console.log(
                 chalk.yellowBright(
-                    `\nYour installed version (${installed}) of the musescore-downloader CLI is not the latest one (${latest})!\nRun npm i -g musescore-downloader@${latest} to update.`
+                    `\nYour installed version (${installed}) of the musescore-dl CLI is not the latest one (${latest})!\nRun npm i -g musescore-dl@${latest} to update.`
                 )
             );
         }
