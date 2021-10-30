@@ -1,6 +1,6 @@
 # musescore-downloader
 
-![LibreScore logo](images/logo.png)
+<img src="images/logo.png" width="256" alt="LibreScore logo">
 
 [![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/musescore-downloader/total.svg)](https://github.com/LibreScore/musescore-downloader/releases/latest)
 
@@ -12,11 +12,11 @@ Download sheet music from Musescore
 
 There are 3 different installable programs:
 
-| Program           | `MSCZ` | MIDI | PDF | MP3 | Conversion | \|  | Windows | macOS | Linux | Android | iOS |
+| Program           | `MSCZ` | MIDI | PDF | MP3 | Conversion |     | Windows | macOS | Linux | Android | iOS |
 | ----------------- | ------ | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | --- |
-| App               | ✔️     | ✔️   | ❌  | ✔️  | ✔️         | \|  | ✔️      | ✔️    | WIP   | ✔️      | ❌  |
-| Browser extension | ❌     | ✔️   | ✔️  | ✔️  | ❌         | \|  | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
-| Command-line tool | ❌     | ✔️   | ✔️  | ✔️  | ✔️         | \|  | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
+| App               | ✔️     | ✔️   | ❌  | ✔️  | ✔️         |     | ✔️      | ✔️    | WIP   | ✔️      | ❌  |
+| Browser extension | ❌     | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
+| Command-line tool | ❌     | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
 
 > Note: `Conversion` refers to the ability to convert MSCZ files into any other file type, including those not downloadable in the program.
 
