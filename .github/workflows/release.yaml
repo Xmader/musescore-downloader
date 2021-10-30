@@ -52,7 +52,6 @@ jobs:
             - run: |
                   mkdir -p $ARTIFACTS_DIR
                   cp dist/main.user.js $ARTIFACTS_DIR/musescore-dl.user.js
-                  wget -q $CHROME_EXT_URL -P $ARTIFACTS_DIR/
                   wget -q https://github.com/LibreScore/musescore-dl/archive/$REF.tar.gz -O $ARTIFACTS_DIR/source.tar.gz
 
             - name: Upload to IPFS
