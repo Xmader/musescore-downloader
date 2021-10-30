@@ -1,17 +1,13 @@
 {
-  "compilerOptions": {
-    "target": "es6",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "es2019",
-    ],
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "strictNullChecks": true,
-    "sourceMap": false,
-    "newLine": "lf",
-  }
+    "compilerOptions": {
+        "target": "es6",
+        "lib": ["dom", "dom.iterable", "es2019"],
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "strictNullChecks": true,
+        "sourceMap": false,
+        "newLine": "lf"
+    }
 }

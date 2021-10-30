@@ -1,127 +1,101 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'The version number. default: the version number in package.json'
-        required: false
-      npm_tag:
-        description: 'The tag to register the published NPM package with'
-        required: false
-        default: 'latest'
-      ref:
-        description: 'The branch, tag or SHA to release from'
-        required: false
-      chrome_ext_url:
-        description: 'URL to the Chrome Extension crx'
-        required: true
+    workflow_dispatch:
+        inputs:
+            version:
+                description: "The version number. default: the version number in package.json"
+                required: false
+            npm_tag:
+                description: "The tag to register the published NPM package with"
+                required: false
+                default: "latest"
+            ref:
+                description: "The branch, tag or SHA to release from"
+                required: false
 
 env:
-  VERSION: ${{ github.event.inputs.version }}
-  NPM_TAG: ${{ github.event.inputs.npm_tag }}
-  REF: ${{ github.event.inputs.ref || github.sha }}
-  ARTIFACTS_DIR: ./.artifacts
-  CHROME_EXT_URL: ${{ github.event.inputs.chrome_ext_url }}
+    VERSION: ${{ github.event.inputs.version }}
+    NPM_TAG: ${{ github.event.inputs.npm_tag }}
+    REF: ${{ github.event.inputs.ref || github.sha }}
+    ARTIFACTS_DIR: ./.artifacts
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-        with:
-          ref: ${{ env.REF }}
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 12
-          registry-url: https://registry.npmjs.org/
+    release:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  ref: ${{ env.REF }}
+            - uses: actions/setup-node@v1
+              with:
+                  node-version: 16
+                  registry-url: https://registry.npmjs.org/
 
-      - name: Set Env
-        run: |
-          VER=$(node -p "require('./package.json').version")
-          echo "VERSION=$VER" >> $GITHUB_ENV
-        if: ${{ !env.VERSION }}
+            - name: Set Env
+              run: |
+                  VER=$(node -p "require('./package.json').version")
+                  echo "VERSION=$VER" >> $GITHUB_ENV
+              if: ${{ !env.VERSION }}
 
-      - run: npm install
-      - name: Bump Version
-        run: npm version --allow-same-version --no-git-tag $VERSION
-      - run: npm run build
-      - run: npm run pack:ext
+            - run: npm install
+            - name: Bump Version
+              run: npm version --allow-same-version --no-git-tag $VERSION
+            - run: npm run build
+            - run: npm run pack:ext
 
-      - name: NPM Publish
-        run: npm publish --tag $NPM_TAG
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # 0301...
+            - name: NPM Publish
+              run: npm publish --tag $NPM_TAG
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # 0301...
 
-      - name: NPM Publish msdl
-        run: |
-          cd ./src/msdl
-          sed -i "s/%VERSION%/$VERSION/" package.json
-          npm publish --tag $NPM_TAG
-          cd -
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+            - name: NPM Publish msdl
+              run: |
+                  cd ./src/msdl
+                  sed -i "s/%VERSION%/$VERSION/" package.json
+                  npm publish --tag $NPM_TAG
+                  cd -
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish Firefox Extension
-        id: web-ext-build
-        uses: kewisch/action-web-ext@v1
-        continue-on-error: true
-        with:
-          cmd: sign
-          source: dist/ext.zip
-          channel: listed
-          apiKey: ${{ secrets.AMO_SIGN_KEY }}
-          apiSecret: ${{ secrets.AMO_SIGN_SECRET }}
+            - name: Upload to IPFS
+              uses: aquiladev/ipfs-action@v0.1.5
+              id: ipfs
+              with:
+                  path: ${{ env.ARTIFACTS_DIR }}
+                  service: infura
+                  verbose: true
 
-      - run: |
-          mkdir -p $ARTIFACTS_DIR
-          cp dist/main.js $ARTIFACTS_DIR/musescore-downloader.user.js
-          cp dist/ext.zip $ARTIFACTS_DIR/musescore-downloader.webextension.zip
-          wget -q $CHROME_EXT_URL -P $ARTIFACTS_DIR/
-          wget -q https://github.com/Xmader/musescore-downloader/archive/$REF.tar.gz -O $ARTIFACTS_DIR/source.tar.gz
-      - run: bash ./.github/workflows/get-signed-ext.sh
-        env:
-          EXT_ID: musescore-downloader
-          OUT_DIR: ${{ env.ARTIFACTS_DIR }}
+            - name: Github Release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  IPFS_HASH: ${{ steps.ipfs.outputs.hash }}
+              run: |
+                  cd $ARTIFACTS_DIR
+                  rm *.tar.gz
 
-      - name: Upload to IPFS
-        uses: aquiladev/ipfs-action@v0.1.5
-        id: ipfs
-        with:
-          path: ${{ env.ARTIFACTS_DIR }}
-          service: infura
-          verbose: true
+                  files=$(ls .)
+                  assets=()
+                  for f in $files; do [ -f "$f" ] && assets+=(-a "$f"); done
 
-      - name: Github Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IPFS_HASH: ${{ steps.ipfs.outputs.hash }}
-        run: |
-          cd $ARTIFACTS_DIR
-          rm *.tar.gz
+                  SHORT_SHA=$(echo $REF | cut -c 1-7)
 
-          files=$(ls .)
-          assets=()
-          for f in $files; do [ -f "$f" ] && assets+=(-a "$f"); done
+                  hub release create \
+                    "${assets[@]}" \
+                    -m v$VERSION \
+                    -m "Mirrors:<br><https://github.com/musescore/MuseScore/tree/$SHORT_SHA><br><https://github.com/github/dmca/tree/$SHORT_SHA>" \
+                    "[$IPFS_HASH](https://ipfs.io/ipfs/$IPFS_HASH)" \
+                    -t $REF \
+                    v$VERSION
 
-          SHORT_SHA=$(echo $REF | cut -c 1-7)
-
-          hub release create \
-            "${assets[@]}" \
-            -m v$VERSION \
-            -m "IPFS Hash: [$IPFS_HASH](https://ipfs.io/ipfs/$IPFS_HASH)" \
-            -m "Guess what? Mirrors!<br><https://github.com/musescore/MuseScore/tree/$SHORT_SHA><br><https://github.com/github/dmca/tree/$SHORT_SHA>" \
-            -t $REF \
-            v$VERSION
-
-      - name: Archive to archive.org
-        continue-on-error: true
-        env:
-          REPO: ${{ github.repository }}
-        run: |
-          URL="https://github.com/$REPO/releases/"
-          curl "https://web.archive.org/save/" \
-            --compressed -s \
-            -H 'Content-Type: application/x-www-form-urlencoded' \
-            --data-raw "url=$URL&capture_all=on" \
-              | grep github
+            - name: Archive to archive.org
+              continue-on-error: true
+              env:
+                  REPO: ${{ github.repository }}
+              run: |
+                  URL="https://github.com/$REPO/releases/"
+                  curl "https://web.archive.org/save/" \
+                    --compressed -s \
+                    -H 'Content-Type: application/x-www-form-urlencoded' \
+                    --data-raw "url=$URL&capture_all=on" \
+                      | grep github

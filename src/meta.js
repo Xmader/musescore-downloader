@@ -1,18 +1,18 @@
 // ==UserScript==
 // @name         musescore-downloader
-// @namespace    https://www.xmader.com/
-// @homepageURL  https://github.com/Xmader/musescore-downloader/
-// @supportURL   https://github.com/Xmader/musescore-downloader/issues
+// @namespace    https://msdl.librescore.org/
+// @homepageURL  https://github.com/LibreScore/musescore-downloader/
+// @supportURL   https://github.com/LibreScore/musescore-downloader/issues
 // @updateURL    https://msdl.librescore.org/install.user.js
 // @downloadURL  https://msdl.librescore.org/install.user.js
 // @version      %VERSION%
-// @description  download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱
-// @author       Xmader
+// @description  Download sheet music from Musescore
+// @author       LibreScore
 // @icon         https://librescore.org/img/icons/logo.svg
 // @match        https://musescore.com/*/*
 // @match        https://s.musescore.com/*/*
 // @license      MIT
-// @copyright    Copyright (c) 2019-2021 Xmader
+// @copyright    Copyright (c) 2021 LibreScore
 // @grant        unsafeWindow
 // @grant        GM.registerMenuCommand
 // @grant        GM.addElement

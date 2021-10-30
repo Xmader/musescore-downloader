@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-require("musescore-downloader/dist/cli.js")
+require("musescore-downloader/dist/cli.js");

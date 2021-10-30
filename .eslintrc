@@ -6,9 +6,7 @@
         "node": true
     },
     "parser": "@typescript-eslint/parser",
-    "plugins": [
-        "@typescript-eslint"
-    ],
+    "plugins": ["@typescript-eslint"],
     "extends": [
         "standard",
         "plugin:@typescript-eslint/recommended",
@@ -38,14 +36,9 @@
                 "ignoreComments": true
             }
         ],
-        "comma-dangle": [
-            "warn",
-            "always-multiline"
-        ]
+        "comma-dangle": ["warn", "always-multiline"]
     },
     "parserOptions": {
-        "project": [
-            "./tsconfig.json"
-        ]
+        "project": ["./tsconfig.json"]
     }
 }
