@@ -1,8 +1,8 @@
-# musescore-dl
+# dl-musescore
 
 <img src="images/logo.png" width="256" alt="LibreScore logo">
 
-[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/musescore-dl/total.svg)](https://github.com/LibreScore/musescore-dl/releases/latest)
+[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/dl-musescore/total.svg)](https://github.com/LibreScore/dl-musescore/releases/latest)
 
 Download sheet music from Musescore
 
@@ -29,7 +29,7 @@ There are 3 different installable programs:
 ### Browser extension
 
 1. Install [Tampermonkey](https://www.tampermonkey.net)
-2. Go to <https://github.com/LibreScore/musescore-dl/raw/master/dist/main.user.js>
+2. Go to <https://github.com/LibreScore/dl-musescore/raw/master/dist/main.user.js>
 3. Press the Install button
 
 ### Command-line tool

@@ -6,15 +6,15 @@
     "bin": "dist/cli.js",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/LibreScore/musescore-dl.git"
+        "url": "git+https://github.com/LibreScore/dl-musescore.git"
     },
     "author": "LibreScore",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/LibreScore/musescore-dl/issues"
+        "url": "https://github.com/LibreScore/dl-musescore/issues"
     },
-    "homepage": "https://github.com/LibreScore/musescore-dl#readme",
-    "homepage_url": "https://github.com/LibreScore/musescore-dl#readme",
+    "homepage": "https://github.com/LibreScore/dl-musescore#readme",
+    "homepage_url": "https://github.com/LibreScore/dl-musescore#readme",
     "manifest_version": 2,
     "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
     "content_scripts": [
