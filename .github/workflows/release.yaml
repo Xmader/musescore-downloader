@@ -49,15 +49,6 @@ jobs:
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # 0301...
 
-            - name: NPM Publish ms-dl
-              run: |
-                  cd ./src/ms-dl
-                  sed -i "s/%VERSION%/$VERSION/" package.json
-                  npm publish --tag $NPM_TAG
-                  cd -
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
             - name: Upload to IPFS
               uses: aquiladev/ipfs-action@v0.1.5
               id: ipfs

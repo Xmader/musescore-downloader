@@ -29,14 +29,14 @@ There are 3 different installable programs:
 ### Browser extension
 
 1. Install [Tampermonkey](https://www.tampermonkey.net)
-2. Go to <https://github.com/LibreScore/musescore-dl/install.user.js>
+2. Go to <https://github.com/LibreScore/musescore-dl/dist/main.js>
 3. Press the Install button
 
 ### Command-line tool
 
 1. Install [Node.js LTS](https://nodejs.org)
 2. Open a terminal (do _not_ open the Node.js application)
-3. Type `npx ms-dl`, then press `Enter ↵`
+3. Type `npx musescore-dl`, then press `Enter ↵`
 
 ## Building
 
@@ -44,5 +44,5 @@ There are 3 different installable programs:
 2. `npm install` to install packages
 3. `npm run build` to build
 
-- Install `./dist/main.js` with Tampermonkey
-- `node ./dist/cli.js` to run command-line tool
+-   Install `./dist/main.js` with Tampermonkey
+-   `node ./dist/cli.js` to run command-line tool

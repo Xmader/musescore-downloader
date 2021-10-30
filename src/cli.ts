@@ -121,7 +121,7 @@ const expDL = async (scoreinfo: ScoreInfoHtml) => {
 void (async () => {
     const arg = process.argv[2];
     if (["-v", "--version"].includes(arg)) {
-        // ran with flag -v or --version, `ms-dl -v`
+        // ran with flag -v or --version, `musescore-dl -v`
         console.log(getSelfVer()); // print musescore-dl version
         return; // exit process
     }

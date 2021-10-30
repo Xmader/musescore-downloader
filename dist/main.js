@@ -3,8 +3,8 @@
 // @namespace    https://github.com/LibreScore/musescore-dl/
 // @homepageURL  https://github.com/LibreScore/
 // @supportURL   https://github.com/LibreScore/musescore-dl/issues
-// @updateURL    https://github.com/LibreScore/musescore-dl/install.user.js
-// @downloadURL  https://github.com/LibreScore/musescore-dl/install.user.js
+// @updateURL    https://github.com/LibreScore/musescore-dl/dist/main.js
+// @downloadURL  https://github.com/LibreScore/musescore-dl/dist/main.js
 // @version      0.27.0
 // @description  Download sheet music from Musescore
 // @author       LibreScore
