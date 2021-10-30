@@ -29,7 +29,7 @@ There are 3 different installable programs:
 ### Browser extension
 
 1. Install [Tampermonkey](https://www.tampermonkey.net)
-2. Go to <https://github.com/LibreScore/musescore-dl/dist/main.user.js>
+2. Go to <https://github.com/LibreScore/musescore-dl/raw/master/dist/main.user.js>
 3. Press the Install button
 
 ### Command-line tool
