@@ -67,6 +67,5 @@ jobs:
                     "${assets[@]}" \
                     -m v$VERSION \
                     -m "Mirrors:<br><https://github.com/musescore/MuseScore/tree/$SHORT_SHA><br><https://github.com/github/dmca/tree/$SHORT_SHA>" \
-                    "[$IPFS_HASH](https://ipfs.io/ipfs/$IPFS_HASH)" \
                     -t $REF \
                     v$VERSION
