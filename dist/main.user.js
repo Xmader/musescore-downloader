@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/LibreScore/musescore-dl/issues
 // @updateURL    https://github.com/LibreScore/musescore-dl/dist/main.user.js
 // @downloadURL  https://github.com/LibreScore/musescore-dl/dist/main.user.js
-// @version      0.27.1
+// @version      0.27.2
 // @description  Download sheet music from Musescore
 // @author       LibreScore
 // @icon         https://librescore.org/img/icons/logo.svg
