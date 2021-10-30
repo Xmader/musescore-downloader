@@ -2,7 +2,7 @@
     "name": "musescore-dl",
     "version": "0.27.0",
     "description": "Download sheet music from Musescore",
-    "main": "dist/main.js",
+    "main": "dist/main.user.js",
     "bin": "dist/cli.js",
     "repository": {
         "type": "git",
@@ -29,7 +29,7 @@
         }
     ],
     "web_accessible_resources": [
-        "dist/main.js"
+        "dist/main.user.js"
     ],
     "dependencies": {
         "@librescore/fonts": "^0.4.0",
@@ -62,7 +62,7 @@
         "watch": "npm run build -- --watch",
         "start:ext": "web-ext run --url https://musescore.com/",
         "start:ext-chrome": "npm run start:ext -- -t chromium",
-        "pack:ext": "zip -r dist/ext.zip manifest.json src/web-ext.js dist/main.js",
+        "pack:ext": "zip -r dist/ext.zip manifest.json src/web-ext.js dist/main.user.js",
         "bump-version:patch": "npm version patch --no-git-tag && npm run build",
         "bump-version:minor": "npm version minor --no-git-tag && npm run build"
     }

@@ -29,7 +29,7 @@ There are 3 different installable programs:
 ### Browser extension
 
 1. Install [Tampermonkey](https://www.tampermonkey.net)
-2. Go to <https://github.com/LibreScore/musescore-dl/dist/main.js>
+2. Go to <https://github.com/LibreScore/musescore-dl/dist/main.user.js>
 3. Press the Install button
 
 ### Command-line tool
@@ -44,5 +44,5 @@ There are 3 different installable programs:
 2. `npm install` to install packages
 3. `npm run build` to build
 
--   Install `./dist/main.js` with Tampermonkey
+-   Install `./dist/main.user.js` with Tampermonkey
 -   `node ./dist/cli.js` to run command-line tool

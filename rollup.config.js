@@ -82,7 +82,7 @@ export default [
     {
         input: "src/main.ts",
         output: {
-            file: "dist/main.js",
+            file: "dist/main.user.js",
             format: "iife",
             sourcemap: false,
             banner: getBannerText,
