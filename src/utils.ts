@@ -2,7 +2,7 @@ import isNodeJs from "detect-node";
 import { isGmAvailable, _GM } from "./gm";
 
 export const APP_URL =
-    "https://github.com/LibreScore/librescore-app/releases/latest";
+    "https://github.com/LibreScore/app-librescore/releases/latest";
 
 export const escapeFilename = (s: string): string => {
     return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, "_");

@@ -22,7 +22,7 @@ There are 3 different installable programs:
 
 ### App
 
-1. Go to the [Releases](https://github.com/LibreScore/app-librescore/releases/latest) page of the `librescore-app` repository
+1. Go to the [Releases](https://github.com/LibreScore/app-librescore/releases/latest) page of the `app-librescore` repository
 2. Download the latest version for your device
 3. Open the file to install it
 
