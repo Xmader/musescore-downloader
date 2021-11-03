@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/LibreScore/dl-musescore/issues
 // @updateURL    https://github.com/LibreScore/dl-musescore/dist/main.user.js
 // @downloadURL  https://github.com/LibreScore/dl-musescore/dist/main.user.js
-// @version      0.27.3
+// @version      0.27.4
 // @description  Download sheet music from Musescore
 // @author       LibreScore
 // @icon         https://librescore.org/img/icons/logo.svg
@@ -338,7 +338,7 @@
 	    return (typeof GM !== "undefined" && typeof GM[requiredMethod] !== "undefined");
 	};
 
-	const APP_URL = "https://github.com/LibreScore/librescore-app/releases/latest";
+	const APP_URL = "https://github.com/LibreScore/app-librescore/releases/latest";
 	const escapeFilename = (s) => {
 	    return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, "_");
 	};

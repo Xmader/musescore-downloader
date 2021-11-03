@@ -44,5 +44,5 @@ There are 3 different installable programs:
 2. `npm install` to install packages
 3. `npm run build` to build
 
--   Install `./dist/main.user.js` with Tampermonkey
--   `node ./dist/cli.js` to run command-line tool
+- Install `./dist/main.user.js` with Tampermonkey
+- `node ./dist/cli.js` to run command-line tool
