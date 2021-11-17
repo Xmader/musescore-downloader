@@ -28,9 +28,10 @@ There are 3 different installable programs:
 
 ### Browser extension
 
-1. Install [Tampermonkey](https://www.tampermonkey.net)
-2. Go to the latest [dl-musescore.user.js](https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js) file
-3. Press the Install button
+1. Install [Tampermonkey](https://www.tampermonkey.net) if it is not already installed
+2. Uninstall any other userscripts with the `musescore-downloader` or `dl-musescore` name from other sources (if you just installed Tampermonkey, you can ignore this step)
+3. Go to the latest [dl-musescore.user.js](https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js) file
+4. Press the Install button
 
 ### Command-line tool
 
