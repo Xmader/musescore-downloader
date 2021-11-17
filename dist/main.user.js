@@ -338,7 +338,7 @@
 	    return (typeof GM !== "undefined" && typeof GM[requiredMethod] !== "undefined");
 	};
 
-	const APP_URL = "https://github.com/LibreScore/app-librescore/releases/latest";
+	const APP_URL = "https://github.com/LibreScore/app-librescore#installation";
 	const escapeFilename = (s) => {
 	    return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, "_");
 	};
