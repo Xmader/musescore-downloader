@@ -4,7 +4,7 @@
 // @homepageURL  https://github.com/LibreScore/dl-musescore
 // @supportURL   https://github.com/LibreScore/dl-musescore/issues
 // @version      %VERSION%
-// @description  Download sheet music from Musescore
+// @description  Download sheet music from MuseScore
 // @author       LibreScore
 // @icon         https://librescore.org/img/icons/logo.svg
 // @match        https://musescore.com/*/*
