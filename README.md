@@ -30,7 +30,7 @@ There are 3 different installable programs:
 ### Browser extension
 
 1. Install [Tampermonkey](https://www.tampermonkey.net)
-> Note: If you already installed an old version of the script called "musescore-downloader" or "MSCZ downloader", please uninstall it from the Tampermonkey dashboard
+> Note: If you already installed an old version of the script called "musescore-downloader" or "mcsz downloader", please uninstall it from the Tampermonkey dashboard
 2. Go to the latest [dl-musescore.user.js](https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js) file
 3. Press the Install button
 
