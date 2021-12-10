@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/LibreScore/dl-musescore/issues
 // @updateURL    https://github.com/LibreScore/dl-musescore/dist/main.user.js
 // @downloadURL  https://github.com/LibreScore/dl-musescore/dist/main.user.js
-// @version      0.27.4
+// @version      0.30.0
 // @description  Download sheet music from Musescore
 // @author       LibreScore
 // @icon         https://librescore.org/img/icons/logo.svg
@@ -338,7 +338,6 @@
 	    return (typeof GM !== "undefined" && typeof GM[requiredMethod] !== "undefined");
 	};
 
-	const APP_URL = "https://github.com/LibreScore/app-librescore/releases/latest";
 	const escapeFilename = (s) => {
 	    return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, "_");
 	};
@@ -29677,18 +29676,6 @@ Please pipe the document into a Node stream.\
 	        }), fallback, timeout);
 	    };
 	    BtnAction.openUrl = BtnAction.download;
-	    BtnAction.errorPopup = () => {
-	        return (btnName, btn, setText) => {
-	            setText(i18n("BTN_ERROR")());
-	            // ask user to use LibreScore app
-	            alert("Get the LibreScore app to download:\n" + APP_URL);
-	            // open LibreScore app releases page on 'OK'
-	            const a = document.createElement("a");
-	            a.href = APP_URL;
-	            a.target = "_blank";
-	            a.dispatchEvent(new MouseEvent("click"));
-	        };
-	    };
 	    BtnAction.process = (fn, fallback, timeout = 0 /* 10min */) => {
 	        return (name, btn, setText) => __awaiter(this, void 0, void 0, function* () {
 	            const _onclick = btn.onclick;
@@ -29704,9 +29691,6 @@ Please pipe the document into a Node stream.\
 	                    // use fallback
 	                    yield fallback();
 	                    setText(name);
-	                }
-	                else {
-	                    BtnAction.errorPopup()(name, btn, setText);
 	                }
 	            }
 	            btn.onclick = _onclick;
@@ -29789,22 +29773,13 @@ Please pipe the document into a Node stream.\
 	const main = () => {
 	    const btnList = new BtnList();
 	    const scoreinfo = new ScoreInfoInPage(document);
-	    let indvPartBtn = null;
 	    const fallback = () => {
 	        // btns fallback to load from MSCZ file (`Individual Parts`)
-	        return indvPartBtn === null || indvPartBtn === void 0 ? void 0 : indvPartBtn.click();
+	        return  void 0 ;
 	    };
-	    btnList.add({
-	        name: i18n("DOWNLOAD")("MSCZ"),
-	        action: BtnAction.errorPopup(),
-	    });
 	    btnList.add({
 	        name: i18n("DOWNLOAD")("PDF"),
 	        action: BtnAction.process(() => downloadPDF(scoreinfo, new SheetInfoInPage(document), saveAs), fallback, 3 * 60 * 1000 /* 3min */),
-	    });
-	    btnList.add({
-	        name: i18n("DOWNLOAD")("MXL"),
-	        action: BtnAction.errorPopup(),
 	    });
 	    btnList.add({
 	        name: i18n("DOWNLOAD")("MIDI"),
@@ -29813,11 +29788,6 @@ Please pipe the document into a Node stream.\
 	    btnList.add({
 	        name: i18n("DOWNLOAD")("MP3"),
 	        action: BtnAction.download(() => getFileUrl(scoreinfo.id, "mp3"), fallback, 30 * 1000 /* 30s */),
-	    });
-	    indvPartBtn = btnList.add({
-	        name: i18n("IND_PARTS")(),
-	        tooltip: i18n("IND_PARTS_TOOLTIP")(),
-	        action: BtnAction.errorPopup(),
 	    });
 	    // eslint-disable-next-line @typescript-eslint/no-floating-promises
 	    btnList.commit(BtnListMode.InPage);

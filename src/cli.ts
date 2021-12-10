@@ -7,7 +7,7 @@ import os from "os";
 import { setMscz } from "./mscz";
 import { loadMscore, INDV_DOWNLOADS, WebMscore } from "./mscore";
 import { ScoreInfo, ScoreInfoHtml, ScoreInfoObj } from "./scoreinfo";
-import { escapeFilename, APP_URL, fetchBuffer } from "./utils";
+import { escapeFilename, WEBMSCORE_URL, fetchBuffer } from "./utils";
 import { isNpx, getVerInfo, getSelfVer } from "./npm-data";
 import { getFileUrl } from "./file";
 import { exportPDF } from "./pdf";
@@ -16,6 +16,43 @@ import i18n from "./i18n";
 const inquirer: typeof import("inquirer") = require("inquirer");
 const ora: typeof import("ora") = require("ora");
 const chalk: typeof import("chalk") = require("chalk");
+const yargs = require("yargs");
+const { hideBin } = require("yargs/helpers");
+const argv: any = yargs(hideBin(process.argv))
+    .usage("Usage: $0 [options]")
+    .example("$0 -i music.mscz -t midi pdf", "convert file to midi and pdf")
+    .example(
+        "$0 -i https://musescore.com/user/123/scores/456 -t mp3 -o " +
+            process.cwd(),
+        "download mp3 of URL to specified directory"
+    )
+    .option("input", {
+        alias: "i",
+        type: "string",
+        description: "URL or file to download from",
+        requiresArg: true,
+    })
+    .option("type", {
+        alias: "t",
+        type: "array",
+        description: "Type of file to download",
+        requiresArg: true,
+        choices: ["midi", "mp3", "pdf"],
+    })
+    .option("output", {
+        alias: "o",
+        type: "string",
+        description: "Folder to download file to",
+        requiresArg: true,
+        default: process.cwd(),
+    })
+    .option("verbose", {
+        alias: "v",
+        type: "boolean",
+        description: "Run with verbose logging",
+    })
+    .alias("help", "h")
+    .alias("version", "V").argv;
 
 const SCORE_URL_PREFIX = "https://(s.)musescore.com/";
 const SCORE_URL_REG = /https:\/\/(s\.)?musescore\.com\//;
@@ -44,7 +81,7 @@ const promptDest = async () => {
         validate(input: string) {
             return input && fs.statSync(input).isDirectory();
         },
-        default: process.cwd(),
+        default: argv.output,
     });
     return dest;
 };
@@ -82,6 +119,7 @@ const expDL = async (scoreinfo: ScoreInfoHtml) => {
         ],
         validate: checkboxValidate,
         pageSize: Infinity,
+        default: argv.type,
     });
 
     // destination directory selection
@@ -119,144 +157,239 @@ const expDL = async (scoreinfo: ScoreInfoHtml) => {
 };
 
 void (async () => {
-    const arg = process.argv[2];
-    if (["-v", "--version"].includes(arg)) {
-        // ran with flag -v or --version, `musescore-dl -v`
-        console.log(getSelfVer()); // print musescore-dl version
-        return; // exit process
-    }
-
-    // Determine platform and paste message
-    const platform = os.platform();
-    let pasteMessage = "";
-    if (platform === "win32") {
-        pasteMessage = "right-click to paste";
-    } else if (platform === "linux") {
-        pasteMessage = "usually Ctrl+Shift+V to paste";
-    } // For MacOS, no hint is needed because the paste shortcut is universal.
-
-    let scoreinfo: ScoreInfo;
-    // ask for the page url or path to local file
-    const { fileInit } = await inquirer.prompt<Params>({
-        type: "input",
-        name: "fileInit",
-        message: "Score URL or path to local MSCZ file:",
-        suffix:
-            "\n  " +
-            `(starts with "${SCORE_URL_PREFIX}" or local filepath ends with "${EXT}") ` +
-            `${chalk.bgGray(pasteMessage)}\n `,
-        validate(input: string) {
-            return (
-                input &&
-                (!!input.match(SCORE_URL_REG) ||
-                    (input.endsWith(EXT) && fs.statSync(input).isFile()))
-            );
-        },
-        default: arg,
-    });
-
-    const isLocalFile = fileInit.endsWith(EXT);
-    if (!isLocalFile) {
-        // request scoreinfo
-        scoreinfo = await ScoreInfoHtml.request(fileInit);
-
-        // confirmation
-        const { confirmed } = await inquirer.prompt<Params>({
-            type: "confirm",
-            name: "confirmed",
-            message: "Continue?",
-            prefix:
-                `${chalk.yellow("!")} ` +
-                `ID: ${scoreinfo.id}\n  ` +
-                `Title: ${scoreinfo.title}\n `,
-            default: true,
-        });
-        if (!confirmed) return;
-
-        // print a blank line
-        console.log();
-
-        expDL(scoreinfo as ScoreInfoHtml);
-    } else {
-        scoreinfo = new ScoreInfoObj(0, path.basename(fileInit, EXT));
-    }
-
-    if (isLocalFile) {
+    // Check if both input and type arguments are used
+    if (argv.input && argv.type) {
         const spinner = createSpinner();
 
-        let score: WebMscore;
-        let metadata: import("webmscore/schemas").ScoreMetadata;
-        try {
-            // load local file
-            const data = await fs.promises.readFile(fileInit);
-            await setMscz(scoreinfo, data.buffer);
-            spinner.info("MSCZ file loaded");
-            spinner.start();
-            // load score using webmscore
-            score = await loadMscore(scoreinfo);
-            metadata = await score.metadata();
+        // Check if local file
+        if (argv.input.endsWith(EXT)) {
+            // Fail since user cannot input part names
+            spinner.fail("Cannot combine type argument with local file");
+            spinner.info(
+                "Batch conversion can be done with Webmscore instead: https://librescore.github.io"
+            );
+            return;
+        } else {
+            // validate input URL
+            if (!argv.input.match(SCORE_URL_REG)) {
+                spinner.fail("Invalid URL");
+                return;
+            }
 
-            spinner.info("Score loaded by webmscore");
-        } catch (err) {
-            spinner.fail(err.message);
-            spinner.info("Try using the LibreScore app instead:" + APP_URL);
+            // validate types
+            if (argv.type.length === 0) {
+                spinner.fail("No types chosen");
+                return;
+            }
+
+            // request scoreinfo
+            let scoreinfo: ScoreInfoHtml = await ScoreInfoHtml.request(
+                argv.input
+            );
+
+            // validate musescore URL
+            if (scoreinfo.id === 0) {
+                spinner.fail("Score not found");
+                return;
+            }
+
+            // print message if verbosity is enabled
+            if (argv.verbose) {
+                spinner.stop();
+                console.log(
+                    `${chalk.yellow("!")} ` +
+                        `ID: ${scoreinfo.id}\n  ` +
+                        `Title: ${scoreinfo.title}\n `
+                );
+                spinner.start();
+            }
+
+            // validate destination directory
+            try {
+                await fs.promises.access(argv.output);
+            } catch (err) {
+                spinner.fail(err.message);
+                return;
+            }
+
+            await Promise.all(
+                argv.type.map(async (type) => {
+                    // download/generate file data
+                    let fileData: Buffer;
+                    switch (type) {
+                        case "midi":
+                        case "mp3": {
+                            const fileUrl = await getFileUrl(
+                                scoreinfo.id,
+                                type
+                            );
+                            fileData = await fetchBuffer(fileUrl);
+                            break;
+                        }
+
+                        case "pdf": {
+                            fileData = Buffer.from(
+                                await exportPDF(scoreinfo, scoreinfo.sheet)
+                            );
+                            break;
+                        }
+                    }
+
+                    // save to filesystem
+                    const f = path.join(
+                        argv.output,
+                        `${scoreinfo.fileName}.${type}`
+                    );
+                    await fs.promises.writeFile(f, fileData);
+                    if (argv.verbose) {
+                        spinner.info(`Saved ${chalk.underline(f)}`);
+                    }
+                })
+            );
+
+            spinner.succeed("OK");
             return;
         }
-        spinner.succeed("OK\n");
+    } else {
+        // Determine platform and paste message
+        const platform = os.platform();
+        let pasteMessage = "";
+        if (platform === "win32") {
+            pasteMessage = "right-click to paste";
+        } else if (platform === "linux") {
+            pasteMessage = "usually Ctrl+Shift+V to paste";
+        } // For MacOS, no hint is needed because the paste shortcut is universal.
 
-        // build part choices
-        const partChoices = metadata.excerpts.map((p) => ({
-            name: p.title,
-            value: p.id,
-        }));
-        // add the "full score" option as a "part"
-        partChoices.unshift({ value: -1, name: i18n("FULL_SCORE")() });
-        // build filetype choices
-        const typeChoices = INDV_DOWNLOADS.map((d, i) => ({
-            name: d.name,
-            value: i,
-        }));
-
-        // part selection
-        const { part } = await inquirer.prompt<Params>({
-            type: "list",
-            name: "part",
-            message: "Part Selection",
-            choices: partChoices,
+        let scoreinfo: ScoreInfo;
+        // ask for the page url or path to local file
+        const { fileInit } = await inquirer.prompt<Params>({
+            type: "input",
+            name: "fileInit",
+            message: "Score URL or path to local MSCZ file:",
+            suffix:
+                "\n  " +
+                `(starts with "${SCORE_URL_PREFIX}" or local filepath ends with "${EXT}") ` +
+                `${chalk.bgGray(pasteMessage)}\n `,
+            validate(input: string) {
+                return (
+                    input &&
+                    (!!input.match(SCORE_URL_REG) ||
+                        (input.endsWith(EXT) && fs.statSync(input).isFile()))
+                );
+            },
+            default: argv.input,
         });
-        const partName = partChoices[part + 1].name;
-        await score.setExcerptId(part);
 
-        // filetype selection
-        const { types } = await inquirer.prompt<Params>({
-            type: "checkbox",
-            name: "types",
-            message: "Filetype Selection",
-            choices: typeChoices,
-            validate: checkboxValidate,
-        });
-        const filetypes = types.map((i) => INDV_DOWNLOADS[i]);
+        const isLocalFile = fileInit.endsWith(EXT);
+        if (!isLocalFile) {
+            // request scoreinfo
+            scoreinfo = await ScoreInfoHtml.request(fileInit);
 
-        // destination directory
-        const dest = await promptDest();
+            // validate musescore URL
+            if (scoreinfo.id === 0) {
+                const spinner = createSpinner();
+                spinner.fail("Score not found");
+                return;
+            }
 
-        // export files
-        const fileName =
-            scoreinfo.fileName || (await score.titleFilenameSafe());
-        spinner.start();
-        await Promise.all(
-            filetypes.map(async (d) => {
-                const data = await d.action(score);
-                const n = `${fileName} - ${escapeFilename(partName)}.${
-                    d.fileExt
-                }`;
-                const f = path.join(dest, n);
-                await fs.promises.writeFile(f, data);
-                spinner.info(`Saved ${chalk.underline(f)}`);
+            // confirmation
+            const { confirmed } = await inquirer.prompt<Params>({
+                type: "confirm",
+                name: "confirmed",
+                message: "Continue?",
+                prefix:
+                    `${chalk.yellow("!")} ` +
+                    `ID: ${scoreinfo.id}\n  ` +
+                    `Title: ${scoreinfo.title}\n `,
+                default: true,
+            });
+            if (!confirmed) return;
+
+            // print a blank line
+            console.log();
+
+            expDL(scoreinfo as ScoreInfoHtml);
+        } else {
+            scoreinfo = new ScoreInfoObj(0, path.basename(fileInit, EXT));
+
+            const spinner = createSpinner();
+
+            let score: WebMscore;
+            let metadata: import("webmscore/schemas").ScoreMetadata;
+            try {
+                // load local file
+                const data = await fs.promises.readFile(fileInit);
+                await setMscz(scoreinfo, data.buffer);
+                spinner.info("MSCZ file loaded");
                 spinner.start();
-            })
-        );
-        spinner.succeed("OK");
+                // load score using webmscore
+                score = await loadMscore(scoreinfo);
+                metadata = await score.metadata();
+
+                spinner.info("Score loaded by webmscore");
+            } catch (err) {
+                spinner.fail(err.message);
+                spinner.info(
+                    "Try using the Webmscore website instead: " + WEBMSCORE_URL
+                );
+                return;
+            }
+            spinner.succeed("OK\n");
+
+            // build part choices
+            const partChoices = metadata.excerpts.map((p) => ({
+                name: p.title,
+                value: p.id,
+            }));
+            // add the "full score" option as a "part"
+            partChoices.unshift({ value: -1, name: i18n("FULL_SCORE")() });
+            // build filetype choices
+            const typeChoices = INDV_DOWNLOADS.map((d, i) => ({
+                name: d.name,
+                value: i,
+            }));
+
+            // part selection
+            const { part } = await inquirer.prompt<Params>({
+                type: "list",
+                name: "part",
+                message: "Part Selection",
+                choices: partChoices,
+            });
+            const partName = partChoices[part + 1].name;
+            await score.setExcerptId(part);
+
+            // filetype selection
+            const { types } = await inquirer.prompt<Params>({
+                type: "checkbox",
+                name: "types",
+                message: "Filetype Selection",
+                choices: typeChoices,
+                validate: checkboxValidate,
+            });
+            const filetypes = types.map((i) => INDV_DOWNLOADS[i]);
+
+            // destination directory
+            const dest = await promptDest();
+
+            // export files
+            const fileName =
+                scoreinfo.fileName || (await score.titleFilenameSafe());
+            spinner.start();
+            await Promise.all(
+                filetypes.map(async (d) => {
+                    const data = await d.action(score);
+                    const n = `${fileName} - ${escapeFilename(partName)}.${
+                        d.fileExt
+                    }`;
+                    const f = path.join(dest, n);
+                    await fs.promises.writeFile(f, data);
+                    spinner.info(`Saved ${chalk.underline(f)}`);
+                    spinner.start();
+                })
+            );
+            spinner.succeed("OK");
+        }
     }
 
     if (!isNpx()) {

@@ -1,10 +1,4 @@
-import {
-    useTimeout,
-    windowOpenAsync,
-    console,
-    attachShadow,
-    APP_URL,
-} from "./utils";
+import { useTimeout, windowOpenAsync, console, attachShadow } from "./utils";
 import { isGmAvailable, _GM } from "./gm";
 import i18n from "./i18n";
 // @ts-ignore
@@ -278,19 +272,6 @@ export namespace BtnAction {
 
     export const openUrl = download;
 
-    export const errorPopup = (): BtnAction => {
-        return (btnName: unknown, btn: unknown, setText) => {
-            setText(i18n("BTN_ERROR")());
-            // ask user to use LibreScore app
-            alert("Get the LibreScore app to download:\n" + APP_URL);
-            // open LibreScore app releases page on 'OK'
-            const a = document.createElement("a");
-            a.href = APP_URL;
-            a.target = "_blank";
-            a.dispatchEvent(new MouseEvent("click"));
-        };
-    };
-
     export const process = (
         fn: () => any,
         fallback?: () => Promisable<void>,
@@ -311,8 +292,6 @@ export namespace BtnAction {
                     // use fallback
                     await fallback();
                     setText(name);
-                } else {
-                    BtnAction.errorPopup()(name, btn, setText);
                 }
             }
 

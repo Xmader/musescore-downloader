@@ -22,22 +22,12 @@ const main = (): void => {
     };
 
     btnList.add({
-        name: i18n("DOWNLOAD")("MSCZ"),
-        action: BtnAction.errorPopup(),
-    });
-
-    btnList.add({
         name: i18n("DOWNLOAD")("PDF"),
         action: BtnAction.process(
             () => downloadPDF(scoreinfo, new SheetInfoInPage(document), saveAs),
             fallback,
             3 * 60 * 1000 /* 3min */
         ),
-    });
-
-    btnList.add({
-        name: i18n("DOWNLOAD")("MXL"),
-        action: BtnAction.errorPopup(),
     });
 
     btnList.add({
@@ -56,12 +46,6 @@ const main = (): void => {
             fallback,
             30 * 1000 /* 30s */
         ),
-    });
-
-    indvPartBtn = btnList.add({
-        name: i18n("IND_PARTS")(),
-        tooltip: i18n("IND_PARTS_TOOLTIP")(),
-        action: BtnAction.errorPopup(),
     });
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises

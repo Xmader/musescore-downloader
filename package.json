@@ -1,6 +1,6 @@
 {
     "name": "musescore-dl",
-    "version": "0.27.4",
+    "version": "0.30.0",
     "description": "Download sheet music from Musescore",
     "main": "dist/main.user.js",
     "bin": "dist/cli.js",
@@ -38,13 +38,15 @@
         "inquirer": "^7.3.3",
         "node-fetch": "^2.6.1",
         "ora": "^5.1.0",
-        "webmscore": "^0.18.0"
+        "webmscore": "^0.18.0",
+        "yargs": "^17.3.0"
     },
     "devDependencies": {
         "@rollup/plugin-json": "^4.1.0",
         "@types/file-saver": "^2.0.1",
         "@types/inquirer": "^7.3.1",
         "@types/pdfkit": "^0.10.6",
+        "@types/yargs": "^17.0.7",
         "pdfkit": "git+https://github.com/LibreScore/pdfkit.git",
         "rollup": "^1.32.1",
         "rollup-plugin-commonjs": "^10.1.0",
