@@ -338,6 +338,10 @@
 	    return (typeof GM !== "undefined" && typeof GM[requiredMethod] !== "undefined");
 	};
 
+<<<<<<< HEAD
+=======
+	const APP_URL = "https://github.com/LibreScore/app-librescore#installation";
+>>>>>>> f0ee7962d95d3787a01f7f4ad4badc14dc9accf4
 	const escapeFilename = (s) => {
 	    return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, "_");
 	};
