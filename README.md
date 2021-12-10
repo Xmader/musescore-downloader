@@ -38,7 +38,7 @@ There are 3 different installable programs:
 
 1. Install [Node.js LTS](https://nodejs.org)
 2. Open a terminal (do _not_ open the Node.js application)
-3. Type `npx musescore-dl`, then press `Enter ↵`
+3. Type `npx musescore-dl@latest`, then press `Enter ↵`
 
 ## Building
 
