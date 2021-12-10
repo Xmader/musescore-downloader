@@ -20,7 +20,6 @@ const yargs = require("yargs");
 const { hideBin } = require("yargs/helpers");
 const argv: any = yargs(hideBin(process.argv))
     .usage("Usage: $0 [options]")
-    .example("$0 -i music.mscz -t midi pdf", "convert file to midi and pdf")
     .example(
         "$0 -i https://musescore.com/user/123/scores/456 -t mp3 -o " +
             process.cwd(),
