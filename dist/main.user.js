@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         musescore-dl
-// @namespace    https://github.com/LibreScore/dl-musescore/
-// @homepageURL  https://github.com/LibreScore/dl-musescore/
+// @namespace    https://github.com/LibreScore/dl-musescore
+// @homepageURL  https://github.com/LibreScore/dl-musescore
 // @supportURL   https://github.com/LibreScore/dl-musescore/issues
-// @updateURL    https://github.com/LibreScore/dl-musescore/dist/main.user.js
-// @downloadURL  https://github.com/LibreScore/dl-musescore/dist/main.user.js
+// @updateURL    https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js
+// @downloadURL  https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js
 // @version      0.30.0
-// @description  Download sheet music from Musescore
+// @description  Download sheet music from MuseScore
 // @author       LibreScore
 // @icon         https://librescore.org/img/icons/logo.svg
 // @match        https://musescore.com/*/*
@@ -338,10 +338,6 @@
 	    return (typeof GM !== "undefined" && typeof GM[requiredMethod] !== "undefined");
 	};
 
-<<<<<<< HEAD
-=======
-	const APP_URL = "https://github.com/LibreScore/app-librescore#installation";
->>>>>>> f0ee7962d95d3787a01f7f4ad4badc14dc9accf4
 	const escapeFilename = (s) => {
 	    return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, "_");
 	};
