@@ -44,7 +44,7 @@ There are 4 different installable programs:
 ### Webmscore
 
 1. Open [Webmscore](https://librescore.github.io)
-> Optional: You can access the website offline by installing it as a PWA
+> Note: You can access the website offline by installing it as a PWA
 
 ## Building
 
