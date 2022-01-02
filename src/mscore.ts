@@ -85,6 +85,7 @@ export const loadSoundFont = (score: WebMscore): Promise<void> => {
 };
 
 export const loadMscore = async (
+    fileExt: string,
     scoreinfo: ScoreInfo,
     w?: Window
 ): Promise<WebMscore> => {
@@ -95,7 +96,7 @@ export const loadMscore = async (
     const data = new Uint8Array(
         new Uint8Array(await fetchMscz(scoreinfo)) // copy its ArrayBuffer
     );
-    const score = await WebMscore.load("mscz", data, await fonts);
+    const score = await WebMscore.load(fileExt, data, await fonts);
     await score.generateExcerpts();
 
     return score;
@@ -117,6 +118,11 @@ export const INDV_DOWNLOADS: IndividualDownload[] = [
         name: i18n("DOWNLOAD")("MSCZ"),
         fileExt: "mscz",
         action: (score) => score.saveMsc("mscz"),
+    },
+    {
+        name: i18n("DOWNLOAD")("MSCX"),
+        fileExt: "mscx",
+        action: (score) => score.saveMsc("mscx"),
     },
     {
         name: i18n("DOWNLOAD")("MusicXML"),

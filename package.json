@@ -38,7 +38,7 @@
         "inquirer": "^7.3.3",
         "node-fetch": "^2.6.1",
         "ora": "^5.1.0",
-        "webmscore": "^0.18.0",
+        "webmscore": "^0.21.0",
         "yargs": "^17.3.0"
     },
     "devDependencies": {
