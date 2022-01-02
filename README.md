@@ -10,16 +10,17 @@ Download sheet music from MuseScore
 
 ## Installation
 
-There are 3 different installable programs:
+There are 4 different installable programs:
 
-| Program           | MSCZ | MIDI | PDF | MP3 | Conversion |     | Windows | macOS | Linux | Android | iOS |
-| ----------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | --- |
-| App               | ✔️   | ✔️   | ❌  | ✔️  | WIP         |     | ✔️      | ✔️    | WIP   | ✔️      | ❌  |
-| Browser extension | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
-| Command-line tool | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
+| Program           | MSCZ | MIDI | PDF | MP3 | Conversion |     | Windows | macOS | Linux | Android | iOS | Web |
+| ----------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | --- | --- |
+| App               | ✔️   | ✔️   | ❌  | ✔️  | ❌         |     | ✔️      | ✔️    | WIP   | ✔️      | ❌  | ❌  |
+| Browser extension | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  | ❌  |
+| Command-line tool | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  | ❌  |
+| Webmscore         | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ❌      | ❌    | ❌    | ❌      | ❌  | ✔️  |
 
-> Note: `Conversion` refers to the ability to convert MSCZ files into any other file type, including those not downloadable in the program.
-> You can alternatively convert MSCZ files into any other file type using the Webmscore website: https://librescore.github.io
+> Note: `Conversion` refers to the ability to convert files into other file types, including those not downloadable in the program.
+> Conversion targets include: Individual Parts, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ, and MSCX.
 
 ### App
 
@@ -39,6 +40,11 @@ There are 3 different installable programs:
 1. Install [Node.js LTS](https://nodejs.org)
 2. Open a terminal (do _not_ open the Node.js application)
 3. Type `npx musescore-dl@latest`, then press `Enter ↵`
+
+### Webmscore
+
+1. Open [Webmscore](https://librescore.github.io)
+> Optional: You can access the website offline by installing it as a PWA
 
 ## Building
 
