@@ -12,12 +12,12 @@ Download sheet music from MuseScore
 
 There are 4 different installable programs:
 
-| Program           | MSCZ | MIDI | PDF | MP3 | Conversion |     | Windows | macOS | Linux | Android | iOS | Web |
-| ----------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | --- | --- |
-| App               | ✔️   | ✔️   | ❌  | ✔️  | ❌         |     | ✔️      | ✔️    | WIP   | ✔️      | ❌  | ❌  |
-| Browser extension | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  | ❌  |
-| Command-line tool | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  | ❌  |
-| Webmscore         | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ❌      | ❌    | ❌    | ❌      | ❌  | ✔️  |
+| Program           | MSCZ | MIDI | PDF | MP3 | Conversion |     | Windows | macOS | Linux | Android | iOS |
+| ----------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | --- |
+| App               | ✔️   | ✔️   | ❌  | ✔️  | ❌         |     | ✔️      | ✔️    | WIP   | ✔️      | ❌  |
+| Browser extension/userscript | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
+| Command-line tool | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
+| Webmscore         | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️  |
 
 > Note: `Conversion` refers to the ability to convert files into other file types, including those not downloadable in the program.
 > Conversion targets include: Individual Parts, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ, and MSCX.
