@@ -332,7 +332,7 @@
             typeof GM[requiredMethod] !== 'undefined';
     };
 
-    const DISCORD_URL = 'https://discord.gg/gSsTUvJmD8';
+    const DISCORD_URL = 'https://discord.gg/kTyx6nUjMv';
     const escapeFilename = (s) => {
         return s.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_');
     };
