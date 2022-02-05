@@ -19,7 +19,7 @@ There are 4 different installable programs:
 | Program           | MSCZ | MIDI | PDF | MP3 | Conversion |     | Windows | macOS | Linux | Android | iOS |
 | ----------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | --- |
 | App               | ✔️   | ✔️   | ❌  | ✔️  | ❌         |     | ✔️      | ✔️    | WIP   | ✔️      | ❌  |
-| Browser extension/userscript | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
+| Browser extension/Bookmark | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
 | Command-line tool | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
 | Webmscore         | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️  |
 
@@ -32,13 +32,24 @@ There are 4 different installable programs:
 2. Download the latest version for your device
 3. Follow the installation instructions for your device to install it
 
-### Browser extension
+### Browser extension/Bookmark
 
+#### Browser extension
+
+> Note: If you cannot install browser extensions on your computer, please follow the [Bookmark](https://github.com/LibreScore/dl-musescore#bookmark) instructions
 1. Install [Tampermonkey](https://www.tampermonkey.net)
 > Note: If you already installed an old version of the script called "musescore-downloader" or "mcsz downloader", please uninstall it from the Tampermonkey dashboard
 2. Go to the latest [dl-musescore.user.js](https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js) file
 3. Press the Install button
 > Note: When using Google Chrome, the download buttons will not be visible. Instead, you can access the download buttons in the Tampermonkey menu, by clicking the Tampermonkey extension icon the the browser toolbar
+
+#### Bookmark
+
+1. Create a new bookmark (usually Ctrl+D)
+2. Type `LibreScore` for the Name field
+3. Type `javascript:(function () {let code = document.createElement('script');code.src = 'https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js';document.body.appendChild(code);}())` for the URL field
+4. Save the bookmark
+5. When viewing a song on MuseScore, click the bookmark to activate the extension
 
 ### Command-line tool
 
