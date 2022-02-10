@@ -51,7 +51,6 @@ There are 4 different installable programs:
 3. Type `javascript:(function () {let code = document.createElement('script');code.src = 'https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js';document.body.appendChild(code);}())` for the URL field
 4. Save the bookmark
 5. When viewing a song on MuseScore, click the bookmark to activate the extension
-> Credit to [RuralAnemone](https://github.com/RuralAnemone)
 
 ### Command-line tool
 
