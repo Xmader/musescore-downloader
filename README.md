@@ -28,9 +28,7 @@ There are 4 different installable programs:
 
 ### App
 
-1. Go to the [Releases](https://github.com/LibreScore/app-librescore/releases/latest) page of the `app-librescore` repository
-2. Download the latest version for your device
-3. Follow the installation instructions for your device to install it
+Follow the [installation instructions](https://github.com/LibreScore/app-librescore#installation) for your device to install it
 
 ### Browser extension/Bookmark
 
