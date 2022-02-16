@@ -16,9 +16,9 @@ Download sheet music from MuseScore
 
 There are 4 different installable programs:
 
-| Program           | MSCZ | MIDI | PDF | MP3 | Conversion |     | Windows | macOS | Linux | Android | iOS |
+| Program           | MSCZ | MIDI | MP3 | PDF | Conversion |     | Windows | macOS | Linux | Android | iOS |
 | ----------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | --- |
-| App               | ✔️   | ✔️   | ❌  | ✔️  | ❌         |     | ✔️      | ✔️    | WIP   | ✔️      | ❌  |
+| App               | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | WIP   | ✔️      | ❌  |
 | Browser extension/Bookmark | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
 | Command-line tool | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
 | Webmscore         | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️  |
@@ -33,7 +33,7 @@ There are 4 different installable programs:
 
 ### Browser extension/Bookmark
 
-> Note: If you cannot install browser extensions on your computer, please follow the [Bookmark](https://github.com/LibreScore/dl-musescore#bookmark) instructions
+> Note: If you cannot install browser extensions on your computer, please follow the [Bookmark](https://github.com/LibreScore/dl-musescore#bookmark) instructions instead
 
 #### Browser extension
 
