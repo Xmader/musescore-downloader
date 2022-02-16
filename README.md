@@ -40,7 +40,7 @@ Follow the [installation instructions](https://github.com/LibreScore/app-libresc
 > Note: If you already installed an old version of the script called "musescore-downloader" or "mcsz downloader", please uninstall it from the Tampermonkey dashboard
 2. Go to the latest [dl-musescore.user.js](https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js) file
 3. Press the Install button
-> Note: When using Google Chrome, the download buttons might not be visible. Instead, you can access the download buttons in the Tampermonkey menu, by clicking the Tampermonkey extension icon the the browser toolbar
+> Note: When using Google Chrome, the download buttons might not be visible. Instead, you can access the download buttons in the Tampermonkey menu, by clicking the Tampermonkey extension icon in the browser toolbar
 
 #### Bookmark
 
