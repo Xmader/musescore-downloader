@@ -24,7 +24,7 @@ There are 4 different installable programs:
 | Webmscore         | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️  |
 
 > Note: `Conversion` refers to the ability to convert files into other file types, including those not downloadable in the program.
-> Conversion targets include: Individual Parts, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ, and MSCX.
+> Conversion targets include: Individual Parts, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ, and MSCX
 
 ### App
 
