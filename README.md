@@ -16,12 +16,12 @@ Download sheet music from MuseScore
 
 There are 4 different installable programs:
 
-| Program           | MSCZ | MIDI | MP3 | PDF | Conversion |     | Windows | macOS | Linux | Android | iOS |
-| ----------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | --- |
-| App               | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | WIP   | ✔️      | ❌  |
-| Browser extension/Bookmark | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
-| Command-line tool | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
-| Webmscore         | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️  |
+| Program                                                                             | MSCZ | MIDI | MP3 | PDF | Conversion |     | Windows | macOS | Linux | Android | iOS |
+| ----------------------------------------------------------------------------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | --- |
+| [App](https://github.com/LibreScore/app-librescore#app)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | WIP   | ✔️      | ❌  |
+| [Userscript](https://github.com/LibreScore/app-librescore#userscript)               | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️  |
+| [Command-line tool](https://github.com/LibreScore/app-librescore#command-line-tool) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
+| [Webmscore](https://github.com/LibreScore/app-librescore#webmscore)                 | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️  |
 
 > Note: `Conversion` refers to the ability to convert files into other file types, including those not downloadable in the program.
 > Conversion targets include: Individual Parts, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ, and MSCX
@@ -31,17 +31,28 @@ There are 4 different installable programs:
 1. Go to the [README](https://github.com/LibreScore/app-librescore#installation) page of the `app-librescore` repository
 2. Follow the installation instructions for your device to install it
 
-### Browser extension/Bookmark
+### Userscript
 
-> Note: If you cannot install browser extensions on your computer, please follow the [Bookmark](https://github.com/LibreScore/dl-musescore#bookmark) instructions instead
+> Note: If your device is on iOS, please follow the [Shortcut](https://github.com/LibreScore/dl-musescore#shortcut) instructions
+
+> Note: If you cannot install browser extensions on your device, please follow the [Bookmark](https://github.com/LibreScore/dl-musescore#bookmark) instructions instead
 
 #### Browser extension
 
 1. Install [Tampermonkey](https://www.tampermonkey.net)
+
 > Note: If you already installed an old version of the script called "musescore-downloader" or "mcsz downloader", please uninstall it from the Tampermonkey dashboard
+
 2. Go to the latest [dl-musescore.user.js](https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js) file
 3. Press the Install button
+
 > Note: When using Google Chrome, the download buttons might not be visible. Instead, you can access the download buttons in the Tampermonkey menu, by clicking the Tampermonkey extension icon in the browser toolbar
+
+#### Shortcut
+
+1. Install the [LibreScore shortcut](https://www.icloud.com/shortcuts/9a4ae92b785c443cb4302fb88229af8a)
+2. In Safari, when viewing a song on MuseScore, tap <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" width="12">
+3. Tap the LibreScore shortcut to activate the extension
 
 #### Bookmark
 
@@ -60,6 +71,7 @@ There are 4 different installable programs:
 ### Webmscore
 
 1. Open [Webmscore](https://librescore.github.io)
+
 > Note: You can access the website offline by installing it as a PWA
 
 ## Building
