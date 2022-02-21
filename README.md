@@ -33,7 +33,7 @@ There are 4 different installable programs:
 
 ### Userscript
 
-> Note: If your device is on iOS, please follow the [Shortcut](https://github.com/LibreScore/dl-musescore#shortcut) instructions
+> Note: If your device is on iOS/iPadOS, please follow the [Shortcut](https://github.com/LibreScore/dl-musescore#shortcut) instructions
 
 > Note: If you cannot install browser extensions on your device, please follow the [Bookmark](https://github.com/LibreScore/dl-musescore#bookmark) instructions instead
 
@@ -51,7 +51,7 @@ There are 4 different installable programs:
 #### Shortcut
 
 1. Install the [LibreScore shortcut](https://www.icloud.com/shortcuts/9a4ae92b785c443cb4302fb88229af8a)
-2. In Safari, when viewing a song on MuseScore, tap <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" width="12">
+2. In Safari, when viewing a song on MuseScore, tap the action button (<img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" width="12">)
 3. Tap the LibreScore shortcut to activate the extension
 
 #### Bookmark
