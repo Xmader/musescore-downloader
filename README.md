@@ -33,7 +33,7 @@ There are 4 different installable programs:
 
 ### Userscript
 
-> Note: If your device is on iOS/iPadOS, please follow the [Shortcut](https://github.com/LibreScore/dl-musescore#shortcut) instructions
+> Note: If your device is on iOS or iPadOS, please follow the [Shortcut](https://github.com/LibreScore/dl-musescore#shortcut) instructions
 
 > Note: If you cannot install browser extensions on your device, please follow the [Bookmark](https://github.com/LibreScore/dl-musescore#bookmark) instructions instead
 
@@ -46,13 +46,17 @@ There are 4 different installable programs:
 2. Go to the latest [dl-musescore.user.js](https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js) file
 3. Press the Install button
 
-> Note: When using Google Chrome, the download buttons might not be visible. Instead, you can access the download buttons in the Tampermonkey menu, by clicking the Tampermonkey extension icon in the browser toolbar
+> Note: When using Google Chrome, the download buttons might not be visible. Instead, you can access the download buttons in the Tampermonkey menu by clicking the Tampermonkey extension icon in the browser toolbar
 
 #### Shortcut
 
 1. Install the [LibreScore shortcut](https://www.icloud.com/shortcuts/9a4ae92b785c443cb4302fb88229af8a)
-2. In Safari, when viewing a song on MuseScore, tap <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" width="12">
+2. In Safari, when viewing a song on MuseScore, tap <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" height="16">
 3. Tap the LibreScore shortcut to activate the extension
+
+> Note: Before you can run JavaScript from a shortcut you must turn on Allow Running Scripts
+> 1. Go to Settings <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/492fec5aff74dbdef9b526177c3804b4.png" height="16"> > Shortcuts > Advanced
+> 2. Turn on Allow Running Scripts
 
 #### Bookmark
 
