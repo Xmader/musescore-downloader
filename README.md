@@ -17,11 +17,11 @@ Download sheet music from MuseScore
 There are 4 different installable programs:
 
 | Program                                                                             | MSCZ | MIDI | MP3 | PDF | Conversion |     | Windows | macOS | Linux | Android | iOS/iPadOS |
-| ----------------------------------------------------------------------------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | --- |
-| [App](https://github.com/LibreScore/app-librescore#app)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | WIP   | ✔️      | ❌  |
-| [Userscript](https://github.com/LibreScore/app-librescore#userscript)               | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️  |
-| [Command-line tool](https://github.com/LibreScore/app-librescore#command-line-tool) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌  |
-| [Webmscore](https://github.com/LibreScore/app-librescore#webmscore)                 | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️  |
+| ----------------------------------------------------------------------------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | ---------- |
+| [App](https://github.com/LibreScore/app-librescore#app)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
+| [Userscript](https://github.com/LibreScore/app-librescore#userscript)               | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
+| [Command-line tool](https://github.com/LibreScore/app-librescore#command-line-tool) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
+| [Webmscore](https://github.com/LibreScore/app-librescore#webmscore)                 | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 
 > Note: `Conversion` refers to the ability to convert files into other file types, including those not downloadable in the program.
 > Conversion targets include: Individual Parts, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ, and MSCX
@@ -55,6 +55,7 @@ There are 4 different installable programs:
 3. Tap the LibreScore shortcut to activate the extension
 
 > Note: Before you can run JavaScript from a shortcut you must turn on Allow Running Scripts
+>
 > 1. Go to Settings <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/492fec5aff74dbdef9b526177c3804b4.png" height="16"> > Shortcuts > Advanced
 > 2. Turn on Allow Running Scripts
 
