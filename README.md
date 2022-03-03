@@ -21,7 +21,7 @@ There are 4 different installable programs:
 | [App](https://github.com/LibreScore/dl-musescore#app)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
 | [Userscript](https://github.com/LibreScore/dl-musescore#userscript)               | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 | [Command-line tool](https://github.com/LibreScore/dl-musescore#command-line-tool) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
-| [Webmscore](https://github.com/LibreScore/dl-musescore#webmscore)                 | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
+| [Webmscore website](https://github.com/LibreScore/dl-musescore#webmscore-website)         | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 
 > Note: `Conversion` refers to the ability to convert MSCZ files into other file types, including those not downloadable in the program.
 > Conversion targets include: Individual Parts, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ, and MSCX.
@@ -74,7 +74,7 @@ There are 4 different installable programs:
 2. Open a terminal (do _not_ open the Node.js application)
 3. Type `npx musescore-dl@latest`, then press `Enter ↵`
 
-### Webmscore
+### Webmscore website
 
 1. Open [Webmscore](https://librescore.github.io)
 
