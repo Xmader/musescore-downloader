@@ -23,8 +23,9 @@ There are 4 different installable programs:
 | [Command-line tool](https://github.com/LibreScore/dl-musescore#command-line-tool) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
 | [Webmscore](https://github.com/LibreScore/dl-musescore#webmscore)                 | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 
-> Note: `Conversion` refers to the ability to convert files into other file types, including those not downloadable in the program.
-> Conversion targets include: Individual Parts, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ, and MSCX
+> Note: `Conversion` refers to the ability to convert MSCZ files into other file types, including those not downloadable in the program.
+> Conversion targets include: Individual Parts, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ, and MSCX.
+> Conversion also enables you to remove specific parts from a score.
 
 ### App
 
