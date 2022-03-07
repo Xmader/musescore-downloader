@@ -17,16 +17,19 @@ import en from "./i18n/en.json";
 import es from "./i18n/es.json";
 import it from "./i18n/it.json";
 import zh from "./i18n/zh.json";
+import fr from "./i18n/fr.json";
 
 (async () => {
     await i18next.init({
         compatibilityJSON: "v3",
-        fallbackLng: lang,
+        lng: lang,
+        fallbackLng: "en",
         resources: {
             en: { translation: en },
             es: { translation: es },
             it: { translation: it },
             zh: { translation: zh },
+            fr: { translation: fr },
         },
     });
 })();
