@@ -1,6 +1,6 @@
 {
     "processing": "Caricamento…",
     "download": "Scaricare {{fileType}}",
-    "download_audio": "Scaricare {{fileType}} Audio",
-    "full_score": "Spartito Completo"
+    "download_audio": "Scaricare {{fileType}} audio",
+    "full_score": "Spartito completo"
 }
