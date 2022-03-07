@@ -365,7 +365,7 @@ void (async () => {
                         name: p.title,
                         value: p.id,
                     }));
-                    console.log(partChoices);
+                    // console.log(partChoices);
                     // add the "full score" option as a "part"
                     partChoices.unshift({
                         value: -1,
@@ -383,11 +383,11 @@ void (async () => {
                         pageSize: Infinity,
                     });
                     spinner.start();
-                    console.log(parts);
+                    // console.log(parts);
                     parts = partChoices.filter((e) =>
                         parts.parts.includes(e.value)
                     );
-                    console.log(parts);
+                    // console.log(parts);
                 } else {
                     parts = [{ name: i18next.t("full_score"), value: -1 }];
                 }
