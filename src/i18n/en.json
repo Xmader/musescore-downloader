@@ -1,6 +1,6 @@
 {
     "processing": "Processing…",
     "download": "Download {{fileType}}",
-    "download_audio": "Download {{fileType}} Audio",
+    "download_audio": "Download {{fileType}} audio",
     "full_score": "Full score"
 }
