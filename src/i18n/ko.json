@@ -1,1 +1,6 @@
-{}
+{
+    "processing": "처리중…",
+    "download": "다운로드 {{fileType}}",
+    "download_audio": "{{fileType}} 오디오 다운로드",
+    "full_score": "풀 스코어"
+}
