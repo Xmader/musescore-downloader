@@ -6,7 +6,25 @@ import { downloadPDF } from "./pdf";
 import { getFileUrl } from "./file";
 import { BtnList, BtnAction, BtnListMode } from "./btn";
 import { ScoreInfoInPage, SheetInfoInPage } from "./scoreinfo";
-import i18n from "./i18n";
+import i18next from "i18next";
+import lang from "./i18n/index";
+import en from "./i18n/en.json";
+import es from "./i18n/es.json";
+import it from "./i18n/it.json";
+import zh from "./i18n/zh.json";
+
+(async () => {
+    await i18next.init({
+        compatibilityJSON: "v3",
+        fallbackLng: lang,
+        resources: {
+            en: { translation: en },
+            es: { translation: es },
+            it: { translation: it },
+            zh: { translation: zh },
+        },
+    });
+})();
 
 const { saveAs } = FileSaver;
 
@@ -22,7 +40,7 @@ const main = (): void => {
     };
 
     btnList.add({
-        name: i18n("DOWNLOAD")("PDF"),
+        name: i18next.t("download", { fileType: "PDF" }),
         action: BtnAction.process(
             () => downloadPDF(scoreinfo, new SheetInfoInPage(document), saveAs),
             fallback,
@@ -31,7 +49,7 @@ const main = (): void => {
     });
 
     btnList.add({
-        name: i18n("DOWNLOAD")("MIDI"),
+        name: i18next.t("download", { fileType: "MIDI" }),
         action: BtnAction.download(
             () => getFileUrl(scoreinfo.id, "midi"),
             fallback,
@@ -40,7 +58,7 @@ const main = (): void => {
     });
 
     btnList.add({
-        name: i18n("DOWNLOAD")("MP3"),
+        name: i18next.t("download", { fileType: "MP3" }),
         action: BtnAction.download(
             () => getFileUrl(scoreinfo.id, "mp3"),
             fallback,

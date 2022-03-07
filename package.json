@@ -35,6 +35,7 @@
         "@librescore/fonts": "^0.4.0",
         "@librescore/sf3": "^0.3.0",
         "detect-node": "^2.0.4",
+        "i18next": "^21.6.13",
         "inquirer": "^7.3.3",
         "node-fetch": "^2.6.1",
         "ora": "^5.1.0",

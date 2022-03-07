@@ -11,7 +11,25 @@ import { WEBMSCORE_URL, fetchBuffer } from "./utils";
 import { isNpx, getVerInfo } from "./npm-data";
 import { getFileUrl } from "./file";
 import { exportPDF } from "./pdf";
-import i18n from "./i18n";
+import i18next from "i18next";
+import lang from "./i18n/index";
+import en from "./i18n/en.json";
+import es from "./i18n/es.json";
+import it from "./i18n/it.json";
+import zh from "./i18n/zh.json";
+
+(async () => {
+    await i18next.init({
+        compatibilityJSON: "v3",
+        fallbackLng: lang,
+        resources: {
+            en: { translation: en },
+            es: { translation: es },
+            it: { translation: it },
+            zh: { translation: zh },
+        },
+    });
+})();
 
 const inquirer: typeof import("inquirer") = require("inquirer");
 const ora: typeof import("ora") = require("ora");
@@ -23,15 +41,15 @@ const argv: any = yargs(hideBin(process.argv))
     .example(
         "$0 -i https://musescore.com/user/123/scores/456 -t mp3 -o " +
             process.cwd(),
-        "download mp3 of URL to specified directory"
+        "download MP3 of URL to specified directory"
     )
     .example(
         "$0 -i path/to/folder -t midi pdf",
-        "export midi and pdf of all files in specified folder to current folder"
+        "export MIDI and PDF of all files in specified folder to current folder"
     )
     .example(
         "$0 -i path/to/file.mxl -t flac",
-        "export flac of specified musicxml file to current folder"
+        "export FLAC of specified MusicXML file to current folder"
     )
     .option("input", {
         alias: "i",
@@ -104,7 +122,7 @@ const promptDest = async () => {
 
 const createSpinner = () => {
     return ora({
-        text: i18n("PROCESSING")(),
+        text: i18next.t("processing"),
         color: "blue",
         spinner: "bounce",
         indent: 0,
@@ -351,7 +369,7 @@ void (async () => {
                     // add the "full score" option as a "part"
                     partChoices.unshift({
                         value: -1,
-                        name: i18n("FULL_SCORE")(),
+                        name: i18next.t("full_score"),
                     });
 
                     // part selection
@@ -371,7 +389,7 @@ void (async () => {
                     );
                     console.log(parts);
                 } else {
-                    parts = [{ name: i18n("FULL_SCORE")(), value: -1 }];
+                    parts = [{ name: i18next.t("full_score"), value: -1 }];
                 }
 
                 if (argv.type) {

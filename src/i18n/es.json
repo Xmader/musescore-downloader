@@ -1,0 +1,6 @@
+{
+    "processing": "Cargando…",
+    "download": "Descargar {{fileType}}",
+    "download_audio": "Descargar Audio {{fileType}}",
+    "full_score": "Partitura Completa"
+}

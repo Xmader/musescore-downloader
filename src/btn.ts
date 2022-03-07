@@ -1,8 +1,26 @@
 import { useTimeout, windowOpenAsync, console, attachShadow } from "./utils";
 import { isGmAvailable, _GM } from "./gm";
-import i18n from "./i18n";
+import i18next from "i18next";
+import lang from "./i18n/index";
+import en from "./i18n/en.json";
+import es from "./i18n/es.json";
+import it from "./i18n/it.json";
+import zh from "./i18n/zh.json";
 // @ts-ignore
 import btnListCss from "./btn.css";
+
+(async () => {
+    await i18next.init({
+        compatibilityJSON: "v3",
+        fallbackLng: lang,
+        resources: {
+            en: { translation: en },
+            es: { translation: es },
+            it: { translation: it },
+            zh: { translation: zh },
+        },
+    });
+})();
 
 type BtnElement = HTMLButtonElement;
 
@@ -281,7 +299,7 @@ export namespace BtnAction {
             const _onclick = btn.onclick;
 
             btn.onclick = null;
-            setText(i18n("PROCESSING")());
+            setText(i18next.t("processing"));
 
             try {
                 await useTimeout(fn(), timeout);
@@ -296,14 +314,6 @@ export namespace BtnAction {
             }
 
             btn.onclick = _onclick;
-        };
-    };
-
-    export const deprecate = (action: BtnAction): BtnAction => {
-        return (name, btn, setText) => {
-            alert(i18n("DEPRECATION_NOTICE")(name));
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-            return action(name, btn, setText);
         };
     };
 }

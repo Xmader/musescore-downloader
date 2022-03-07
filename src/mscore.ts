@@ -5,8 +5,26 @@ import { fetchMscz } from "./mscz";
 import { fetchData } from "./utils";
 import { ScoreInfo } from "./scoreinfo";
 import isNodeJs from "detect-node";
-import i18n from "./i18n";
+import i18next from "i18next";
+import lang from "./i18n/index";
+import en from "./i18n/en.json";
+import es from "./i18n/es.json";
+import it from "./i18n/it.json";
+import zh from "./i18n/zh.json";
 import { dependencies as depVers } from "../package.json";
+
+(async () => {
+    await i18next.init({
+        compatibilityJSON: "v3",
+        fallbackLng: lang,
+        resources: {
+            en: { translation: en },
+            es: { translation: es },
+            it: { translation: it },
+            zh: { translation: zh },
+        },
+    });
+})();
 
 const WEBMSCORE_URL = `https://cdn.jsdelivr.net/npm/webmscore@${depVers.webmscore}/webmscore.js`;
 
@@ -110,44 +128,44 @@ export interface IndividualDownload {
 
 export const INDV_DOWNLOADS: IndividualDownload[] = [
     {
-        name: i18n("DOWNLOAD")("PDF"),
+        name: i18next.t("download", { fileType: "PDF" }),
         fileExt: "pdf",
         action: (score) => score.savePdf(),
     },
     {
-        name: i18n("DOWNLOAD")("MSCZ"),
+        name: i18next.t("download", { fileType: "MSCZ" }),
         fileExt: "mscz",
         action: (score) => score.saveMsc("mscz"),
     },
     {
-        name: i18n("DOWNLOAD")("MSCX"),
+        name: i18next.t("download", { fileType: "MSCX" }),
         fileExt: "mscx",
         action: (score) => score.saveMsc("mscx"),
     },
     {
-        name: i18n("DOWNLOAD")("MusicXML"),
+        name: i18next.t("download", { fileType: "MusicXML" }),
         fileExt: "mxl",
         action: (score) => score.saveMxl(),
     },
     {
-        name: i18n("DOWNLOAD")("MIDI"),
+        name: i18next.t("download", { fileType: "MIDI" }),
         fileExt: "mid",
         action: (score) => score.saveMidi(true, true),
     },
     {
-        name: i18n("DOWNLOAD_AUDIO")("MP3"),
+        name: i18next.t("download_audio", { fileType: "MP3" }),
         fileExt: "mp3",
         action: (score) =>
             loadSoundFont(score).then(() => score.saveAudio("mp3")),
     },
     {
-        name: i18n("DOWNLOAD_AUDIO")("FLAC"),
+        name: i18next.t("download_audio", { fileType: "FLAC" }),
         fileExt: "flac",
         action: (score) =>
             loadSoundFont(score).then(() => score.saveAudio("flac")),
     },
     {
-        name: i18n("DOWNLOAD_AUDIO")("OGG"),
+        name: i18next.t("download_audio", { fileType: "OGG" }),
         fileExt: "ogg",
         action: (score) =>
             loadSoundFont(score).then(() => score.saveAudio("ogg")),
