@@ -1,1 +1,6 @@
-{}
+{
+    "processing": "処理中…",
+    "download": "{{fileType}}をダウンロード",
+    "download_audio": "{{fileType}}オーディオをダウンロード",
+    "full_score": "フルスコア"
+}
