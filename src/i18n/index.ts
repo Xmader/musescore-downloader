@@ -1,21 +1,29 @@
-import isNodeJs from "detect-node";
+import i18n from "i18next";
+import ar from "./ar.json";
+import en from "./en.json";
+import es from "./es.json";
+import fr from "./fr.json";
+import it from "./it.json";
+import ja from "./ja.json";
+import ko from "./ko.json";
+import ru from "./ru.json";
+import zh_Hans from "./zh-Hans.json";
 
-// detect browser language
-export default (() => {
-    let userLangs: readonly string[];
-    if (!isNodeJs) {
-        userLangs = navigator.languages;
-    } else {
-        const env = process.env;
-        const l =
-            env.LC_ALL || env.LC_MESSAGES || env.LANG || env.LANGUAGE || "";
-        userLangs = [l.slice(0, 2)];
-    }
+export default i18n.init({
+    compatibilityJSON: "v3",
+    lng: Intl.DateTimeFormat().resolvedOptions().locale,
+    fallbackLng: "en",
+    resources: {
+        ar: { translation: ar },
+        en: { translation: en },
+        es: { translation: es },
+        fr: { translation: fr },
+        it: { translation: it },
+        ja: { translation: ja },
+        ko: { translation: ko },
+        ru: { translation: ru },
+        "zh-Hans": { translation: zh_Hans },
+    },
+});
 
-    const names = ["en", "es", "it", "zh"];
-    const _lang = userLangs.find((l) => {
-        // find the first occurrence of valid languages
-        return names.includes(l);
-    });
-    return _lang || "en";
-})();
+export const i18next = i18n;

@@ -1,3 +1,9 @@
+const { default: i18nextInit, i18next } = require("./i18n/index");
+
+(async () => {
+    await i18nextInit;
+})();
+
 /* eslint-disable */
 const w = typeof unsafeWindow == "object" ? unsafeWindow : window;
 
@@ -8,13 +14,20 @@ w[gmId] = _GM;
 
 if (_GM && _GM.registerMenuCommand && _GM.openInTab) {
     // add buttons to the userscript manager menu
-    _GM.registerMenuCommand(`** Version: ${_GM.info.script.version} **`, () =>
-        _GM.openInTab("https://github.com/LibreScore/dl-musescore/releases", {
-            active: true,
-        })
+    _GM.registerMenuCommand(
+        "** " +
+            i18next.t("version", { version: _GM.info.script.version }) +
+            " **",
+        () =>
+            _GM.openInTab(
+                "https://github.com/LibreScore/dl-musescore/releases",
+                {
+                    active: true,
+                }
+            )
     );
 
-    _GM.registerMenuCommand("** Source Code **", () =>
+    _GM.registerMenuCommand("** " + i18next.t("source_code") + " **", () =>
         _GM.openInTab(_GM.info.script.homepage, { active: true })
     );
 

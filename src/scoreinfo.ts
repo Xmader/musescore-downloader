@@ -1,4 +1,9 @@
-import { getFetch, escapeFilename, assertRes } from "./utils";
+import { getFetch, escapeFilename } from "./utils";
+import i18nextInit, { i18next } from "./i18n/index";
+
+(async () => {
+    await i18nextInit;
+})();
 
 export abstract class ScoreInfo {
     abstract id: number;
@@ -120,7 +125,7 @@ export class SheetInfoInPage extends SheetInfo {
     get pageCount(): number {
         const sheet0Div = this.sheet0Img?.parentElement;
         if (!sheet0Div) {
-            throw new Error("no sheet images found");
+            throw new Error(i18next.t("no_sheet_images_error"));
         }
         return this.document.getElementsByClassName(sheet0Div.className).length;
     }

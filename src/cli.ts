@@ -7,31 +7,14 @@ import os from "os";
 import { setMscz } from "./mscz";
 import { loadMscore, INDV_DOWNLOADS, WebMscore } from "./mscore";
 import { ScoreInfoHtml, ScoreInfoObj } from "./scoreinfo";
-import { WEBMSCORE_URL, fetchBuffer } from "./utils";
+import { fetchBuffer } from "./utils";
 import { isNpx, getVerInfo } from "./npm-data";
 import { getFileUrl } from "./file";
 import { exportPDF } from "./pdf";
-import i18next from "i18next";
-import lang from "./i18n/index";
-import en from "./i18n/en.json";
-import es from "./i18n/es.json";
-import it from "./i18n/it.json";
-import zh from "./i18n/zh.json";
-import fr from "./i18n/fr.json";
+import i18nextInit, { i18next } from "./i18n/index";
 
 (async () => {
-    await i18next.init({
-        compatibilityJSON: "v3",
-        lng: lang,
-        fallbackLng: "en",
-        resources: {
-            en: { translation: en },
-            es: { translation: es },
-            it: { translation: it },
-            zh: { translation: zh },
-            fr: { translation: fr },
-        },
-    });
+    await i18nextInit;
 })();
 
 const inquirer: typeof import("inquirer") = require("inquirer");
@@ -40,30 +23,30 @@ const chalk: typeof import("chalk") = require("chalk");
 const yargs = require("yargs");
 const { hideBin } = require("yargs/helpers");
 const argv: any = yargs(hideBin(process.argv))
-    .usage("Usage: $0 [options]")
+    .usage(i18next.t("cli_usage_hint"))
     .example(
         "$0 -i https://musescore.com/user/123/scores/456 -t mp3 -o " +
             process.cwd(),
-        "download MP3 of URL to specified directory"
+        i18next.t("cli_example_url")
     )
     .example(
-        "$0 -i path/to/folder -t midi pdf",
-        "export MIDI and PDF of all files in specified folder to current folder"
+        "$0 -i " + i18next.t("path_to_folder") + " -t midi pdf",
+        i18next.t("cli_example_folder")
     )
     .example(
-        "$0 -i path/to/file.mxl -t flac",
-        "export FLAC of specified MusicXML file to current folder"
+        "$0 -i " + i18next.t("path_to_file") + ".mxl -t flac",
+        i18next.t("cli_example_file")
     )
     .option("input", {
         alias: "i",
         type: "string",
-        description: "URL, file, or folder to download or convert from",
+        description: i18next.t("cli_option_input_description"),
         requiresArg: true,
     })
     .option("type", {
         alias: "t",
         type: "array",
-        description: "Type of files to download",
+        description: i18next.t("cli_option_type_description"),
         requiresArg: true,
         choices: [
             "midi",
@@ -79,20 +62,18 @@ const argv: any = yargs(hideBin(process.argv))
     .option("output", {
         alias: "o",
         type: "string",
-        description: "Folder to save files to",
+        description: i18next.t("cli_option_output_description"),
         requiresArg: true,
         default: process.cwd(),
     })
     .option("verbose", {
         alias: "v",
         type: "boolean",
-        description: "Run with verbose logging",
+        description: i18next.t("cli_option_verbose_description"),
     })
     .alias("help", "h")
     .alias("version", "V").argv;
 
-const SCORE_URL_PREFIX = "https://musescore.com/";
-// const SCORE_URL_REG = /https:\/\/(s\.)?musescore\.com\//;
 const SCORE_URL_REG = /^(?:https?:\/\/)(?:(?:s|www)\.)?musescore\.com\/[^\s]+$/;
 
 type ExpDlType = "midi" | "mp3" | "pdf";
@@ -104,24 +85,8 @@ interface Params {
     expDlTypes: ExpDlType[];
     part: number;
     types: number[];
-    dest: string;
+    output: string;
 }
-
-/**
- * Prompt for destination directory
- */
-const promptDest = async () => {
-    const { dest } = await inquirer.prompt<Params>({
-        type: "input",
-        name: "dest",
-        message: "Destination Directory:",
-        validate(input: string) {
-            return input && fs.statSync(input).isDirectory();
-        },
-        default: argv.output,
-    });
-    return dest;
-};
 
 const createSpinner = () => {
     return ora({
@@ -142,7 +107,10 @@ void (async () => {
         if (!isLatest) {
             console.log(
                 chalk.yellowBright(
-                    `\nYour installed version (${installed}) of the musescore-dl CLI is not the latest one (${latest})!\nRun npm i -g musescore-dl@${latest} to update.`
+                    i18next.t("cli_outdated_version_message", {
+                        installed: installed,
+                        latest: latest,
+                    })
                 )
             );
         }
@@ -163,20 +131,20 @@ void (async () => {
         const platform = os.platform();
         let pasteMessage = "";
         if (platform === "win32") {
-            pasteMessage = "right-click to paste";
+            pasteMessage = i18next.t("cli_windows_paste_hint");
         } else if (platform === "linux") {
-            pasteMessage = "usually Ctrl+Shift+V to paste";
+            pasteMessage = i18next.t("cli_linux_paste_hint");
         } // For MacOS, no hint is needed because the paste shortcut is universal.
 
         // ask for the page url or path to local file
         const { fileInit } = await inquirer.prompt<Params>({
             type: "input",
             name: "fileInit",
-            message: "MuseScore URL or path to file or folder:",
+            message: i18next.t("cli_input_message"),
             suffix:
-                "\n  " +
-                `(starts with "${SCORE_URL_PREFIX}" or is a path) ` +
-                `${chalk.bgGray(pasteMessage)}\n `,
+                "\n  (" +
+                i18next.t("cli_input_suffix") +
+                `) ${chalk.bgGray(pasteMessage)}\n `,
             validate(input: string) {
                 return (
                     input &&
@@ -247,7 +215,7 @@ void (async () => {
                 types = await inquirer.prompt<Params>({
                     type: "checkbox",
                     name: "types",
-                    message: "Filetype Selection",
+                    message: i18next.t("cli_types_message"),
                     choices: typeChoices,
                     validate: checkboxValidate,
                     pageSize: Infinity,
@@ -257,19 +225,19 @@ void (async () => {
 
                 types = types.types;
 
-                // destination directory
+                // output directory
                 spinner.stop();
-                const { dest } = await inquirer.prompt<Params>({
+                const { output } = await inquirer.prompt<Params>({
                     type: "input",
-                    name: "dest",
-                    message: "Destination Directory:",
+                    name: "output",
+                    message: i18next.t("cli_output_message"),
                     validate(input: string) {
                         return input && fs.statSync(input).isDirectory();
                     },
                     default: argv.output,
                 });
                 spinner.start();
-                argv.output = dest;
+                argv.output = output;
             }
         } else {
             filePaths.push(argv.input);
@@ -280,14 +248,14 @@ void (async () => {
             filePaths.map(async (filePath) => {
                 // validate input file
                 if (!fs.statSync(filePath).isFile()) {
-                    spinner.fail("File does not exist");
+                    spinner.fail(i18next.t("cli_file_error"));
                     return;
                 }
 
                 if (!isInteractive) {
                     // validate types
                     if (argv.type.length === 0) {
-                        spinner.fail("No types chosen");
+                        spinner.fail(i18next.t("cli_type_error"));
                         return;
                     }
                 }
@@ -315,9 +283,7 @@ void (async () => {
                         "xml",
                     ].includes(inputFileExt)
                 ) {
-                    spinner.fail(
-                        "Invalid file extension, only gp, gp3, gp4, gp5, gpx, gtp, kar, mid, midi, mscx, mscz, musicxml, mxl, ptb, xml are supported"
-                    );
+                    spinner.fail(i18next.t("cli_file_extension_error"));
                     return;
                 }
 
@@ -335,7 +301,7 @@ void (async () => {
                     const data = await fs.promises.readFile(filePath);
                     await setMscz(scoreinfo, data.buffer);
                     if (argv.verbose) {
-                        spinner.info("File loaded");
+                        spinner.info(i18next.t("cli_file_loaded_message"));
                         spinner.start();
                     }
                     // load score using webmscore
@@ -346,17 +312,14 @@ void (async () => {
                     }
 
                     if (argv.verbose) {
-                        spinner.info("Score loaded by webmscore");
+                        spinner.info(i18next.t("cli_score_loaded_message"));
                     }
                 } catch (err) {
                     if (isFile || argv.verbose) {
                         spinner.fail(err.message);
                     }
                     if (argv.verbose) {
-                        spinner.info(
-                            "Try using the Webmscore website instead: " +
-                                WEBMSCORE_URL
-                        );
+                        spinner.info(i18next.t("cli_input_error"));
                     }
                     return;
                 }
@@ -380,7 +343,7 @@ void (async () => {
                     parts = await inquirer.prompt<Params>({
                         type: "checkbox",
                         name: "parts",
-                        message: "Part Selection",
+                        message: i18next.t("cli_parts_message"),
                         choices: partChoices,
                         validate: checkboxValidate,
                         pageSize: Infinity,
@@ -414,7 +377,7 @@ void (async () => {
                     types = await inquirer.prompt<Params>({
                         type: "checkbox",
                         name: "types",
-                        message: "Filetype Selection",
+                        message: i18next.t("cli_types_message"),
                         choices: typeChoices,
                         validate: checkboxValidate,
                         pageSize: Infinity,
@@ -428,22 +391,22 @@ void (async () => {
                 filetypes = types.map((i) => INDV_DOWNLOADS[i]);
 
                 if (isInteractive && isFile) {
-                    // destination directory
+                    // output directory
                     spinner.stop();
-                    const { dest } = await inquirer.prompt<Params>({
+                    const { output } = await inquirer.prompt<Params>({
                         type: "input",
-                        name: "dest",
-                        message: "Destination Directory:",
+                        name: "output",
+                        message: i18next.t("cli_output_message"),
                         validate(input: string) {
                             return input && fs.statSync(input).isDirectory();
                         },
                         default: argv.output,
                     });
                     spinner.start();
-                    argv.output = dest;
+                    argv.output = output;
                 }
 
-                // validate destination directory
+                // validate output directory
                 try {
                     await fs.promises.access(argv.output);
                 } catch (err) {
@@ -470,7 +433,11 @@ void (async () => {
                                 const f = path.join(argv.output, n);
                                 await fs.promises.writeFile(f, data);
                                 if (argv.verbose) {
-                                    spinner.info(`Saved ${chalk.underline(f)}`);
+                                    spinner.info(
+                                        i18next.t("cli_saved_message", {
+                                            file: chalk.underline(f),
+                                        })
+                                    );
                                 }
                             })
                         );
@@ -478,12 +445,12 @@ void (async () => {
                 );
             })
         );
-        spinner.succeed("OK");
+        spinner.succeed(i18next.t("cli_done_message"));
         return;
     } else {
         // validate input URL
         if (!argv.input.match(SCORE_URL_REG)) {
-            spinner.fail("Invalid URL");
+            spinner.fail(i18next.t("cli_url_error"));
             return;
         }
         argv.input = argv.input.match(SCORE_URL_REG)[0];
@@ -491,7 +458,7 @@ void (async () => {
         // validate types
         if (!isInteractive) {
             if (argv.type.length === 0) {
-                spinner.fail("No types chosen");
+                spinner.fail(i18next.t("cli_type_error"));
                 return;
             } else if (
                 ["mscz", "mscx", "musicxml", "flac", "ogg"].some((e) =>
@@ -499,7 +466,7 @@ void (async () => {
                 )
             ) {
                 // Fail since user cannot download these types from a URL
-                spinner.fail("Can only download MIDI, MP3, and PDF from a URL");
+                spinner.fail(i18next.t("cli_url_type_error"));
                 return;
             }
         }
@@ -509,7 +476,7 @@ void (async () => {
 
         // validate musescore URL
         if (scoreinfo.id === 0) {
-            spinner.fail("Score not found");
+            spinner.fail(i18next.t("cli_score_not_found"));
             return;
         }
 
@@ -519,11 +486,13 @@ void (async () => {
             const { confirmed } = await inquirer.prompt<Params>({
                 type: "confirm",
                 name: "confirmed",
-                message: "Continue?",
+                message: i18next.t("cli_confirm_message"),
                 prefix:
                     `${chalk.yellow("!")} ` +
-                    `ID: ${scoreinfo.id}\n  ` +
-                    `Title: ${scoreinfo.title}\n `,
+                    i18next.t("id", { id: scoreinfo.id }) +
+                    "\n  " +
+                    i18next.t("title", { title: scoreinfo.title }) +
+                    "\n ",
                 default: true,
             });
             if (!confirmed) return;
@@ -537,8 +506,10 @@ void (async () => {
                 spinner.stop();
                 console.log(
                     `${chalk.yellow("!")} ` +
-                        `ID: ${scoreinfo.id}\n  ` +
-                        `Title: ${scoreinfo.title}\n `
+                        i18next.t("id", { id: scoreinfo.id }) +
+                        "\n  " +
+                        i18next.t("title", { title: scoreinfo.title }) +
+                        "\n "
                 );
                 spinner.start();
             }
@@ -553,7 +524,7 @@ void (async () => {
             types = await inquirer.prompt<Params>({
                 type: "checkbox",
                 name: "types",
-                message: "Filetype Selection",
+                message: i18next.t("cli_types_message"),
                 choices: ["midi", "mp3", "pdf"],
                 validate: checkboxValidate,
                 pageSize: Infinity,
@@ -561,21 +532,21 @@ void (async () => {
             });
             types = types.types;
 
-            // destination directory
-            const { dest } = await inquirer.prompt<Params>({
+            // output directory
+            const { output } = await inquirer.prompt<Params>({
                 type: "input",
-                name: "dest",
-                message: "Destination Directory:",
+                name: "output",
+                message: i18next.t("cli_output_message"),
                 validate(input: string) {
                     return input && fs.statSync(input).isDirectory();
                 },
                 default: argv.output,
             });
             spinner.start();
-            argv.output = dest;
+            argv.output = output;
         }
 
-        // validate destination directory
+        // validate output directory
         try {
             await fs.promises.access(argv.output);
         } catch (err) {
@@ -617,12 +588,16 @@ void (async () => {
                 );
                 await fs.promises.writeFile(f, fileData);
                 if (argv.verbose) {
-                    spinner.info(`Saved ${chalk.underline(f)}`);
+                    spinner.info(
+                        i18next.t("cli_saved_message", {
+                            file: chalk.underline(f),
+                        })
+                    );
                 }
             })
         );
 
-        spinner.succeed("OK");
+        spinner.succeed(i18next.t("cli_done_message"));
         return;
     }
 })();

@@ -1,25 +1,11 @@
 import { useTimeout, windowOpenAsync, console, attachShadow } from "./utils";
 import { isGmAvailable, _GM } from "./gm";
-import i18next from "i18next";
-import lang from "./i18n/index";
-import en from "./i18n/en.json";
-import es from "./i18n/es.json";
-import it from "./i18n/it.json";
-import zh from "./i18n/zh.json";
 // @ts-ignore
 import btnListCss from "./btn.css";
+import i18nextInit, { i18next } from "./i18n/index";
 
 (async () => {
-    await i18next.init({
-        compatibilityJSON: "v3",
-        fallbackLng: lang,
-        resources: {
-            en: { translation: en },
-            es: { translation: es },
-            it: { translation: it },
-            zh: { translation: zh },
-        },
-    });
+    await i18nextInit;
 })();
 
 type BtnElement = HTMLButtonElement;
@@ -39,7 +25,7 @@ const getBtnContainer = (): HTMLDivElement => {
         | HTMLDivElement
         | undefined;
     if (!btnParent || !(btnParent instanceof HTMLDivElement))
-        throw new Error("btn parent not found");
+        throw new Error(i18next.t("button_parent_not_found"));
     return btnParent;
 };
 
@@ -248,7 +234,7 @@ export class BtnList {
             }
 
             default:
-                throw new Error("unknown BtnListMode");
+                throw new Error(i18next.t("unknown_button_list_mode"));
         }
     }
 }

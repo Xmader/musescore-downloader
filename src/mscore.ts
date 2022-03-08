@@ -4,26 +4,12 @@
 import { fetchMscz } from "./mscz";
 import { fetchData } from "./utils";
 import { ScoreInfo } from "./scoreinfo";
-import isNodeJs from "detect-node";
-import i18next from "i18next";
-import lang from "./i18n/index";
-import en from "./i18n/en.json";
-import es from "./i18n/es.json";
-import it from "./i18n/it.json";
-import zh from "./i18n/zh.json";
 import { dependencies as depVers } from "../package.json";
+import isNodeJs from "detect-node";
+import i18nextInit, { i18next } from "./i18n/index";
 
 (async () => {
-    await i18next.init({
-        compatibilityJSON: "v3",
-        fallbackLng: lang,
-        resources: {
-            en: { translation: en },
-            es: { translation: es },
-            it: { translation: it },
-            zh: { translation: zh },
-        },
-    });
+    await i18nextInit;
 })();
 
 const WEBMSCORE_URL = `https://cdn.jsdelivr.net/npm/webmscore@${depVers.webmscore}/webmscore.js`;
