@@ -68,3 +68,5 @@ typings/
 dist/cache
 dist/ext*
 dist/cli.js
+
+.vscode/
