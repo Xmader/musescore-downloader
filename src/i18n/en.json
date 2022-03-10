@@ -5,7 +5,7 @@
     "full_score": "Full score",
     "button_parent_not_found": "Button parent not found",
     "unknown_button_list_mode": "Unknown button list mode",
-    "cli_usage_hint": "Usage: $0 [options]",
+    "cli_usage_hint": "Usage: {{bin}} [options]",
     "cli_example_url": "download MP3 of URL to specified directory",
     "path_to_folder": "path/to/folder",
     "path_to_file": "path/to/file",

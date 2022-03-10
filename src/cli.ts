@@ -23,7 +23,7 @@ const chalk: typeof import("chalk") = require("chalk");
 const yargs = require("yargs");
 const { hideBin } = require("yargs/helpers");
 const argv: any = yargs(hideBin(process.argv))
-    .usage(i18next.t("cli_usage_hint"))
+    .usage(i18next.t("cli_usage_hint", { bin: "$0" }))
     .example(
         "$0 -i https://musescore.com/user/123/scores/456 -t mp3 -o " +
             process.cwd(),
@@ -243,7 +243,6 @@ void (async () => {
             filePaths.push(argv.input);
         }
 
-        // for await (const filePath of filePaths) {
         await Promise.all(
             filePaths.map(async (filePath) => {
                 // validate input file

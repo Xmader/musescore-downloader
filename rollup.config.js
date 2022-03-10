@@ -27,7 +27,6 @@ function modifyWrapper() {
         .split(/\n/g)
         .slice(index + 9 + fs.readdirSync("./src/i18n/").length - 1)
         .join("\n");
-    // fs.closeSync("./dist/wrapper.js");
     fs.writeFileSync("./dist/wrapper.js", startJs + endJs);
 }
 

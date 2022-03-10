@@ -2910,7 +2910,7 @@
       var full_score = "Full score";
       var button_parent_not_found = "Button parent not found";
       var unknown_button_list_mode = "Unknown button list mode";
-      var cli_usage_hint = "Usage: $0 [options]";
+      var cli_usage_hint = "Usage: {{bin}} [options]";
       var cli_example_url = "download MP3 of URL to specified directory";
       var path_to_folder = "path/to/folder";
       var path_to_file = "path/to/file";
@@ -35268,7 +35268,7 @@ Please pipe the document into a Node stream.\
     var full_score = "Full score";
     var button_parent_not_found = "Button parent not found";
     var unknown_button_list_mode = "Unknown button list mode";
-    var cli_usage_hint = "Usage: $0 [options]";
+    var cli_usage_hint = "Usage: {{bin}} [options]";
     var cli_example_url = "download MP3 of URL to specified directory";
     var path_to_folder = "path/to/folder";
     var path_to_file = "path/to/file";
