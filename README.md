@@ -46,8 +46,6 @@ There are 4 different installable programs:
 2. Go to the latest [dl-musescore.user.js](https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js) file
 3. Press the Install button
 
-> Note: When using Google Chrome, the download buttons might not be visible. Instead, you can access the download buttons in the Tampermonkey menu by clicking the Tampermonkey extension icon in the browser toolbar
-
 #### Shortcut
 
 1. Install the [LibreScore shortcut](https://www.icloud.com/shortcuts/9a4ae92b785c443cb4302fb88229af8a)
