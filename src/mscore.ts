@@ -7,6 +7,7 @@ import { ScoreInfo } from "./scoreinfo";
 import { dependencies as depVers } from "../package.json";
 import isNodeJs from "detect-node";
 import i18nextInit, { i18next } from "./i18n/index";
+import { InputFileFormat } from "webmscore/schemas";
 
 (async () => {
     await i18nextInit;
@@ -89,7 +90,7 @@ export const loadSoundFont = (score: WebMscore): Promise<void> => {
 };
 
 export const loadMscore = async (
-    fileExt: string,
+    fileExt: InputFileFormat,
     scoreinfo: ScoreInfo,
     w?: Window
 ): Promise<WebMscore> => {

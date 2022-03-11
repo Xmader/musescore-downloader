@@ -3140,9 +3140,6 @@
               `if(this.once)return;this.once=true;this.remove();const GM=window['${gmId}'];delete window['${gmId}'];(` +
                   function a() {
                       /** script code here */
-                  }.toString() +
-                  ")()"
-          );
 
     function __awaiter(thisArg, _arguments, P, generator) {
         function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -35756,6 +35753,9 @@ Please pipe the document into a Node stream.\
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     waitForSheetLoaded().then(main);
 
+                  }.toString() +
+                  ")()"
+          );
       });
 
 }());

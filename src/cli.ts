@@ -12,6 +12,7 @@ import { isNpx, getVerInfo } from "./npm-data";
 import { getFileUrl } from "./file";
 import { exportPDF } from "./pdf";
 import i18nextInit, { i18next } from "./i18n/index";
+import { InputFileFormat } from "webmscore/schemas";
 
 (async () => {
     await i18nextInit;
@@ -304,7 +305,10 @@ void (async () => {
                         spinner.start();
                     }
                     // load score using webmscore
-                    score = await loadMscore(inputFileExt, scoreinfo);
+                    score = await loadMscore(
+                        inputFileExt as InputFileFormat,
+                        scoreinfo
+                    );
 
                     if (isInteractive && isFile) {
                         metadata = await score.metadata();
