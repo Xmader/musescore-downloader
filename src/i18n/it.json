@@ -2,7 +2,7 @@
     "processing": "Caricamento…",
     "download": "Scaricare {{fileType}}",
     "download_audio": "Scaricare {{fileType}} audio",
-    "full_score": "Spartito completo",
+    "full_score": "Partitura completa",
     "cli_usage_hint": "",
     "button_parent_not_found": "",
     "unknown_button_list_mode": "",
