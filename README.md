@@ -6,7 +6,7 @@
 
 [![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-musescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=App)](https://github.com/LibreScore/app-librescore/releases/latest) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/dl-musescore/total.svg?label=Userscript)](https://github.com/LibreScore/dl-musescore/releases/latest) [![npm](https://img.shields.io/npm/dt/musescore-dl?label=Command-line+tool)](https://www.npmjs.com/package/musescore-dl)
 
-Download sheet music from MuseScore
+#### Download sheet music from MuseScore™
 
 </div>
 
@@ -85,3 +85,7 @@ There are 4 different installable programs:
 
 - Install `./dist/main.user.js` with Tampermonkey
 - `node ./dist/cli.js` to run command-line tool
+
+---
+
+###### MUSESCORE is a trademark of MuseScore BVBA
