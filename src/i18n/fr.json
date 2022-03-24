@@ -1,7 +1,7 @@
 {
     "processing": "En traitement…",
     "download": "Télécharger {{fileType}}",
-    "full_score": "Grande partition",
+    "full_score": "Partition complète",
     "download_audio": "Télécharger audio {{fileType}}",
     "cli_usage_hint": "",
     "button_parent_not_found": "",
