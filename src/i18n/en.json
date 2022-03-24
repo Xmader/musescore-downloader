@@ -15,7 +15,7 @@
     "cli_option_type_description": "Type of files to download",
     "cli_option_output_description": "Folder to save files to",
     "cli_option_verbose_description": "Run with verbose logging",
-    "cli_outdated_version_message": "\nNew version is available! Current version is {{installed}}\nRun npm i -g librescore-dl@{{latest}} to update",
+    "cli_outdated_version_message": "\nNew version is available! Current version is {{installed}}\nRun npm i -g dl-librescore@{{latest}} to update",
     "cli_windows_paste_hint": "right-click to paste",
     "cli_linux_paste_hint": "usually Ctrl+Shift+V to paste",
     "cli_input_message": "MuseScore URL or path to file or folder:",

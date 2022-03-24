@@ -4,7 +4,7 @@
 
 <img src="images/logo.png" width="256" alt="LibreScore logo">
 
-[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=App)](https://github.com/LibreScore/app-librescore/releases/latest) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Userscript)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/librescore-dl?label=Command-line+tool)](https://www.npmjs.com/package/librescore-dl)
+[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=App)](https://github.com/LibreScore/app-librescore/releases/latest) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Userscript)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/dl-librescore?label=Command-line+tool)](https://www.npmjs.com/package/dl-librescore)
 
 </div>
 
@@ -67,7 +67,7 @@ There are 4 different installable programs:
 
 1. Install [Node.js LTS](https://nodejs.org)
 2. Open a terminal (do _not_ open the Node.js application)
-3. Type `npx librescore-dl@latest`, then press `Enter ↵`
+3. Type `npx dl-librescore@latest`, then press `Enter ↵`
 
 ### Webmscore website
 
@@ -81,8 +81,8 @@ There are 4 different installable programs:
 2. `npm install` to install packages
 3. `npm run build` to build
 
-- Install `./dist/main.user.js` with Tampermonkey
-- `node ./dist/cli.js` to run command-line tool
+-   Install `./dist/main.user.js` with Tampermonkey
+-   `node ./dist/cli.js` to run command-line tool
 
 ---
 

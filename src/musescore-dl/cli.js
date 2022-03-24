@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-require("librescore-dl/dist/cli.js");
+require("dl-librescore/dist/cli.js");

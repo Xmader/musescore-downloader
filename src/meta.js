@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         librescore-dl
+// @name         dl-librescore
 // @namespace    https://github.com/LibreScore/dl-librescore
 // @homepageURL  https://github.com/LibreScore/dl-librescore
 // @supportURL   https://github.com/LibreScore/dl-librescore/issues
