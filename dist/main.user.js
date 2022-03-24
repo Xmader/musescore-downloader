@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/LibreScore/dl-librescore/issues
 // @updateURL    https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js
 // @downloadURL  https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js
-// @version      0.33.0
+// @version      0.34.0
 // @description  Download sheet music
 // @author       LibreScore
 // @icon         https://librescore.org/img/icons/logo.svg
