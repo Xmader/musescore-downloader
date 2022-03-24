@@ -1,9 +1,6 @@
 {
     "eslint.options": {},
-    "eslint.validate": [
-        "javascript",
-        "typescript",
-    ],
+    "eslint.validate": ["javascript", "typescript"],
     "editor.tabSize": 2,
     "javascript.format.insertSpaceBeforeFunctionParenthesis": true,
     "typescript.format.insertSpaceBeforeFunctionParenthesis": true,
@@ -16,4 +13,5 @@
         "source.fixAll.eslint": true
     },
     "typescript.tsdk": "node_modules/typescript/lib",
+    "i18n-ally.localesPaths": ["src/i18n"]
 }

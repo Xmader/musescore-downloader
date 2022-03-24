@@ -20,7 +20,7 @@ if (_GM && _GM.registerMenuCommand && _GM.openInTab) {
             " **",
         () =>
             _GM.openInTab(
-                "https://github.com/LibreScore/dl-musescore/releases",
+                "https://github.com/LibreScore/dl-librescore/releases",
                 {
                     active: true,
                 }

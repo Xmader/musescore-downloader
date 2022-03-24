@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name         musescore-dl
-// @namespace    https://github.com/LibreScore/dl-musescore
-// @homepageURL  https://github.com/LibreScore/dl-musescore
-// @supportURL   https://github.com/LibreScore/dl-musescore/issues
-// @updateURL    https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js
-// @downloadURL  https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js
+// @name         librescore-dl
+// @namespace    https://github.com/LibreScore/dl-librescore
+// @homepageURL  https://github.com/LibreScore/dl-librescore
+// @supportURL   https://github.com/LibreScore/dl-librescore/issues
+// @updateURL    https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js
+// @downloadURL  https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js
 // @version      0.33.0
-// @description  Download sheet music from MuseScore
+// @description  Download sheet music
 // @author       LibreScore
 // @icon         https://librescore.org/img/icons/logo.svg
 // @match        https://musescore.com/*/*
@@ -3001,7 +3001,7 @@
       var cli_option_type_description$1 = "Type of files to download";
       var cli_option_output_description$1 = "Folder to save files to";
       var cli_option_verbose_description$1 = "Run with verbose logging";
-      var cli_outdated_version_message$1 = "\nNew version is available! Current version is {{installed}}\nRun npm i -g musescore-dl@{{latest}} to update";
+      var cli_outdated_version_message$1 = "\nNew version is available! Current version is {{installed}}\nRun npm i -g librescore-dl@{{latest}} to update";
       var cli_windows_paste_hint$1 = "right-click to paste";
       var cli_linux_paste_hint$1 = "usually Ctrl+Shift+V to paste";
       var cli_input_message$1 = "MuseScore URL or path to file or folder:";
@@ -3243,7 +3243,7 @@
       var processing$4 = "Caricamento…";
       var download$4 = "Scaricare {{fileType}}";
       var download_audio$4 = "Scaricare {{fileType}} audio";
-      var full_score$4 = "Spartito completo";
+      var full_score$4 = "Partitura completa";
       var cli_usage_hint$4 = "";
       var button_parent_not_found$4 = "";
       var unknown_button_list_mode$4 = "";
@@ -3700,7 +3700,7 @@
                   " **",
               () =>
                   _GM.openInTab(
-                      "https://github.com/LibreScore/dl-musescore/releases",
+                      "https://github.com/LibreScore/dl-librescore/releases",
                       {
                           active: true,
                       }
@@ -35962,7 +35962,7 @@ Please pipe the document into a Node stream.\
     var cli_option_type_description$1 = "Type of files to download";
     var cli_option_output_description$1 = "Folder to save files to";
     var cli_option_verbose_description$1 = "Run with verbose logging";
-    var cli_outdated_version_message$1 = "\nNew version is available! Current version is {{installed}}\nRun npm i -g musescore-dl@{{latest}} to update";
+    var cli_outdated_version_message$1 = "\nNew version is available! Current version is {{installed}}\nRun npm i -g librescore-dl@{{latest}} to update";
     var cli_windows_paste_hint$1 = "right-click to paste";
     var cli_linux_paste_hint$1 = "usually Ctrl+Shift+V to paste";
     var cli_input_message$1 = "MuseScore URL or path to file or folder:";
@@ -36204,7 +36204,7 @@ Please pipe the document into a Node stream.\
     var processing$4 = "Caricamento…";
     var download$4 = "Scaricare {{fileType}}";
     var download_audio$4 = "Scaricare {{fileType}} audio";
-    var full_score$4 = "Spartito completo";
+    var full_score$4 = "Partitura completa";
     var cli_usage_hint$4 = "";
     var button_parent_not_found$4 = "";
     var unknown_button_list_mode$4 = "";

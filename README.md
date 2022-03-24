@@ -1,27 +1,25 @@
-# dl-musescore
+# dl-librescore
 
 <div align="center">
 
 <img src="images/logo.png" width="256" alt="LibreScore logo">
 
-[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-musescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=App)](https://github.com/LibreScore/app-librescore/releases/latest) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/dl-musescore/total.svg?label=Userscript)](https://github.com/LibreScore/dl-musescore/releases/latest) [![npm](https://img.shields.io/npm/dt/musescore-dl?label=Command-line+tool)](https://www.npmjs.com/package/musescore-dl)
-
-#### Download sheet music from MuseScore™
+[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=App)](https://github.com/LibreScore/app-librescore/releases/latest) [![Github All Releases](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Userscript)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/librescore-dl?label=Command-line+tool)](https://www.npmjs.com/package/librescore-dl)
 
 </div>
 
-> DISCLAIMER: This is not an officially supported MuseScore product
+> DISCLAIMER: This is not an officially supported MuseScore™ product
 
 ## Installation
 
 There are 4 different installable programs:
 
-| Program                                                                             | MSCZ | MIDI | MP3 | PDF | Conversion |     | Windows | macOS | Linux | Android | iOS/iPadOS |
-| ----------------------------------------------------------------------------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | ---------- |
-| [App](https://github.com/LibreScore/dl-musescore#app)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
-| [Userscript](https://github.com/LibreScore/dl-musescore#userscript)               | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
-| [Command-line tool](https://github.com/LibreScore/dl-musescore#command-line-tool) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
-| [Webmscore website](https://github.com/LibreScore/dl-musescore#webmscore-website) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
+| Program                                                                            | MSCZ | MIDI | MP3 | PDF | Conversion |     | Windows | macOS | Linux | Android | iOS/iPadOS |
+| ---------------------------------------------------------------------------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | ---------- |
+| [App](https://github.com/LibreScore/dl-librescore#app)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
+| [Userscript](https://github.com/LibreScore/dl-librescore#userscript)               | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
+| [Command-line tool](https://github.com/LibreScore/dl-librescore#command-line-tool) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
+| [Webmscore website](https://github.com/LibreScore/dl-librescore#webmscore-website) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 
 > Note: `Conversion` refers to the ability to convert files into other file types, including those not downloadable in the program.
 > Conversion targets include: Individual Parts, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ, and MSCX.
@@ -33,17 +31,17 @@ There are 4 different installable programs:
 
 ### Userscript
 
-> Note: If your device is on iOS or iPadOS, please follow the [Shortcut](https://github.com/LibreScore/dl-musescore#shortcut) instructions
+> Note: If your device is on iOS or iPadOS, please follow the [Shortcut](https://github.com/LibreScore/dl-librescore#shortcut) instructions
 
-> Note: If you cannot install browser extensions on your device, please follow the [Bookmark](https://github.com/LibreScore/dl-musescore#bookmark) instructions instead
+> Note: If you cannot install browser extensions on your device, please follow the [Bookmark](https://github.com/LibreScore/dl-librescore#bookmark) instructions instead
 
 #### Browser extension
 
 1. Install [Tampermonkey](https://www.tampermonkey.net)
 
-> Note: If you already installed an old version of the script called "musescore-downloader" or "mcsz downloader", please uninstall it from the Tampermonkey dashboard
+> Note: If you already installed an old version of the script called "musescore-downloader", "mcsz downloader", or "musescore-dl" please uninstall it from the Tampermonkey dashboard
 
-2. Go to the latest [dl-musescore.user.js](https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js) file
+2. Go to the latest [dl-librescore.user.js](https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js) file
 3. Press the Install button
 
 #### Shortcut
@@ -61,7 +59,7 @@ There are 4 different installable programs:
 
 1. Create a new bookmark (usually Ctrl+D)
 2. Type `LibreScore` for the Name field
-3. Type `javascript:(function () {let code = document.createElement('script');code.src = 'https://github.com/LibreScore/dl-musescore/releases/latest/download/dl-musescore.user.js';document.body.appendChild(code);}())` for the URL field
+3. Type `javascript:(function () {let code = document.createElement('script');code.src = 'https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js';document.body.appendChild(code);}())` for the URL field
 4. Save the bookmark
 5. When viewing a song on MuseScore, click the bookmark to activate the extension
 
@@ -69,7 +67,7 @@ There are 4 different installable programs:
 
 1. Install [Node.js LTS](https://nodejs.org)
 2. Open a terminal (do _not_ open the Node.js application)
-3. Type `npx musescore-dl@latest`, then press `Enter ↵`
+3. Type `npx librescore-dl@latest`, then press `Enter ↵`
 
 ### Webmscore website
 

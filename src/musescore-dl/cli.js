@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-require("musescore-dl/dist/cli.js");
+require("librescore-dl/dist/cli.js");

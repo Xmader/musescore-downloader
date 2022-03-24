@@ -1,20 +1,20 @@
 {
-    "name": "musescore-dl",
+    "name": "librescore-dl",
     "version": "0.33.0",
-    "description": "Download sheet music from Musescore",
+    "description": "Download sheet music",
     "main": "dist/main.user.js",
     "bin": "dist/cli.js",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/LibreScore/dl-musescore.git"
+        "url": "git+https://github.com/LibreScore/dl-librescore.git"
     },
     "author": "LibreScore",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/LibreScore/dl-musescore/issues"
+        "url": "https://github.com/LibreScore/dl-librescore/issues"
     },
-    "homepage": "https://github.com/LibreScore/dl-musescore#readme",
-    "homepage_url": "https://github.com/LibreScore/dl-musescore#readme",
+    "homepage": "https://github.com/LibreScore/dl-librescore#readme",
+    "homepage_url": "https://github.com/LibreScore/dl-librescore#readme",
     "manifest_version": 2,
     "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
     "content_scripts": [

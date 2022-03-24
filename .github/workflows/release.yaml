@@ -54,8 +54,8 @@ jobs:
 
             - run: |
                   mkdir -p $ARTIFACTS_DIR
-                  cp dist/main.user.js $ARTIFACTS_DIR/dl-musescore.user.js
-                  wget -q https://github.com/LibreScore/dl-musescore/archive/$REF.tar.gz -O $ARTIFACTS_DIR/source.tar.gz
+                  cp dist/main.user.js $ARTIFACTS_DIR/dl-librescore.user.js
+                  wget -q https://github.com/LibreScore/dl-librescore/archive/$REF.tar.gz -O $ARTIFACTS_DIR/source.tar.gz
 
             - name: Upload to IPFS
               uses: aquiladev/ipfs-action@v0.1.6
