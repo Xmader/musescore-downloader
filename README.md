@@ -8,7 +8,7 @@
 
 </div>
 
-> DISCLAIMER: This is not an officially supported MuseScore™ product
+> DISCLAIMER: This is not an officially endorsed MuseScore product
 
 ## Installation
 
@@ -81,9 +81,5 @@ There are 4 different installable programs:
 2. `npm install` to install packages
 3. `npm run build` to build
 
--   Install `./dist/main.user.js` with Tampermonkey
--   `node ./dist/cli.js` to run command-line tool
-
----
-
-###### MUSESCORE is a trademark of MuseScore BVBA
+- Install `./dist/main.user.js` with Tampermonkey
+- `node ./dist/cli.js` to run command-line tool
