@@ -31,9 +31,7 @@ There are 4 different installable programs:
 
 ### Userscript
 
-> Note: If your device is on iOS or iPadOS, please follow the [Shortcut](https://github.com/LibreScore/dl-librescore#shortcut) instructions
-
-> Note: If you cannot install browser extensions on your device, please follow the [Bookmark](https://github.com/LibreScore/dl-librescore#bookmark) instructions instead
+> Note: If your device is on iOS or iPadOS, please follow the [Shortcut](https://github.com/LibreScore/dl-librescore#shortcut) instructions. If you cannot install browser extensions on your device, please follow the [Bookmark](https://github.com/LibreScore/dl-librescore#bookmark) instructions instead.
 
 #### Browser extension
 
