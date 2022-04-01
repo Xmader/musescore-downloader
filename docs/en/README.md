@@ -2,6 +2,8 @@
 
 &#8206;**English** | &#8206;[[+]](https://librescore.ddns.net/projects/librescore/docs)
 
+[//]: # "\+\_==!|!=_=!|!==_/+/ ***DO NOT EDIT ABOVE THIS LINE*** /+/^^+#|#+^+#|#+^^\+\"
+
 # dl-librescore
 
 <div align="center">
