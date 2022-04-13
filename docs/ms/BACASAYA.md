@@ -12,7 +12,7 @@
 
 [![ Discord ](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![Github Semua Keluaran](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=App)](https://github.com/LibreScore/app-librescore/releases/latest) [![Github Semua Keluaran](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Userscript)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/dl-librescore?label=Command-line+tool)](https://www.npmjs.com/package/dl-librescore)
 
-Download sheet music
+Muat turun lembaran muzik
 
 </div>
 
@@ -55,7 +55,7 @@ Terdapat 4 program boleh dipasang yang berbeza:
 #### Pintasan
 
 1. Pasang [pintasan LibreScore](https://www.icloud.com/shortcuts/901d8778d2da4f7db9272d3b2232d0fe)
-2. Dalam Safari, apabila melihat lagu di MuseScore, ketik <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/81f5a996cc"
+2. Dalam Safari, apabila melihat lagu di MuseScore, ketik <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" height="16">
 3. Ketik pintasan LibreScore untuk mengaktifkan sambungan
 
 > Nota: Sebelum anda boleh menjalankan JavaScript daripada pintasan, anda mesti menghidupkan Benarkan Skrip Berjalan
