@@ -60,8 +60,8 @@ Terdapat 4 program boleh dipasang yang berbeza:
 
 > Nota: Sebelum anda boleh menjalankan JavaScript daripada pintasan, anda mesti menghidupkan Benarkan Skrip Berjalan
 >
-> 1. Pergi ke Tetapan <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/492fec5aff74dbdef9b4s1">tinggi"
-> 2. Hidupkan Benarkan Skrip Berjalan
+> 1. Pergi ke Tetapan <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/492fec5aff74dbdef9b526177c3804b4.png" height="16"> > Pintasan > Advanced
+> 2. Menyalakan Izinkan Menjalankan Skrip
 
 #### Penanda buku
 
