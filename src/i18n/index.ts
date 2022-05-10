@@ -6,6 +6,7 @@ import fr from "./fr.json";
 import it from "./it.json";
 import ja from "./ja.json";
 import ko from "./ko.json";
+import ms from "./ms.json";
 import ru from "./ru.json";
 import zh_Hans from "./zh-Hans.json";
 
@@ -21,6 +22,7 @@ export default i18n.init({
         it: { translation: it },
         ja: { translation: ja },
         ko: { translation: ko },
+        ms: { translation: ms },
         ru: { translation: ru },
         "zh-Hans": { translation: zh_Hans },
     },
