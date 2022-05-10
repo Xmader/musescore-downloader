@@ -47,8 +47,8 @@ jobs:
             - run: npm run build
             - run: npm run pack:ext
 
-            - name: NPM Publish
-              run: npm publish --tag $NPM_TAG
+#             - name: NPM Publish
+#               run: npm publish --tag $NPM_TAG
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -58,7 +58,7 @@ jobs:
                   wget -q https://github.com/LibreScore/dl-librescore/archive/$REF.tar.gz -O $ARTIFACTS_DIR/source.tar.gz
 
             - name: Upload to IPFS
-              uses: aquiladev/ipfs-action@v0.1.6
+              uses: aquiladev/ipfs-action@v0.2.2-alpha.0
               id: ipfs
               with:
                   path: ${{ env.ARTIFACTS_DIR }}
