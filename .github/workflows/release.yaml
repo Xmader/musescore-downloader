@@ -47,8 +47,8 @@ jobs:
             - run: npm run build
             - run: npm run pack:ext
 
-#             - name: NPM Publish
-#               run: npm publish --tag $NPM_TAG
+            - name: NPM Publish
+              run: npm publish --tag $NPM_TAG
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
