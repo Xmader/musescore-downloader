@@ -62,6 +62,7 @@ jobs:
               id: ipfs
               with:
                   path: ${{ env.ARTIFACTS_DIR }}
+                  timeout: 60000
                   service: infura
                   verbose: true
 
