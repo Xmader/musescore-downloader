@@ -788,6 +788,7 @@ var wrapper = (function () {
         if (!options) options = {};
         if (keys === undefined || keys === null) return '';
         if (!Array.isArray(keys)) keys = [String(keys)];
+        var returnDetails = options.returnDetails !== undefined ? options.returnDetails : this.options.returnDetails;
         var keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator;
 
         var _this$extractFromKey = this.extractFromKey(keys[keys.length - 1], options),
@@ -801,7 +802,18 @@ var wrapper = (function () {
         if (lng && lng.toLowerCase() === 'cimode') {
           if (appendNamespaceToCIMode) {
             var nsSeparator = options.nsSeparator || this.options.nsSeparator;
-            return namespace + nsSeparator + key;
+
+            if (returnDetails) {
+              resolved.res = "".concat(namespace).concat(nsSeparator).concat(key);
+              return resolved;
+            }
+
+            return "".concat(namespace).concat(nsSeparator).concat(key);
+          }
+
+          if (returnDetails) {
+            resolved.res = key;
+            return resolved;
           }
 
           return key;
@@ -823,9 +835,16 @@ var wrapper = (function () {
               this.logger.warn('accessing an object - but returnObjects options is not enabled!');
             }
 
-            return this.options.returnedObjectHandler ? this.options.returnedObjectHandler(resUsedKey, res, _objectSpread$2(_objectSpread$2({}, options), {}, {
+            var r = this.options.returnedObjectHandler ? this.options.returnedObjectHandler(resUsedKey, res, _objectSpread$2(_objectSpread$2({}, options), {}, {
               ns: namespaces
             })) : "key '".concat(key, " (").concat(this.language, ")' returned an object instead of string.");
+
+            if (returnDetails) {
+              resolved.res = r;
+              return resolved;
+            }
+
+            return r;
           }
 
           if (keySeparator) {
@@ -931,6 +950,11 @@ var wrapper = (function () {
           }
         }
 
+        if (returnDetails) {
+          resolved.res = res;
+          return resolved;
+        }
+
         return res;
       }
     }, {
@@ -939,7 +963,7 @@ var wrapper = (function () {
         var _this3 = this;
 
         if (this.i18nFormat && this.i18nFormat.parse) {
-          res = this.i18nFormat.parse(res, options, resolved.usedLng, resolved.usedNS, resolved.usedKey, {
+          res = this.i18nFormat.parse(res, _objectSpread$2(_objectSpread$2({}, this.options.interpolation.defaultVariables), options), resolved.usedLng, resolved.usedNS, resolved.usedKey, {
             resolved: resolved
           });
         } else if (!options.skipInterpolation) {
@@ -1837,10 +1861,10 @@ var wrapper = (function () {
               rest = _opt$split2.slice(1);
 
           var val = rest.join(':');
+          if (!formatOptions[key.trim()]) formatOptions[key.trim()] = val.trim();
           if (val.trim() === 'false') formatOptions[key.trim()] = false;
           if (val.trim() === 'true') formatOptions[key.trim()] = true;
           if (!isNaN(val.trim())) formatOptions[key.trim()] = parseInt(val.trim(), 10);
-          if (!formatOptions[key.trim()]) formatOptions[key.trim()] = val.trim();
         });
       }
     }
@@ -1940,13 +1964,9 @@ var wrapper = (function () {
 
   function _isNativeReflectConstruct$2() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
 
-  function remove(arr, what) {
-    var found = arr.indexOf(what);
-
-    while (found !== -1) {
-      arr.splice(found, 1);
-      found = arr.indexOf(what);
-    }
+  function removePending(q, name) {
+    delete q.pending[name];
+    q.pendingCount--;
   }
 
   var Connector = function (_EventEmitter) {
@@ -1973,6 +1993,9 @@ var wrapper = (function () {
       _this.languageUtils = services.languageUtils;
       _this.options = options;
       _this.logger = baseLogger.create('backendConnector');
+      _this.waitingReads = [];
+      _this.maxParallelReads = options.maxParallelReads || 10;
+      _this.readingCalls = 0;
       _this.state = {};
       _this.queue = [];
 
@@ -1988,10 +2011,10 @@ var wrapper = (function () {
       value: function queueLoad(languages, namespaces, options, callback) {
         var _this2 = this;
 
-        var toLoad = [];
-        var pending = [];
-        var toLoadLanguages = [];
-        var toLoadNamespaces = [];
+        var toLoad = {};
+        var pending = {};
+        var toLoadLanguages = {};
+        var toLoadNamespaces = {};
         languages.forEach(function (lng) {
           var hasAllNamespaces = true;
           namespaces.forEach(function (ns) {
@@ -2000,21 +2023,22 @@ var wrapper = (function () {
             if (!options.reload && _this2.store.hasResourceBundle(lng, ns)) {
               _this2.state[name] = 2;
             } else if (_this2.state[name] < 0) ; else if (_this2.state[name] === 1) {
-              if (pending.indexOf(name) < 0) pending.push(name);
+              if (pending[name] !== undefined) pending[name] = true;
             } else {
               _this2.state[name] = 1;
               hasAllNamespaces = false;
-              if (pending.indexOf(name) < 0) pending.push(name);
-              if (toLoad.indexOf(name) < 0) toLoad.push(name);
-              if (toLoadNamespaces.indexOf(ns) < 0) toLoadNamespaces.push(ns);
+              pending[name] = true;
+              toLoad[name] = true;
+              toLoadNamespaces[ns] = true;
             }
           });
-          if (!hasAllNamespaces) toLoadLanguages.push(lng);
+          if (!hasAllNamespaces) toLoadLanguages[lng] = true;
         });
 
-        if (toLoad.length || pending.length) {
+        if (Object.keys(toLoad).length || Object.keys(pending).length) {
           this.queue.push({
             pending: pending,
+            pendingCount: Object.keys(pending).length,
             loaded: {},
             errors: [],
             callback: callback
@@ -2022,10 +2046,10 @@ var wrapper = (function () {
         }
 
         return {
-          toLoad: toLoad,
-          pending: pending,
-          toLoadLanguages: toLoadLanguages,
-          toLoadNamespaces: toLoadNamespaces
+          toLoad: Object.keys(toLoad),
+          pending: Object.keys(pending),
+          toLoadLanguages: Object.keys(toLoadLanguages),
+          toLoadNamespaces: Object.keys(toLoadNamespaces)
         };
       }
     }, {
@@ -2044,16 +2068,17 @@ var wrapper = (function () {
         var loaded = {};
         this.queue.forEach(function (q) {
           pushPath(q.loaded, [lng], ns);
-          remove(q.pending, name);
+          removePending(q, name);
           if (err) q.errors.push(err);
 
-          if (q.pending.length === 0 && !q.done) {
+          if (q.pendingCount === 0 && !q.done) {
             Object.keys(q.loaded).forEach(function (l) {
-              if (!loaded[l]) loaded[l] = [];
+              if (!loaded[l]) loaded[l] = {};
+              var loadedKeys = Object.keys(loaded[l]);
 
-              if (q.loaded[l].length) {
-                q.loaded[l].forEach(function (ns) {
-                  if (loaded[l].indexOf(ns) < 0) loaded[l].push(ns);
+              if (loadedKeys.length) {
+                loadedKeys.forEach(function (ns) {
+                  if (loadedKeys[ns] !== undefined) loaded[l][ns] = true;
                 });
               }
             });
@@ -2080,12 +2105,34 @@ var wrapper = (function () {
         var wait = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 350;
         var callback = arguments.length > 5 ? arguments[5] : undefined;
         if (!lng.length) return callback(null, {});
+
+        if (this.readingCalls >= this.maxParallelReads) {
+          this.waitingReads.push({
+            lng: lng,
+            ns: ns,
+            fcName: fcName,
+            tried: tried,
+            wait: wait,
+            callback: callback
+          });
+          return;
+        }
+
+        this.readingCalls++;
         return this.backend[fcName](lng, ns, function (err, data) {
           if (err && data && tried < 5) {
             setTimeout(function () {
               _this3.read.call(_this3, lng, ns, fcName, tried + 1, wait * 2, callback);
             }, wait);
             return;
+          }
+
+          _this3.readingCalls--;
+
+          if (_this3.waitingReads.length > 0) {
+            var next = _this3.waitingReads.shift();
+
+            _this3.read(next.lng, next.ns, next.fcName, next.tried, next.wait, next.callback);
           }
 
           callback(err, data);
@@ -2747,7 +2794,7 @@ var wrapper = (function () {
         }
 
         if (this.hasResourceBundle(lng, ns)) return true;
-        if (!this.services.backendConnector.backend) return true;
+        if (!this.services.backendConnector.backend || this.options.resources && !this.options.partialBundledLanguages) return true;
         if (loadNotPending(lng, ns) && (!fallbackLng || loadNotPending(lastLng, ns))) return true;
         return false;
       }
@@ -2864,749 +2911,154 @@ var wrapper = (function () {
   var instance = I18n.createInstance();
   instance.createInstance = I18n.createInstance;
 
-  var createInstance = instance.createInstance;
-  var init = instance.init;
-  var loadResources = instance.loadResources;
-  var reloadResources = instance.reloadResources;
-  var use = instance.use;
-  var changeLanguage = instance.changeLanguage;
-  var getFixedT = instance.getFixedT;
-  var t = instance.t;
-  var exists = instance.exists;
-  var setDefaultNamespace = instance.setDefaultNamespace;
-  var hasLoadedNamespace = instance.hasLoadedNamespace;
-  var loadNamespaces = instance.loadNamespaces;
-  var loadLanguages = instance.loadLanguages;
+  instance.createInstance;
+  instance.init;
+  instance.loadResources;
+  instance.reloadResources;
+  instance.use;
+  instance.changeLanguage;
+  instance.getFixedT;
+  instance.t;
+  instance.exists;
+  instance.setDefaultNamespace;
+  instance.hasLoadedNamespace;
+  instance.loadNamespaces;
+  instance.loadLanguages;
 
-  var cli_usage_hint = "";
-  var cli_example_folder = "";
-  var cli_example_file = "";
-  var cli_option_input_description = "";
-  var cli_option_type_description = "";
-  var cli_option_output_description = "";
-  var cli_option_verbose_description = "";
-  var cli_outdated_version_message = "";
-  var cli_windows_paste_hint = "";
-  var cli_linux_paste_hint = "";
-  var cli_input_message = "";
-  var cli_input_suffix = "";
-  var cli_types_message = "";
-  var cli_output_message = "";
-  var cli_file_error = "";
-  var cli_input_error = "";
-  var cli_parts_message = "";
-  var cli_saved_message = "";
-  var cli_done_message = "";
-  var cli_url_error = "";
-  var cli_url_type_error = "";
-  var cli_score_not_found = "";
-  var button_parent_not_found = "";
-  var unknown_button_list_mode = "";
-  var cli_example_url = "";
-  var path_to_folder = "";
-  var path_to_file = "";
-  var cli_type_error = "";
-  var cli_file_extension_error = "";
-  var cli_file_loaded_message = "";
-  var cli_score_loaded_message = "";
-  var cli_confirm_message = "";
-  var id = "";
-  var title = "";
-  var no_sheet_images_error = "";
-  var source_code = "";
-  var version = "";
-  var processing = "";
-  var download = "";
-  var full_score = "";
-  var download_audio = "";
+  var cli_usage_hint$9 = "";
+  var cli_example_folder$9 = "";
+  var cli_example_file$9 = "";
+  var cli_option_input_description$9 = "";
+  var cli_option_type_description$9 = "";
+  var cli_option_output_description$9 = "";
+  var cli_option_verbose_description$9 = "";
+  var cli_outdated_version_message$9 = "";
+  var cli_windows_paste_hint$9 = "";
+  var cli_linux_paste_hint$9 = "";
+  var cli_input_message$9 = "";
+  var cli_input_suffix$9 = "";
+  var cli_types_message$9 = "";
+  var cli_output_message$9 = "";
+  var cli_file_error$9 = "";
+  var cli_input_error$9 = "";
+  var cli_parts_message$9 = "";
+  var cli_saved_message$9 = "";
+  var cli_done_message$9 = "";
+  var cli_url_error$9 = "";
+  var cli_url_type_error$9 = "";
+  var cli_score_not_found$9 = "";
+  var button_parent_not_found$9 = "";
+  var unknown_button_list_mode$9 = "";
+  var cli_example_url$9 = "";
+  var path_to_folder$9 = "";
+  var path_to_file$9 = "";
+  var cli_type_error$9 = "";
+  var cli_file_extension_error$9 = "";
+  var cli_file_loaded_message$9 = "";
+  var cli_score_loaded_message$9 = "";
+  var cli_confirm_message$9 = "";
+  var id$9 = "";
+  var title$9 = "";
+  var no_sheet_images_error$9 = "";
+  var source_code$9 = "";
+  var version$9 = "";
+  var processing$9 = "";
+  var download$9 = "";
+  var full_score$9 = "";
+  var download_audio$9 = "";
   var ar = {
-  	cli_usage_hint: cli_usage_hint,
-  	cli_example_folder: cli_example_folder,
-  	cli_example_file: cli_example_file,
-  	cli_option_input_description: cli_option_input_description,
-  	cli_option_type_description: cli_option_type_description,
-  	cli_option_output_description: cli_option_output_description,
-  	cli_option_verbose_description: cli_option_verbose_description,
-  	cli_outdated_version_message: cli_outdated_version_message,
-  	cli_windows_paste_hint: cli_windows_paste_hint,
-  	cli_linux_paste_hint: cli_linux_paste_hint,
-  	cli_input_message: cli_input_message,
-  	cli_input_suffix: cli_input_suffix,
-  	cli_types_message: cli_types_message,
-  	cli_output_message: cli_output_message,
-  	cli_file_error: cli_file_error,
-  	cli_input_error: cli_input_error,
-  	cli_parts_message: cli_parts_message,
-  	cli_saved_message: cli_saved_message,
-  	cli_done_message: cli_done_message,
-  	cli_url_error: cli_url_error,
-  	cli_url_type_error: cli_url_type_error,
-  	cli_score_not_found: cli_score_not_found,
-  	button_parent_not_found: button_parent_not_found,
-  	unknown_button_list_mode: unknown_button_list_mode,
-  	cli_example_url: cli_example_url,
-  	path_to_folder: path_to_folder,
-  	path_to_file: path_to_file,
-  	cli_type_error: cli_type_error,
-  	cli_file_extension_error: cli_file_extension_error,
-  	cli_file_loaded_message: cli_file_loaded_message,
-  	cli_score_loaded_message: cli_score_loaded_message,
-  	cli_confirm_message: cli_confirm_message,
-  	id: id,
-  	title: title,
-  	no_sheet_images_error: no_sheet_images_error,
-  	source_code: source_code,
-  	version: version,
-  	processing: processing,
-  	download: download,
-  	full_score: full_score,
-  	download_audio: download_audio
+  	cli_usage_hint: cli_usage_hint$9,
+  	cli_example_folder: cli_example_folder$9,
+  	cli_example_file: cli_example_file$9,
+  	cli_option_input_description: cli_option_input_description$9,
+  	cli_option_type_description: cli_option_type_description$9,
+  	cli_option_output_description: cli_option_output_description$9,
+  	cli_option_verbose_description: cli_option_verbose_description$9,
+  	cli_outdated_version_message: cli_outdated_version_message$9,
+  	cli_windows_paste_hint: cli_windows_paste_hint$9,
+  	cli_linux_paste_hint: cli_linux_paste_hint$9,
+  	cli_input_message: cli_input_message$9,
+  	cli_input_suffix: cli_input_suffix$9,
+  	cli_types_message: cli_types_message$9,
+  	cli_output_message: cli_output_message$9,
+  	cli_file_error: cli_file_error$9,
+  	cli_input_error: cli_input_error$9,
+  	cli_parts_message: cli_parts_message$9,
+  	cli_saved_message: cli_saved_message$9,
+  	cli_done_message: cli_done_message$9,
+  	cli_url_error: cli_url_error$9,
+  	cli_url_type_error: cli_url_type_error$9,
+  	cli_score_not_found: cli_score_not_found$9,
+  	button_parent_not_found: button_parent_not_found$9,
+  	unknown_button_list_mode: unknown_button_list_mode$9,
+  	cli_example_url: cli_example_url$9,
+  	path_to_folder: path_to_folder$9,
+  	path_to_file: path_to_file$9,
+  	cli_type_error: cli_type_error$9,
+  	cli_file_extension_error: cli_file_extension_error$9,
+  	cli_file_loaded_message: cli_file_loaded_message$9,
+  	cli_score_loaded_message: cli_score_loaded_message$9,
+  	cli_confirm_message: cli_confirm_message$9,
+  	id: id$9,
+  	title: title$9,
+  	no_sheet_images_error: no_sheet_images_error$9,
+  	source_code: source_code$9,
+  	version: version$9,
+  	processing: processing$9,
+  	download: download$9,
+  	full_score: full_score$9,
+  	download_audio: download_audio$9
   };
 
-  var processing$1 = "Processing…";
-  var download$1 = "Download {{fileType}}";
-  var download_audio$1 = "Download {{fileType}} audio";
-  var full_score$1 = "Full score";
-  var button_parent_not_found$1 = "Button parent not found";
-  var unknown_button_list_mode$1 = "Unknown button list mode";
-  var cli_usage_hint$1 = "Usage: {{bin}} [options]";
-  var cli_example_url$1 = "download MP3 of URL to specified directory";
-  var path_to_folder$1 = "path/to/folder";
-  var path_to_file$1 = "path/to/file";
-  var cli_example_folder$1 = "export MIDI and PDF of all files in specified folder to current folder";
-  var cli_example_file$1 = "export FLAC of specified MusicXML file to current folder";
-  var cli_option_input_description$1 = "URL, file, or folder to download or convert from";
-  var cli_option_type_description$1 = "Type of files to download";
-  var cli_option_output_description$1 = "Folder to save files to";
-  var cli_option_verbose_description$1 = "Run with verbose logging";
-  var cli_outdated_version_message$1 = "\nNew version is available! Current version is {{installed}}\nRun npm i -g dl-librescore@{{latest}} to update";
-  var cli_windows_paste_hint$1 = "right-click to paste";
-  var cli_linux_paste_hint$1 = "usually Ctrl+Shift+V to paste";
-  var cli_input_message$1 = "MuseScore URL or path to file or folder:";
-  var cli_input_suffix$1 = "starts with https://musescore.com/ or is a path";
-  var cli_types_message$1 = "Filetype Selection";
-  var cli_output_message$1 = "Output Directory:";
-  var cli_file_error$1 = "File does not exist";
-  var cli_type_error$1 = "No types chosen";
-  var cli_file_extension_error$1 = "Invalid file extension, only gp, gp3, gp4, gp5, gpx, gtp, kar, mid, midi, mscx, mscz, musicxml, mxl, ptb, and xml are supported";
-  var cli_file_loaded_message$1 = "File loaded";
-  var cli_score_loaded_message$1 = "Score loaded by Webmscore";
-  var cli_input_error$1 = "Try using the Webmscore website instead: https://librescore.github.io";
-  var cli_parts_message$1 = "Part Selection";
-  var cli_saved_message$1 = "Saved {{file}}";
-  var cli_done_message$1 = "Done";
-  var cli_url_error$1 = "Invalid URL";
-  var cli_url_type_error$1 = "Only MIDI, MP3, and PDF are downloadable from a URL";
-  var cli_score_not_found$1 = "Score not found";
-  var cli_confirm_message$1 = "Continue?";
-  var id$1 = "ID: {{id}}";
-  var title$1 = "Title: {{title}}";
-  var no_sheet_images_error$1 = "No sheet images found";
-  var source_code$1 = "Source Code";
-  var version$1 = "Version: {{version}}";
+  var processing$8 = "Processing…";
+  var download$8 = "Download {{fileType}}";
+  var download_audio$8 = "Download {{fileType}} audio";
+  var full_score$8 = "Full score";
+  var button_parent_not_found$8 = "Button parent not found";
+  var unknown_button_list_mode$8 = "Unknown button list mode";
+  var cli_usage_hint$8 = "Usage: {{bin}} [options]";
+  var cli_example_url$8 = "download MP3 of URL to specified directory";
+  var path_to_folder$8 = "path/to/folder";
+  var path_to_file$8 = "path/to/file";
+  var cli_example_folder$8 = "export MIDI and PDF of all files in specified folder to current folder";
+  var cli_example_file$8 = "export FLAC of specified MusicXML file to current folder";
+  var cli_option_input_description$8 = "URL, file, or folder to download or convert from";
+  var cli_option_type_description$8 = "Type of files to download";
+  var cli_option_output_description$8 = "Folder to save files to";
+  var cli_option_verbose_description$8 = "Run with verbose logging";
+  var cli_outdated_version_message$8 = "\nNew version is available! Current version is {{installed}}\nRun npm i -g dl-librescore@{{latest}} to update";
+  var cli_windows_paste_hint$8 = "right-click to paste";
+  var cli_linux_paste_hint$8 = "usually Ctrl+Shift+V to paste";
+  var cli_input_message$8 = "MuseScore URL or path to file or folder:";
+  var cli_input_suffix$8 = "starts with https://musescore.com/ or is a path";
+  var cli_types_message$8 = "Filetype Selection";
+  var cli_output_message$8 = "Output Directory:";
+  var cli_file_error$8 = "File does not exist";
+  var cli_type_error$8 = "No types chosen";
+  var cli_file_extension_error$8 = "Invalid file extension, only gp, gp3, gp4, gp5, gpx, gtp, kar, mid, midi, mscx, mscz, musicxml, mxl, ptb, and xml are supported";
+  var cli_file_loaded_message$8 = "File loaded";
+  var cli_score_loaded_message$8 = "Score loaded by Webmscore";
+  var cli_input_error$8 = "Try using the Webmscore website instead: https://librescore.github.io";
+  var cli_parts_message$8 = "Part Selection";
+  var cli_saved_message$8 = "Saved {{file}}";
+  var cli_done_message$8 = "Done";
+  var cli_url_error$8 = "Invalid URL";
+  var cli_url_type_error$8 = "Only MIDI, MP3, and PDF are downloadable from a URL";
+  var cli_score_not_found$8 = "Score not found";
+  var cli_confirm_message$8 = "Continue?";
+  var id$8 = "ID: {{id}}";
+  var title$8 = "Title: {{title}}";
+  var no_sheet_images_error$8 = "No sheet images found";
+  var source_code$8 = "Source Code";
+  var version$8 = "Version: {{version}}";
   var en = {
-  	processing: processing$1,
-  	download: download$1,
-  	download_audio: download_audio$1,
-  	full_score: full_score$1,
-  	button_parent_not_found: button_parent_not_found$1,
-  	unknown_button_list_mode: unknown_button_list_mode$1,
-  	cli_usage_hint: cli_usage_hint$1,
-  	cli_example_url: cli_example_url$1,
-  	path_to_folder: path_to_folder$1,
-  	path_to_file: path_to_file$1,
-  	cli_example_folder: cli_example_folder$1,
-  	cli_example_file: cli_example_file$1,
-  	cli_option_input_description: cli_option_input_description$1,
-  	cli_option_type_description: cli_option_type_description$1,
-  	cli_option_output_description: cli_option_output_description$1,
-  	cli_option_verbose_description: cli_option_verbose_description$1,
-  	cli_outdated_version_message: cli_outdated_version_message$1,
-  	cli_windows_paste_hint: cli_windows_paste_hint$1,
-  	cli_linux_paste_hint: cli_linux_paste_hint$1,
-  	cli_input_message: cli_input_message$1,
-  	cli_input_suffix: cli_input_suffix$1,
-  	cli_types_message: cli_types_message$1,
-  	cli_output_message: cli_output_message$1,
-  	cli_file_error: cli_file_error$1,
-  	cli_type_error: cli_type_error$1,
-  	cli_file_extension_error: cli_file_extension_error$1,
-  	cli_file_loaded_message: cli_file_loaded_message$1,
-  	cli_score_loaded_message: cli_score_loaded_message$1,
-  	cli_input_error: cli_input_error$1,
-  	cli_parts_message: cli_parts_message$1,
-  	cli_saved_message: cli_saved_message$1,
-  	cli_done_message: cli_done_message$1,
-  	cli_url_error: cli_url_error$1,
-  	cli_url_type_error: cli_url_type_error$1,
-  	cli_score_not_found: cli_score_not_found$1,
-  	cli_confirm_message: cli_confirm_message$1,
-  	id: id$1,
-  	title: title$1,
-  	no_sheet_images_error: no_sheet_images_error$1,
-  	source_code: source_code$1,
-  	version: version$1
-  };
-
-  var processing$2 = "Cargando…";
-  var download$2 = "Descargar {{fileType}}";
-  var download_audio$2 = "Descargar audio {{fileType}}";
-  var full_score$2 = "Partitura completa";
-  var cli_file_error$2 = "";
-  var cli_type_error$2 = "";
-  var cli_file_extension_error$2 = "";
-  var cli_file_loaded_message$2 = "";
-  var cli_score_loaded_message$2 = "";
-  var cli_input_error$2 = "";
-  var cli_parts_message$2 = "";
-  var cli_saved_message$2 = "";
-  var cli_done_message$2 = "";
-  var cli_url_error$2 = "";
-  var cli_url_type_error$2 = "";
-  var cli_score_not_found$2 = "";
-  var cli_confirm_message$2 = "";
-  var id$2 = "";
-  var title$2 = "";
-  var no_sheet_images_error$2 = "";
-  var source_code$2 = "";
-  var version$2 = "";
-  var cli_usage_hint$2 = "";
-  var button_parent_not_found$2 = "";
-  var unknown_button_list_mode$2 = "";
-  var cli_example_url$2 = "";
-  var path_to_folder$2 = "";
-  var path_to_file$2 = "";
-  var cli_example_folder$2 = "";
-  var cli_example_file$2 = "";
-  var cli_option_input_description$2 = "";
-  var cli_option_type_description$2 = "";
-  var cli_option_output_description$2 = "";
-  var cli_option_verbose_description$2 = "";
-  var cli_outdated_version_message$2 = "";
-  var cli_windows_paste_hint$2 = "";
-  var cli_linux_paste_hint$2 = "";
-  var cli_input_message$2 = "";
-  var cli_input_suffix$2 = "";
-  var cli_types_message$2 = "";
-  var cli_output_message$2 = "";
-  var es = {
-  	processing: processing$2,
-  	download: download$2,
-  	download_audio: download_audio$2,
-  	full_score: full_score$2,
-  	cli_file_error: cli_file_error$2,
-  	cli_type_error: cli_type_error$2,
-  	cli_file_extension_error: cli_file_extension_error$2,
-  	cli_file_loaded_message: cli_file_loaded_message$2,
-  	cli_score_loaded_message: cli_score_loaded_message$2,
-  	cli_input_error: cli_input_error$2,
-  	cli_parts_message: cli_parts_message$2,
-  	cli_saved_message: cli_saved_message$2,
-  	cli_done_message: cli_done_message$2,
-  	cli_url_error: cli_url_error$2,
-  	cli_url_type_error: cli_url_type_error$2,
-  	cli_score_not_found: cli_score_not_found$2,
-  	cli_confirm_message: cli_confirm_message$2,
-  	id: id$2,
-  	title: title$2,
-  	no_sheet_images_error: no_sheet_images_error$2,
-  	source_code: source_code$2,
-  	version: version$2,
-  	cli_usage_hint: cli_usage_hint$2,
-  	button_parent_not_found: button_parent_not_found$2,
-  	unknown_button_list_mode: unknown_button_list_mode$2,
-  	cli_example_url: cli_example_url$2,
-  	path_to_folder: path_to_folder$2,
-  	path_to_file: path_to_file$2,
-  	cli_example_folder: cli_example_folder$2,
-  	cli_example_file: cli_example_file$2,
-  	cli_option_input_description: cli_option_input_description$2,
-  	cli_option_type_description: cli_option_type_description$2,
-  	cli_option_output_description: cli_option_output_description$2,
-  	cli_option_verbose_description: cli_option_verbose_description$2,
-  	cli_outdated_version_message: cli_outdated_version_message$2,
-  	cli_windows_paste_hint: cli_windows_paste_hint$2,
-  	cli_linux_paste_hint: cli_linux_paste_hint$2,
-  	cli_input_message: cli_input_message$2,
-  	cli_input_suffix: cli_input_suffix$2,
-  	cli_types_message: cli_types_message$2,
-  	cli_output_message: cli_output_message$2
-  };
-
-  var processing$3 = "En traitement…";
-  var download$3 = "Télécharger {{fileType}}";
-  var full_score$3 = "Grande partition";
-  var download_audio$3 = "Télécharger audio {{fileType}}";
-  var cli_usage_hint$3 = "";
-  var button_parent_not_found$3 = "";
-  var unknown_button_list_mode$3 = "";
-  var cli_example_url$3 = "";
-  var path_to_folder$3 = "";
-  var path_to_file$3 = "";
-  var cli_example_folder$3 = "";
-  var cli_example_file$3 = "";
-  var cli_option_input_description$3 = "";
-  var cli_option_type_description$3 = "";
-  var cli_option_output_description$3 = "";
-  var cli_option_verbose_description$3 = "";
-  var cli_outdated_version_message$3 = "";
-  var cli_windows_paste_hint$3 = "";
-  var cli_linux_paste_hint$3 = "";
-  var cli_input_message$3 = "";
-  var cli_input_suffix$3 = "";
-  var cli_types_message$3 = "";
-  var cli_output_message$3 = "";
-  var cli_file_error$3 = "";
-  var cli_type_error$3 = "";
-  var cli_file_extension_error$3 = "";
-  var cli_file_loaded_message$3 = "";
-  var cli_score_loaded_message$3 = "";
-  var cli_input_error$3 = "";
-  var cli_parts_message$3 = "";
-  var cli_saved_message$3 = "";
-  var cli_done_message$3 = "";
-  var cli_url_error$3 = "";
-  var cli_url_type_error$3 = "";
-  var cli_score_not_found$3 = "";
-  var cli_confirm_message$3 = "";
-  var id$3 = "";
-  var title$3 = "";
-  var no_sheet_images_error$3 = "";
-  var source_code$3 = "";
-  var version$3 = "";
-  var fr = {
-  	processing: processing$3,
-  	download: download$3,
-  	full_score: full_score$3,
-  	download_audio: download_audio$3,
-  	cli_usage_hint: cli_usage_hint$3,
-  	button_parent_not_found: button_parent_not_found$3,
-  	unknown_button_list_mode: unknown_button_list_mode$3,
-  	cli_example_url: cli_example_url$3,
-  	path_to_folder: path_to_folder$3,
-  	path_to_file: path_to_file$3,
-  	cli_example_folder: cli_example_folder$3,
-  	cli_example_file: cli_example_file$3,
-  	cli_option_input_description: cli_option_input_description$3,
-  	cli_option_type_description: cli_option_type_description$3,
-  	cli_option_output_description: cli_option_output_description$3,
-  	cli_option_verbose_description: cli_option_verbose_description$3,
-  	cli_outdated_version_message: cli_outdated_version_message$3,
-  	cli_windows_paste_hint: cli_windows_paste_hint$3,
-  	cli_linux_paste_hint: cli_linux_paste_hint$3,
-  	cli_input_message: cli_input_message$3,
-  	cli_input_suffix: cli_input_suffix$3,
-  	cli_types_message: cli_types_message$3,
-  	cli_output_message: cli_output_message$3,
-  	cli_file_error: cli_file_error$3,
-  	cli_type_error: cli_type_error$3,
-  	cli_file_extension_error: cli_file_extension_error$3,
-  	cli_file_loaded_message: cli_file_loaded_message$3,
-  	cli_score_loaded_message: cli_score_loaded_message$3,
-  	cli_input_error: cli_input_error$3,
-  	cli_parts_message: cli_parts_message$3,
-  	cli_saved_message: cli_saved_message$3,
-  	cli_done_message: cli_done_message$3,
-  	cli_url_error: cli_url_error$3,
-  	cli_url_type_error: cli_url_type_error$3,
-  	cli_score_not_found: cli_score_not_found$3,
-  	cli_confirm_message: cli_confirm_message$3,
-  	id: id$3,
-  	title: title$3,
-  	no_sheet_images_error: no_sheet_images_error$3,
-  	source_code: source_code$3,
-  	version: version$3
-  };
-
-  var processing$4 = "Caricamento…";
-  var download$4 = "Scaricare {{fileType}}";
-  var download_audio$4 = "Scaricare {{fileType}} audio";
-  var full_score$4 = "Partitura completa";
-  var cli_usage_hint$4 = "";
-  var button_parent_not_found$4 = "";
-  var unknown_button_list_mode$4 = "";
-  var cli_example_url$4 = "";
-  var path_to_folder$4 = "";
-  var path_to_file$4 = "";
-  var cli_example_folder$4 = "";
-  var cli_example_file$4 = "";
-  var cli_option_input_description$4 = "";
-  var cli_option_type_description$4 = "";
-  var cli_option_output_description$4 = "";
-  var cli_option_verbose_description$4 = "";
-  var cli_outdated_version_message$4 = "";
-  var cli_windows_paste_hint$4 = "";
-  var cli_linux_paste_hint$4 = "";
-  var cli_input_message$4 = "";
-  var cli_input_suffix$4 = "";
-  var cli_types_message$4 = "";
-  var cli_output_message$4 = "";
-  var cli_file_error$4 = "";
-  var cli_type_error$4 = "";
-  var cli_file_extension_error$4 = "";
-  var cli_file_loaded_message$4 = "";
-  var cli_score_loaded_message$4 = "";
-  var cli_input_error$4 = "";
-  var cli_parts_message$4 = "";
-  var cli_saved_message$4 = "";
-  var cli_done_message$4 = "";
-  var cli_url_error$4 = "";
-  var cli_url_type_error$4 = "";
-  var cli_score_not_found$4 = "";
-  var cli_confirm_message$4 = "";
-  var id$4 = "";
-  var title$4 = "";
-  var no_sheet_images_error$4 = "";
-  var source_code$4 = "";
-  var version$4 = "";
-  var it = {
-  	processing: processing$4,
-  	download: download$4,
-  	download_audio: download_audio$4,
-  	full_score: full_score$4,
-  	cli_usage_hint: cli_usage_hint$4,
-  	button_parent_not_found: button_parent_not_found$4,
-  	unknown_button_list_mode: unknown_button_list_mode$4,
-  	cli_example_url: cli_example_url$4,
-  	path_to_folder: path_to_folder$4,
-  	path_to_file: path_to_file$4,
-  	cli_example_folder: cli_example_folder$4,
-  	cli_example_file: cli_example_file$4,
-  	cli_option_input_description: cli_option_input_description$4,
-  	cli_option_type_description: cli_option_type_description$4,
-  	cli_option_output_description: cli_option_output_description$4,
-  	cli_option_verbose_description: cli_option_verbose_description$4,
-  	cli_outdated_version_message: cli_outdated_version_message$4,
-  	cli_windows_paste_hint: cli_windows_paste_hint$4,
-  	cli_linux_paste_hint: cli_linux_paste_hint$4,
-  	cli_input_message: cli_input_message$4,
-  	cli_input_suffix: cli_input_suffix$4,
-  	cli_types_message: cli_types_message$4,
-  	cli_output_message: cli_output_message$4,
-  	cli_file_error: cli_file_error$4,
-  	cli_type_error: cli_type_error$4,
-  	cli_file_extension_error: cli_file_extension_error$4,
-  	cli_file_loaded_message: cli_file_loaded_message$4,
-  	cli_score_loaded_message: cli_score_loaded_message$4,
-  	cli_input_error: cli_input_error$4,
-  	cli_parts_message: cli_parts_message$4,
-  	cli_saved_message: cli_saved_message$4,
-  	cli_done_message: cli_done_message$4,
-  	cli_url_error: cli_url_error$4,
-  	cli_url_type_error: cli_url_type_error$4,
-  	cli_score_not_found: cli_score_not_found$4,
-  	cli_confirm_message: cli_confirm_message$4,
-  	id: id$4,
-  	title: title$4,
-  	no_sheet_images_error: no_sheet_images_error$4,
-  	source_code: source_code$4,
-  	version: version$4
-  };
-
-  var processing$5 = "処理中…";
-  var download$5 = "{{fileType}}をダウンロード";
-  var download_audio$5 = "{{fileType}}オーディオをダウンロード";
-  var full_score$5 = "フルスコア";
-  var cli_url_error$5 = "";
-  var cli_url_type_error$5 = "";
-  var cli_score_not_found$5 = "";
-  var cli_usage_hint$5 = "";
-  var button_parent_not_found$5 = "";
-  var unknown_button_list_mode$5 = "";
-  var cli_example_url$5 = "";
-  var path_to_folder$5 = "";
-  var path_to_file$5 = "";
-  var cli_example_folder$5 = "";
-  var cli_example_file$5 = "";
-  var cli_option_input_description$5 = "";
-  var cli_option_type_description$5 = "";
-  var cli_option_output_description$5 = "";
-  var cli_option_verbose_description$5 = "";
-  var cli_outdated_version_message$5 = "";
-  var cli_windows_paste_hint$5 = "";
-  var cli_linux_paste_hint$5 = "";
-  var cli_input_message$5 = "";
-  var cli_input_suffix$5 = "";
-  var cli_types_message$5 = "";
-  var cli_output_message$5 = "";
-  var cli_file_error$5 = "";
-  var cli_type_error$5 = "";
-  var cli_file_extension_error$5 = "";
-  var cli_file_loaded_message$5 = "";
-  var cli_score_loaded_message$5 = "";
-  var cli_input_error$5 = "";
-  var cli_parts_message$5 = "";
-  var cli_saved_message$5 = "";
-  var cli_done_message$5 = "";
-  var id$5 = "";
-  var cli_confirm_message$5 = "";
-  var title$5 = "";
-  var no_sheet_images_error$5 = "";
-  var source_code$5 = "";
-  var version$5 = "";
-  var ja = {
-  	processing: processing$5,
-  	download: download$5,
-  	download_audio: download_audio$5,
-  	full_score: full_score$5,
-  	cli_url_error: cli_url_error$5,
-  	cli_url_type_error: cli_url_type_error$5,
-  	cli_score_not_found: cli_score_not_found$5,
-  	cli_usage_hint: cli_usage_hint$5,
-  	button_parent_not_found: button_parent_not_found$5,
-  	unknown_button_list_mode: unknown_button_list_mode$5,
-  	cli_example_url: cli_example_url$5,
-  	path_to_folder: path_to_folder$5,
-  	path_to_file: path_to_file$5,
-  	cli_example_folder: cli_example_folder$5,
-  	cli_example_file: cli_example_file$5,
-  	cli_option_input_description: cli_option_input_description$5,
-  	cli_option_type_description: cli_option_type_description$5,
-  	cli_option_output_description: cli_option_output_description$5,
-  	cli_option_verbose_description: cli_option_verbose_description$5,
-  	cli_outdated_version_message: cli_outdated_version_message$5,
-  	cli_windows_paste_hint: cli_windows_paste_hint$5,
-  	cli_linux_paste_hint: cli_linux_paste_hint$5,
-  	cli_input_message: cli_input_message$5,
-  	cli_input_suffix: cli_input_suffix$5,
-  	cli_types_message: cli_types_message$5,
-  	cli_output_message: cli_output_message$5,
-  	cli_file_error: cli_file_error$5,
-  	cli_type_error: cli_type_error$5,
-  	cli_file_extension_error: cli_file_extension_error$5,
-  	cli_file_loaded_message: cli_file_loaded_message$5,
-  	cli_score_loaded_message: cli_score_loaded_message$5,
-  	cli_input_error: cli_input_error$5,
-  	cli_parts_message: cli_parts_message$5,
-  	cli_saved_message: cli_saved_message$5,
-  	cli_done_message: cli_done_message$5,
-  	id: id$5,
-  	cli_confirm_message: cli_confirm_message$5,
-  	title: title$5,
-  	no_sheet_images_error: no_sheet_images_error$5,
-  	source_code: source_code$5,
-  	version: version$5
-  };
-
-  var processing$6 = "처리중…";
-  var download$6 = "다운로드 {{fileType}}";
-  var download_audio$6 = "{{fileType}} 오디오 다운로드";
-  var full_score$6 = "풀 스코어";
-  var cli_done_message$6 = "";
-  var cli_score_not_found$6 = "";
-  var cli_confirm_message$6 = "";
-  var cli_usage_hint$6 = "";
-  var button_parent_not_found$6 = "";
-  var unknown_button_list_mode$6 = "";
-  var cli_example_url$6 = "";
-  var path_to_folder$6 = "";
-  var path_to_file$6 = "";
-  var cli_example_folder$6 = "";
-  var cli_example_file$6 = "";
-  var cli_option_input_description$6 = "";
-  var cli_option_type_description$6 = "";
-  var cli_option_output_description$6 = "";
-  var cli_option_verbose_description$6 = "";
-  var cli_outdated_version_message$6 = "";
-  var cli_windows_paste_hint$6 = "";
-  var cli_linux_paste_hint$6 = "";
-  var cli_input_message$6 = "";
-  var cli_input_suffix$6 = "";
-  var cli_types_message$6 = "";
-  var cli_output_message$6 = "";
-  var cli_file_error$6 = "";
-  var cli_type_error$6 = "";
-  var cli_file_extension_error$6 = "";
-  var cli_file_loaded_message$6 = "";
-  var cli_score_loaded_message$6 = "";
-  var cli_input_error$6 = "";
-  var cli_parts_message$6 = "";
-  var cli_saved_message$6 = "";
-  var cli_url_error$6 = "";
-  var cli_url_type_error$6 = "";
-  var id$6 = "";
-  var title$6 = "";
-  var no_sheet_images_error$6 = "";
-  var source_code$6 = "";
-  var version$6 = "";
-  var ko = {
-  	processing: processing$6,
-  	download: download$6,
-  	download_audio: download_audio$6,
-  	full_score: full_score$6,
-  	cli_done_message: cli_done_message$6,
-  	cli_score_not_found: cli_score_not_found$6,
-  	cli_confirm_message: cli_confirm_message$6,
-  	cli_usage_hint: cli_usage_hint$6,
-  	button_parent_not_found: button_parent_not_found$6,
-  	unknown_button_list_mode: unknown_button_list_mode$6,
-  	cli_example_url: cli_example_url$6,
-  	path_to_folder: path_to_folder$6,
-  	path_to_file: path_to_file$6,
-  	cli_example_folder: cli_example_folder$6,
-  	cli_example_file: cli_example_file$6,
-  	cli_option_input_description: cli_option_input_description$6,
-  	cli_option_type_description: cli_option_type_description$6,
-  	cli_option_output_description: cli_option_output_description$6,
-  	cli_option_verbose_description: cli_option_verbose_description$6,
-  	cli_outdated_version_message: cli_outdated_version_message$6,
-  	cli_windows_paste_hint: cli_windows_paste_hint$6,
-  	cli_linux_paste_hint: cli_linux_paste_hint$6,
-  	cli_input_message: cli_input_message$6,
-  	cli_input_suffix: cli_input_suffix$6,
-  	cli_types_message: cli_types_message$6,
-  	cli_output_message: cli_output_message$6,
-  	cli_file_error: cli_file_error$6,
-  	cli_type_error: cli_type_error$6,
-  	cli_file_extension_error: cli_file_extension_error$6,
-  	cli_file_loaded_message: cli_file_loaded_message$6,
-  	cli_score_loaded_message: cli_score_loaded_message$6,
-  	cli_input_error: cli_input_error$6,
-  	cli_parts_message: cli_parts_message$6,
-  	cli_saved_message: cli_saved_message$6,
-  	cli_url_error: cli_url_error$6,
-  	cli_url_type_error: cli_url_type_error$6,
-  	id: id$6,
-  	title: title$6,
-  	no_sheet_images_error: no_sheet_images_error$6,
-  	source_code: source_code$6,
-  	version: version$6
-  };
-
-  var cli_usage_hint$7 = "";
-  var processing$7 = "";
-  var download$7 = "";
-  var full_score$7 = "";
-  var download_audio$7 = "";
-  var button_parent_not_found$7 = "";
-  var unknown_button_list_mode$7 = "";
-  var cli_example_url$7 = "";
-  var path_to_folder$7 = "";
-  var path_to_file$7 = "";
-  var cli_example_folder$7 = "";
-  var cli_example_file$7 = "";
-  var cli_option_input_description$7 = "";
-  var cli_option_type_description$7 = "";
-  var cli_option_output_description$7 = "";
-  var cli_option_verbose_description$7 = "";
-  var cli_outdated_version_message$7 = "";
-  var cli_windows_paste_hint$7 = "";
-  var cli_linux_paste_hint$7 = "";
-  var cli_input_message$7 = "";
-  var cli_input_suffix$7 = "";
-  var cli_types_message$7 = "";
-  var cli_output_message$7 = "";
-  var cli_file_error$7 = "";
-  var cli_type_error$7 = "";
-  var cli_file_extension_error$7 = "";
-  var cli_file_loaded_message$7 = "";
-  var cli_score_loaded_message$7 = "";
-  var cli_input_error$7 = "";
-  var cli_parts_message$7 = "";
-  var cli_saved_message$7 = "";
-  var cli_done_message$7 = "";
-  var cli_url_error$7 = "";
-  var cli_url_type_error$7 = "";
-  var cli_score_not_found$7 = "";
-  var cli_confirm_message$7 = "";
-  var id$7 = "";
-  var title$7 = "";
-  var no_sheet_images_error$7 = "";
-  var source_code$7 = "";
-  var version$7 = "";
-  var ru = {
-  	cli_usage_hint: cli_usage_hint$7,
-  	processing: processing$7,
-  	download: download$7,
-  	full_score: full_score$7,
-  	download_audio: download_audio$7,
-  	button_parent_not_found: button_parent_not_found$7,
-  	unknown_button_list_mode: unknown_button_list_mode$7,
-  	cli_example_url: cli_example_url$7,
-  	path_to_folder: path_to_folder$7,
-  	path_to_file: path_to_file$7,
-  	cli_example_folder: cli_example_folder$7,
-  	cli_example_file: cli_example_file$7,
-  	cli_option_input_description: cli_option_input_description$7,
-  	cli_option_type_description: cli_option_type_description$7,
-  	cli_option_output_description: cli_option_output_description$7,
-  	cli_option_verbose_description: cli_option_verbose_description$7,
-  	cli_outdated_version_message: cli_outdated_version_message$7,
-  	cli_windows_paste_hint: cli_windows_paste_hint$7,
-  	cli_linux_paste_hint: cli_linux_paste_hint$7,
-  	cli_input_message: cli_input_message$7,
-  	cli_input_suffix: cli_input_suffix$7,
-  	cli_types_message: cli_types_message$7,
-  	cli_output_message: cli_output_message$7,
-  	cli_file_error: cli_file_error$7,
-  	cli_type_error: cli_type_error$7,
-  	cli_file_extension_error: cli_file_extension_error$7,
-  	cli_file_loaded_message: cli_file_loaded_message$7,
-  	cli_score_loaded_message: cli_score_loaded_message$7,
-  	cli_input_error: cli_input_error$7,
-  	cli_parts_message: cli_parts_message$7,
-  	cli_saved_message: cli_saved_message$7,
-  	cli_done_message: cli_done_message$7,
-  	cli_url_error: cli_url_error$7,
-  	cli_url_type_error: cli_url_type_error$7,
-  	cli_score_not_found: cli_score_not_found$7,
-  	cli_confirm_message: cli_confirm_message$7,
-  	id: id$7,
-  	title: title$7,
-  	no_sheet_images_error: no_sheet_images_error$7,
-  	source_code: source_code$7,
-  	version: version$7
-  };
-
-  var processing$8 = "处理中…";
-  var download$8 = "下载 {{fileType}}";
-  var download_audio$8 = "下载 {{fileType}} 音频";
-  var full_score$8 = "完整乐谱";
-  var cli_usage_hint$8 = "";
-  var button_parent_not_found$8 = "";
-  var unknown_button_list_mode$8 = "";
-  var cli_example_url$8 = "";
-  var path_to_folder$8 = "";
-  var path_to_file$8 = "";
-  var cli_example_folder$8 = "";
-  var cli_example_file$8 = "";
-  var cli_option_input_description$8 = "";
-  var cli_option_type_description$8 = "";
-  var cli_option_output_description$8 = "";
-  var cli_option_verbose_description$8 = "";
-  var cli_outdated_version_message$8 = "";
-  var cli_windows_paste_hint$8 = "";
-  var cli_linux_paste_hint$8 = "";
-  var cli_input_message$8 = "";
-  var cli_input_suffix$8 = "";
-  var cli_types_message$8 = "";
-  var cli_output_message$8 = "";
-  var cli_file_error$8 = "";
-  var cli_type_error$8 = "";
-  var cli_file_extension_error$8 = "";
-  var cli_file_loaded_message$8 = "";
-  var cli_score_loaded_message$8 = "";
-  var cli_input_error$8 = "";
-  var cli_parts_message$8 = "";
-  var cli_saved_message$8 = "";
-  var cli_done_message$8 = "";
-  var cli_url_error$8 = "";
-  var cli_url_type_error$8 = "";
-  var cli_score_not_found$8 = "";
-  var cli_confirm_message$8 = "";
-  var id$8 = "";
-  var title$8 = "";
-  var no_sheet_images_error$8 = "";
-  var source_code$8 = "";
-  var version$8 = "";
-  var zh_Hans = {
   	processing: processing$8,
   	download: download$8,
   	download_audio: download_audio$8,
   	full_score: full_score$8,
-  	cli_usage_hint: cli_usage_hint$8,
   	button_parent_not_found: button_parent_not_found$8,
   	unknown_button_list_mode: unknown_button_list_mode$8,
+  	cli_usage_hint: cli_usage_hint$8,
   	cli_example_url: cli_example_url$8,
   	path_to_folder: path_to_folder$8,
   	path_to_file: path_to_file$8,
@@ -3643,6 +3095,686 @@ var wrapper = (function () {
   	version: version$8
   };
 
+  var processing$7 = "Cargando…";
+  var download$7 = "Descargar {{fileType}}";
+  var download_audio$7 = "Descargar audio {{fileType}}";
+  var full_score$7 = "Partitura completa";
+  var cli_file_error$7 = "";
+  var cli_type_error$7 = "";
+  var cli_file_extension_error$7 = "";
+  var cli_file_loaded_message$7 = "";
+  var cli_score_loaded_message$7 = "";
+  var cli_input_error$7 = "";
+  var cli_parts_message$7 = "";
+  var cli_saved_message$7 = "";
+  var cli_done_message$7 = "";
+  var cli_url_error$7 = "";
+  var cli_url_type_error$7 = "";
+  var cli_score_not_found$7 = "";
+  var cli_confirm_message$7 = "";
+  var id$7 = "";
+  var title$7 = "";
+  var no_sheet_images_error$7 = "";
+  var source_code$7 = "";
+  var version$7 = "";
+  var cli_usage_hint$7 = "";
+  var button_parent_not_found$7 = "";
+  var unknown_button_list_mode$7 = "";
+  var cli_example_url$7 = "";
+  var path_to_folder$7 = "";
+  var path_to_file$7 = "";
+  var cli_example_folder$7 = "";
+  var cli_example_file$7 = "";
+  var cli_option_input_description$7 = "";
+  var cli_option_type_description$7 = "";
+  var cli_option_output_description$7 = "";
+  var cli_option_verbose_description$7 = "";
+  var cli_outdated_version_message$7 = "";
+  var cli_windows_paste_hint$7 = "";
+  var cli_linux_paste_hint$7 = "";
+  var cli_input_message$7 = "";
+  var cli_input_suffix$7 = "";
+  var cli_types_message$7 = "";
+  var cli_output_message$7 = "";
+  var es = {
+  	processing: processing$7,
+  	download: download$7,
+  	download_audio: download_audio$7,
+  	full_score: full_score$7,
+  	cli_file_error: cli_file_error$7,
+  	cli_type_error: cli_type_error$7,
+  	cli_file_extension_error: cli_file_extension_error$7,
+  	cli_file_loaded_message: cli_file_loaded_message$7,
+  	cli_score_loaded_message: cli_score_loaded_message$7,
+  	cli_input_error: cli_input_error$7,
+  	cli_parts_message: cli_parts_message$7,
+  	cli_saved_message: cli_saved_message$7,
+  	cli_done_message: cli_done_message$7,
+  	cli_url_error: cli_url_error$7,
+  	cli_url_type_error: cli_url_type_error$7,
+  	cli_score_not_found: cli_score_not_found$7,
+  	cli_confirm_message: cli_confirm_message$7,
+  	id: id$7,
+  	title: title$7,
+  	no_sheet_images_error: no_sheet_images_error$7,
+  	source_code: source_code$7,
+  	version: version$7,
+  	cli_usage_hint: cli_usage_hint$7,
+  	button_parent_not_found: button_parent_not_found$7,
+  	unknown_button_list_mode: unknown_button_list_mode$7,
+  	cli_example_url: cli_example_url$7,
+  	path_to_folder: path_to_folder$7,
+  	path_to_file: path_to_file$7,
+  	cli_example_folder: cli_example_folder$7,
+  	cli_example_file: cli_example_file$7,
+  	cli_option_input_description: cli_option_input_description$7,
+  	cli_option_type_description: cli_option_type_description$7,
+  	cli_option_output_description: cli_option_output_description$7,
+  	cli_option_verbose_description: cli_option_verbose_description$7,
+  	cli_outdated_version_message: cli_outdated_version_message$7,
+  	cli_windows_paste_hint: cli_windows_paste_hint$7,
+  	cli_linux_paste_hint: cli_linux_paste_hint$7,
+  	cli_input_message: cli_input_message$7,
+  	cli_input_suffix: cli_input_suffix$7,
+  	cli_types_message: cli_types_message$7,
+  	cli_output_message: cli_output_message$7
+  };
+
+  var processing$6 = "En traitement…";
+  var download$6 = "Télécharger {{fileType}}";
+  var full_score$6 = "Partition complète";
+  var download_audio$6 = "Télécharger audio {{fileType}}";
+  var cli_usage_hint$6 = "";
+  var button_parent_not_found$6 = "";
+  var unknown_button_list_mode$6 = "";
+  var cli_example_url$6 = "";
+  var path_to_folder$6 = "";
+  var path_to_file$6 = "";
+  var cli_example_folder$6 = "";
+  var cli_example_file$6 = "";
+  var cli_option_input_description$6 = "";
+  var cli_option_type_description$6 = "";
+  var cli_option_output_description$6 = "";
+  var cli_option_verbose_description$6 = "";
+  var cli_outdated_version_message$6 = "";
+  var cli_windows_paste_hint$6 = "";
+  var cli_linux_paste_hint$6 = "";
+  var cli_input_message$6 = "";
+  var cli_input_suffix$6 = "";
+  var cli_types_message$6 = "";
+  var cli_output_message$6 = "";
+  var cli_file_error$6 = "";
+  var cli_type_error$6 = "";
+  var cli_file_extension_error$6 = "";
+  var cli_file_loaded_message$6 = "";
+  var cli_score_loaded_message$6 = "";
+  var cli_input_error$6 = "";
+  var cli_parts_message$6 = "";
+  var cli_saved_message$6 = "";
+  var cli_done_message$6 = "";
+  var cli_url_error$6 = "";
+  var cli_url_type_error$6 = "";
+  var cli_score_not_found$6 = "";
+  var cli_confirm_message$6 = "";
+  var id$6 = "";
+  var title$6 = "";
+  var no_sheet_images_error$6 = "";
+  var source_code$6 = "";
+  var version$6 = "";
+  var fr = {
+  	processing: processing$6,
+  	download: download$6,
+  	full_score: full_score$6,
+  	download_audio: download_audio$6,
+  	cli_usage_hint: cli_usage_hint$6,
+  	button_parent_not_found: button_parent_not_found$6,
+  	unknown_button_list_mode: unknown_button_list_mode$6,
+  	cli_example_url: cli_example_url$6,
+  	path_to_folder: path_to_folder$6,
+  	path_to_file: path_to_file$6,
+  	cli_example_folder: cli_example_folder$6,
+  	cli_example_file: cli_example_file$6,
+  	cli_option_input_description: cli_option_input_description$6,
+  	cli_option_type_description: cli_option_type_description$6,
+  	cli_option_output_description: cli_option_output_description$6,
+  	cli_option_verbose_description: cli_option_verbose_description$6,
+  	cli_outdated_version_message: cli_outdated_version_message$6,
+  	cli_windows_paste_hint: cli_windows_paste_hint$6,
+  	cli_linux_paste_hint: cli_linux_paste_hint$6,
+  	cli_input_message: cli_input_message$6,
+  	cli_input_suffix: cli_input_suffix$6,
+  	cli_types_message: cli_types_message$6,
+  	cli_output_message: cli_output_message$6,
+  	cli_file_error: cli_file_error$6,
+  	cli_type_error: cli_type_error$6,
+  	cli_file_extension_error: cli_file_extension_error$6,
+  	cli_file_loaded_message: cli_file_loaded_message$6,
+  	cli_score_loaded_message: cli_score_loaded_message$6,
+  	cli_input_error: cli_input_error$6,
+  	cli_parts_message: cli_parts_message$6,
+  	cli_saved_message: cli_saved_message$6,
+  	cli_done_message: cli_done_message$6,
+  	cli_url_error: cli_url_error$6,
+  	cli_url_type_error: cli_url_type_error$6,
+  	cli_score_not_found: cli_score_not_found$6,
+  	cli_confirm_message: cli_confirm_message$6,
+  	id: id$6,
+  	title: title$6,
+  	no_sheet_images_error: no_sheet_images_error$6,
+  	source_code: source_code$6,
+  	version: version$6
+  };
+
+  var processing$5 = "Caricamento…";
+  var download$5 = "Scaricare {{fileType}}";
+  var download_audio$5 = "Scaricare {{fileType}} audio";
+  var full_score$5 = "Partitura completa";
+  var cli_usage_hint$5 = "";
+  var button_parent_not_found$5 = "";
+  var unknown_button_list_mode$5 = "";
+  var cli_example_url$5 = "";
+  var path_to_folder$5 = "";
+  var path_to_file$5 = "";
+  var cli_example_folder$5 = "";
+  var cli_example_file$5 = "";
+  var cli_option_input_description$5 = "";
+  var cli_option_type_description$5 = "";
+  var cli_option_output_description$5 = "";
+  var cli_option_verbose_description$5 = "";
+  var cli_outdated_version_message$5 = "";
+  var cli_windows_paste_hint$5 = "";
+  var cli_linux_paste_hint$5 = "";
+  var cli_input_message$5 = "";
+  var cli_input_suffix$5 = "";
+  var cli_types_message$5 = "";
+  var cli_output_message$5 = "";
+  var cli_file_error$5 = "";
+  var cli_type_error$5 = "";
+  var cli_file_extension_error$5 = "";
+  var cli_file_loaded_message$5 = "";
+  var cli_score_loaded_message$5 = "";
+  var cli_input_error$5 = "";
+  var cli_parts_message$5 = "";
+  var cli_saved_message$5 = "";
+  var cli_done_message$5 = "";
+  var cli_url_error$5 = "";
+  var cli_url_type_error$5 = "";
+  var cli_score_not_found$5 = "";
+  var cli_confirm_message$5 = "";
+  var id$5 = "";
+  var title$5 = "";
+  var no_sheet_images_error$5 = "";
+  var source_code$5 = "";
+  var version$5 = "";
+  var it = {
+  	processing: processing$5,
+  	download: download$5,
+  	download_audio: download_audio$5,
+  	full_score: full_score$5,
+  	cli_usage_hint: cli_usage_hint$5,
+  	button_parent_not_found: button_parent_not_found$5,
+  	unknown_button_list_mode: unknown_button_list_mode$5,
+  	cli_example_url: cli_example_url$5,
+  	path_to_folder: path_to_folder$5,
+  	path_to_file: path_to_file$5,
+  	cli_example_folder: cli_example_folder$5,
+  	cli_example_file: cli_example_file$5,
+  	cli_option_input_description: cli_option_input_description$5,
+  	cli_option_type_description: cli_option_type_description$5,
+  	cli_option_output_description: cli_option_output_description$5,
+  	cli_option_verbose_description: cli_option_verbose_description$5,
+  	cli_outdated_version_message: cli_outdated_version_message$5,
+  	cli_windows_paste_hint: cli_windows_paste_hint$5,
+  	cli_linux_paste_hint: cli_linux_paste_hint$5,
+  	cli_input_message: cli_input_message$5,
+  	cli_input_suffix: cli_input_suffix$5,
+  	cli_types_message: cli_types_message$5,
+  	cli_output_message: cli_output_message$5,
+  	cli_file_error: cli_file_error$5,
+  	cli_type_error: cli_type_error$5,
+  	cli_file_extension_error: cli_file_extension_error$5,
+  	cli_file_loaded_message: cli_file_loaded_message$5,
+  	cli_score_loaded_message: cli_score_loaded_message$5,
+  	cli_input_error: cli_input_error$5,
+  	cli_parts_message: cli_parts_message$5,
+  	cli_saved_message: cli_saved_message$5,
+  	cli_done_message: cli_done_message$5,
+  	cli_url_error: cli_url_error$5,
+  	cli_url_type_error: cli_url_type_error$5,
+  	cli_score_not_found: cli_score_not_found$5,
+  	cli_confirm_message: cli_confirm_message$5,
+  	id: id$5,
+  	title: title$5,
+  	no_sheet_images_error: no_sheet_images_error$5,
+  	source_code: source_code$5,
+  	version: version$5
+  };
+
+  var processing$4 = "処理中…";
+  var download$4 = "{{fileType}}をダウンロード";
+  var download_audio$4 = "{{fileType}}オーディオをダウンロード";
+  var full_score$4 = "フルスコア";
+  var cli_url_error$4 = "";
+  var cli_url_type_error$4 = "";
+  var cli_score_not_found$4 = "";
+  var cli_usage_hint$4 = "";
+  var button_parent_not_found$4 = "";
+  var unknown_button_list_mode$4 = "";
+  var cli_example_url$4 = "";
+  var path_to_folder$4 = "";
+  var path_to_file$4 = "";
+  var cli_example_folder$4 = "";
+  var cli_example_file$4 = "";
+  var cli_option_input_description$4 = "";
+  var cli_option_type_description$4 = "";
+  var cli_option_output_description$4 = "";
+  var cli_option_verbose_description$4 = "";
+  var cli_outdated_version_message$4 = "";
+  var cli_windows_paste_hint$4 = "";
+  var cli_linux_paste_hint$4 = "";
+  var cli_input_message$4 = "";
+  var cli_input_suffix$4 = "";
+  var cli_types_message$4 = "";
+  var cli_output_message$4 = "";
+  var cli_file_error$4 = "";
+  var cli_type_error$4 = "";
+  var cli_file_extension_error$4 = "";
+  var cli_file_loaded_message$4 = "";
+  var cli_score_loaded_message$4 = "";
+  var cli_input_error$4 = "";
+  var cli_parts_message$4 = "";
+  var cli_saved_message$4 = "";
+  var cli_done_message$4 = "";
+  var id$4 = "";
+  var cli_confirm_message$4 = "";
+  var title$4 = "";
+  var no_sheet_images_error$4 = "";
+  var source_code$4 = "";
+  var version$4 = "";
+  var ja = {
+  	processing: processing$4,
+  	download: download$4,
+  	download_audio: download_audio$4,
+  	full_score: full_score$4,
+  	cli_url_error: cli_url_error$4,
+  	cli_url_type_error: cli_url_type_error$4,
+  	cli_score_not_found: cli_score_not_found$4,
+  	cli_usage_hint: cli_usage_hint$4,
+  	button_parent_not_found: button_parent_not_found$4,
+  	unknown_button_list_mode: unknown_button_list_mode$4,
+  	cli_example_url: cli_example_url$4,
+  	path_to_folder: path_to_folder$4,
+  	path_to_file: path_to_file$4,
+  	cli_example_folder: cli_example_folder$4,
+  	cli_example_file: cli_example_file$4,
+  	cli_option_input_description: cli_option_input_description$4,
+  	cli_option_type_description: cli_option_type_description$4,
+  	cli_option_output_description: cli_option_output_description$4,
+  	cli_option_verbose_description: cli_option_verbose_description$4,
+  	cli_outdated_version_message: cli_outdated_version_message$4,
+  	cli_windows_paste_hint: cli_windows_paste_hint$4,
+  	cli_linux_paste_hint: cli_linux_paste_hint$4,
+  	cli_input_message: cli_input_message$4,
+  	cli_input_suffix: cli_input_suffix$4,
+  	cli_types_message: cli_types_message$4,
+  	cli_output_message: cli_output_message$4,
+  	cli_file_error: cli_file_error$4,
+  	cli_type_error: cli_type_error$4,
+  	cli_file_extension_error: cli_file_extension_error$4,
+  	cli_file_loaded_message: cli_file_loaded_message$4,
+  	cli_score_loaded_message: cli_score_loaded_message$4,
+  	cli_input_error: cli_input_error$4,
+  	cli_parts_message: cli_parts_message$4,
+  	cli_saved_message: cli_saved_message$4,
+  	cli_done_message: cli_done_message$4,
+  	id: id$4,
+  	cli_confirm_message: cli_confirm_message$4,
+  	title: title$4,
+  	no_sheet_images_error: no_sheet_images_error$4,
+  	source_code: source_code$4,
+  	version: version$4
+  };
+
+  var processing$3 = "처리중…";
+  var download$3 = "다운로드 {{fileType}}";
+  var download_audio$3 = "{{fileType}} 오디오 다운로드";
+  var full_score$3 = "풀 스코어";
+  var cli_done_message$3 = "";
+  var cli_score_not_found$3 = "";
+  var cli_confirm_message$3 = "";
+  var cli_usage_hint$3 = "";
+  var button_parent_not_found$3 = "";
+  var unknown_button_list_mode$3 = "";
+  var cli_example_url$3 = "";
+  var path_to_folder$3 = "";
+  var path_to_file$3 = "";
+  var cli_example_folder$3 = "";
+  var cli_example_file$3 = "";
+  var cli_option_input_description$3 = "";
+  var cli_option_type_description$3 = "";
+  var cli_option_output_description$3 = "";
+  var cli_option_verbose_description$3 = "";
+  var cli_outdated_version_message$3 = "";
+  var cli_windows_paste_hint$3 = "";
+  var cli_linux_paste_hint$3 = "";
+  var cli_input_message$3 = "";
+  var cli_input_suffix$3 = "";
+  var cli_types_message$3 = "";
+  var cli_output_message$3 = "";
+  var cli_file_error$3 = "";
+  var cli_type_error$3 = "";
+  var cli_file_extension_error$3 = "";
+  var cli_file_loaded_message$3 = "";
+  var cli_score_loaded_message$3 = "";
+  var cli_input_error$3 = "";
+  var cli_parts_message$3 = "";
+  var cli_saved_message$3 = "";
+  var cli_url_error$3 = "";
+  var cli_url_type_error$3 = "";
+  var id$3 = "";
+  var title$3 = "";
+  var no_sheet_images_error$3 = "";
+  var source_code$3 = "";
+  var version$3 = "";
+  var ko = {
+  	processing: processing$3,
+  	download: download$3,
+  	download_audio: download_audio$3,
+  	full_score: full_score$3,
+  	cli_done_message: cli_done_message$3,
+  	cli_score_not_found: cli_score_not_found$3,
+  	cli_confirm_message: cli_confirm_message$3,
+  	cli_usage_hint: cli_usage_hint$3,
+  	button_parent_not_found: button_parent_not_found$3,
+  	unknown_button_list_mode: unknown_button_list_mode$3,
+  	cli_example_url: cli_example_url$3,
+  	path_to_folder: path_to_folder$3,
+  	path_to_file: path_to_file$3,
+  	cli_example_folder: cli_example_folder$3,
+  	cli_example_file: cli_example_file$3,
+  	cli_option_input_description: cli_option_input_description$3,
+  	cli_option_type_description: cli_option_type_description$3,
+  	cli_option_output_description: cli_option_output_description$3,
+  	cli_option_verbose_description: cli_option_verbose_description$3,
+  	cli_outdated_version_message: cli_outdated_version_message$3,
+  	cli_windows_paste_hint: cli_windows_paste_hint$3,
+  	cli_linux_paste_hint: cli_linux_paste_hint$3,
+  	cli_input_message: cli_input_message$3,
+  	cli_input_suffix: cli_input_suffix$3,
+  	cli_types_message: cli_types_message$3,
+  	cli_output_message: cli_output_message$3,
+  	cli_file_error: cli_file_error$3,
+  	cli_type_error: cli_type_error$3,
+  	cli_file_extension_error: cli_file_extension_error$3,
+  	cli_file_loaded_message: cli_file_loaded_message$3,
+  	cli_score_loaded_message: cli_score_loaded_message$3,
+  	cli_input_error: cli_input_error$3,
+  	cli_parts_message: cli_parts_message$3,
+  	cli_saved_message: cli_saved_message$3,
+  	cli_url_error: cli_url_error$3,
+  	cli_url_type_error: cli_url_type_error$3,
+  	id: id$3,
+  	title: title$3,
+  	no_sheet_images_error: no_sheet_images_error$3,
+  	source_code: source_code$3,
+  	version: version$3
+  };
+
+  var processing$2 = "Memproses…";
+  var download$2 = "Muat turun {{fileType}}";
+  var download_audio$2 = "Muat turun audio {{fileType}}";
+  var button_parent_not_found$2 = "Induk butang tidak ditemui";
+  var unknown_button_list_mode$2 = "Mod senarai butang tidak diketahui";
+  var cli_usage_hint$2 = "Penggunaan: {{bin}} [pilihan]";
+  var path_to_folder$2 = "laluan/ke/folder";
+  var path_to_file$2 = "laluan/ke/fail";
+  var cli_example_folder$2 = "eksport MIDI dan PDF semua fail dalam folder tertentu ke folder semasa";
+  var cli_example_file$2 = "eksport FLAC fail MusicXML yang ditentukan ke folder semasa";
+  var cli_option_type_description$2 = "Jenis fail untuk dimuat turun";
+  var cli_option_output_description$2 = "Folder untuk menyimpan fail ke";
+  var cli_option_verbose_description$2 = "Jalankan dengan pengelogan verbose";
+  var cli_windows_paste_hint$2 = "klik kanan untuk menampal";
+  var cli_linux_paste_hint$2 = "biasanya Ctrl+Shift+V untuk menampal";
+  var cli_input_message$2 = "URL MuseScore atau laluan ke fail atau folder:";
+  var cli_input_suffix$2 = "bermula dengan https://musescore.com/ atau ialah laluan";
+  var cli_types_message$2 = "Pemilihan jenis fail";
+  var cli_output_message$2 = "Direktori Output:";
+  var cli_file_error$2 = "Fail tidak wujud";
+  var cli_type_error$2 = "Tiada jenis yang dipilih";
+  var cli_file_loaded_message$2 = "Fail dimuatkan";
+  var cli_score_loaded_message$2 = "Skor dimuatkan oleh Webmscore";
+  var cli_parts_message$2 = "Pemilihan Bahagian";
+  var cli_saved_message$2 = "{{file}} disimpan";
+  var cli_done_message$2 = "Selesai";
+  var cli_url_error$2 = "URL tidak sah";
+  var cli_input_error$2 = "Cuba gunakan tapak web Webmscore: https://librescore.github.io";
+  var cli_score_not_found$2 = "Skor tidak ditemui";
+  var cli_confirm_message$2 = "Teruskan?";
+  var title$2 = "Tajuk: {{title}}";
+  var source_code$2 = "Kod sumber";
+  var version$2 = "Versi: {{version}}";
+  var id$2 = "ID : {{id}}";
+  var full_score$2 = "Skor penuh";
+  var cli_example_url$2 = "muat turun MP3 URL ke direktori tertentu";
+  var cli_option_input_description$2 = "URL, fail atau folder untuk memuat turun atau menukar daripada";
+  var cli_outdated_version_message$2 = "\nVersi baharu tersedia! Versi semasa {{installed}}\nJalankan npm i -g dl-librescore@{{latest}} untuk mengemas kini";
+  var cli_file_extension_error$2 = "Sambungan fail tidak sah, hanya gp, gp3, gp4, gp5, gpx, gtp, kar, mid, midi, mscx, mscz, musicxml, mxl, ptb dan xml disokong";
+  var cli_url_type_error$2 = "Hanya MIDI, MP3 dan PDF boleh dimuat turun daripada URL";
+  var no_sheet_images_error$2 = "Tiada imej helaian ditemui";
+  var ms = {
+  	processing: processing$2,
+  	download: download$2,
+  	download_audio: download_audio$2,
+  	button_parent_not_found: button_parent_not_found$2,
+  	unknown_button_list_mode: unknown_button_list_mode$2,
+  	cli_usage_hint: cli_usage_hint$2,
+  	path_to_folder: path_to_folder$2,
+  	path_to_file: path_to_file$2,
+  	cli_example_folder: cli_example_folder$2,
+  	cli_example_file: cli_example_file$2,
+  	cli_option_type_description: cli_option_type_description$2,
+  	cli_option_output_description: cli_option_output_description$2,
+  	cli_option_verbose_description: cli_option_verbose_description$2,
+  	cli_windows_paste_hint: cli_windows_paste_hint$2,
+  	cli_linux_paste_hint: cli_linux_paste_hint$2,
+  	cli_input_message: cli_input_message$2,
+  	cli_input_suffix: cli_input_suffix$2,
+  	cli_types_message: cli_types_message$2,
+  	cli_output_message: cli_output_message$2,
+  	cli_file_error: cli_file_error$2,
+  	cli_type_error: cli_type_error$2,
+  	cli_file_loaded_message: cli_file_loaded_message$2,
+  	cli_score_loaded_message: cli_score_loaded_message$2,
+  	cli_parts_message: cli_parts_message$2,
+  	cli_saved_message: cli_saved_message$2,
+  	cli_done_message: cli_done_message$2,
+  	cli_url_error: cli_url_error$2,
+  	cli_input_error: cli_input_error$2,
+  	cli_score_not_found: cli_score_not_found$2,
+  	cli_confirm_message: cli_confirm_message$2,
+  	title: title$2,
+  	source_code: source_code$2,
+  	version: version$2,
+  	id: id$2,
+  	full_score: full_score$2,
+  	cli_example_url: cli_example_url$2,
+  	cli_option_input_description: cli_option_input_description$2,
+  	cli_outdated_version_message: cli_outdated_version_message$2,
+  	cli_file_extension_error: cli_file_extension_error$2,
+  	cli_url_type_error: cli_url_type_error$2,
+  	no_sheet_images_error: no_sheet_images_error$2
+  };
+
+  var cli_usage_hint$1 = "";
+  var processing$1 = "";
+  var download$1 = "";
+  var full_score$1 = "Партитура целиком";
+  var download_audio$1 = "";
+  var button_parent_not_found$1 = "";
+  var unknown_button_list_mode$1 = "";
+  var cli_example_url$1 = "";
+  var path_to_folder$1 = "";
+  var path_to_file$1 = "";
+  var cli_example_folder$1 = "";
+  var cli_example_file$1 = "";
+  var cli_option_input_description$1 = "";
+  var cli_option_type_description$1 = "";
+  var cli_option_output_description$1 = "";
+  var cli_option_verbose_description$1 = "";
+  var cli_outdated_version_message$1 = "";
+  var cli_windows_paste_hint$1 = "";
+  var cli_linux_paste_hint$1 = "";
+  var cli_input_message$1 = "";
+  var cli_input_suffix$1 = "";
+  var cli_types_message$1 = "";
+  var cli_output_message$1 = "";
+  var cli_file_error$1 = "";
+  var cli_type_error$1 = "";
+  var cli_file_extension_error$1 = "";
+  var cli_file_loaded_message$1 = "";
+  var cli_score_loaded_message$1 = "";
+  var cli_input_error$1 = "";
+  var cli_parts_message$1 = "";
+  var cli_saved_message$1 = "";
+  var cli_done_message$1 = "";
+  var cli_url_error$1 = "";
+  var cli_url_type_error$1 = "";
+  var cli_score_not_found$1 = "";
+  var cli_confirm_message$1 = "";
+  var id$1 = "";
+  var title$1 = "";
+  var no_sheet_images_error$1 = "";
+  var source_code$1 = "";
+  var version$1 = "";
+  var ru = {
+  	cli_usage_hint: cli_usage_hint$1,
+  	processing: processing$1,
+  	download: download$1,
+  	full_score: full_score$1,
+  	download_audio: download_audio$1,
+  	button_parent_not_found: button_parent_not_found$1,
+  	unknown_button_list_mode: unknown_button_list_mode$1,
+  	cli_example_url: cli_example_url$1,
+  	path_to_folder: path_to_folder$1,
+  	path_to_file: path_to_file$1,
+  	cli_example_folder: cli_example_folder$1,
+  	cli_example_file: cli_example_file$1,
+  	cli_option_input_description: cli_option_input_description$1,
+  	cli_option_type_description: cli_option_type_description$1,
+  	cli_option_output_description: cli_option_output_description$1,
+  	cli_option_verbose_description: cli_option_verbose_description$1,
+  	cli_outdated_version_message: cli_outdated_version_message$1,
+  	cli_windows_paste_hint: cli_windows_paste_hint$1,
+  	cli_linux_paste_hint: cli_linux_paste_hint$1,
+  	cli_input_message: cli_input_message$1,
+  	cli_input_suffix: cli_input_suffix$1,
+  	cli_types_message: cli_types_message$1,
+  	cli_output_message: cli_output_message$1,
+  	cli_file_error: cli_file_error$1,
+  	cli_type_error: cli_type_error$1,
+  	cli_file_extension_error: cli_file_extension_error$1,
+  	cli_file_loaded_message: cli_file_loaded_message$1,
+  	cli_score_loaded_message: cli_score_loaded_message$1,
+  	cli_input_error: cli_input_error$1,
+  	cli_parts_message: cli_parts_message$1,
+  	cli_saved_message: cli_saved_message$1,
+  	cli_done_message: cli_done_message$1,
+  	cli_url_error: cli_url_error$1,
+  	cli_url_type_error: cli_url_type_error$1,
+  	cli_score_not_found: cli_score_not_found$1,
+  	cli_confirm_message: cli_confirm_message$1,
+  	id: id$1,
+  	title: title$1,
+  	no_sheet_images_error: no_sheet_images_error$1,
+  	source_code: source_code$1,
+  	version: version$1
+  };
+
+  var processing = "处理中…";
+  var download = "下载 {{fileType}}";
+  var download_audio = "下载 {{fileType}} 音频";
+  var full_score = "完整乐谱";
+  var cli_usage_hint = "";
+  var button_parent_not_found = "";
+  var unknown_button_list_mode = "";
+  var cli_example_url = "";
+  var path_to_folder = "";
+  var path_to_file = "";
+  var cli_example_folder = "";
+  var cli_example_file = "";
+  var cli_option_input_description = "";
+  var cli_option_type_description = "";
+  var cli_option_output_description = "";
+  var cli_option_verbose_description = "";
+  var cli_outdated_version_message = "";
+  var cli_windows_paste_hint = "";
+  var cli_linux_paste_hint = "";
+  var cli_input_message = "";
+  var cli_input_suffix = "";
+  var cli_types_message = "";
+  var cli_output_message = "";
+  var cli_file_error = "";
+  var cli_type_error = "";
+  var cli_file_extension_error = "";
+  var cli_file_loaded_message = "";
+  var cli_score_loaded_message = "";
+  var cli_input_error = "";
+  var cli_parts_message = "";
+  var cli_saved_message = "";
+  var cli_done_message = "";
+  var cli_url_error = "";
+  var cli_url_type_error = "";
+  var cli_score_not_found = "";
+  var cli_confirm_message = "";
+  var id = "";
+  var title = "";
+  var no_sheet_images_error = "";
+  var source_code = "";
+  var version = "";
+  var zh_Hans = {
+  	processing: processing,
+  	download: download,
+  	download_audio: download_audio,
+  	full_score: full_score,
+  	cli_usage_hint: cli_usage_hint,
+  	button_parent_not_found: button_parent_not_found,
+  	unknown_button_list_mode: unknown_button_list_mode,
+  	cli_example_url: cli_example_url,
+  	path_to_folder: path_to_folder,
+  	path_to_file: path_to_file,
+  	cli_example_folder: cli_example_folder,
+  	cli_example_file: cli_example_file,
+  	cli_option_input_description: cli_option_input_description,
+  	cli_option_type_description: cli_option_type_description,
+  	cli_option_output_description: cli_option_output_description,
+  	cli_option_verbose_description: cli_option_verbose_description,
+  	cli_outdated_version_message: cli_outdated_version_message,
+  	cli_windows_paste_hint: cli_windows_paste_hint,
+  	cli_linux_paste_hint: cli_linux_paste_hint,
+  	cli_input_message: cli_input_message,
+  	cli_input_suffix: cli_input_suffix,
+  	cli_types_message: cli_types_message,
+  	cli_output_message: cli_output_message,
+  	cli_file_error: cli_file_error,
+  	cli_type_error: cli_type_error,
+  	cli_file_extension_error: cli_file_extension_error,
+  	cli_file_loaded_message: cli_file_loaded_message,
+  	cli_score_loaded_message: cli_score_loaded_message,
+  	cli_input_error: cli_input_error,
+  	cli_parts_message: cli_parts_message,
+  	cli_saved_message: cli_saved_message,
+  	cli_done_message: cli_done_message,
+  	cli_url_error: cli_url_error,
+  	cli_url_type_error: cli_url_type_error,
+  	cli_score_not_found: cli_score_not_found,
+  	cli_confirm_message: cli_confirm_message,
+  	id: id,
+  	title: title,
+  	no_sheet_images_error: no_sheet_images_error,
+  	source_code: source_code,
+  	version: version
+  };
+
   instance.init({
       compatibilityJSON: "v3",
       lng: Intl.DateTimeFormat().resolvedOptions().locale,
@@ -3655,12 +3787,17 @@ var wrapper = (function () {
           it: { translation: it },
           ja: { translation: ja },
           ko: { translation: ko },
+          ms: { translation: ms },
           ru: { translation: ru },
           "zh-Hans": { translation: zh_Hans },
       },
   });
 
   const i18next = instance;
+
+  (async () => {
+      await i18nextInit;
+  })();
 
   /* eslint-disable */
   const w = typeof unsafeWindow == "object" ? unsafeWindow : window;
@@ -3735,4 +3872,4 @@ var wrapper = (function () {
 
   return wrapper;
 
-}());
+})();

@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/LibreScore/dl-librescore/issues
 // @updateURL    https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js
 // @downloadURL  https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js
-// @version      0.34.0
+// @version      0.34.1
 // @description  Download sheet music
 // @author       LibreScore
 // @icon         https://librescore.org/img/icons/logo.svg
@@ -810,6 +810,7 @@
             if (!options) options = {};
             if (keys === undefined || keys === null) return '';
             if (!Array.isArray(keys)) keys = [String(keys)];
+            var returnDetails = options.returnDetails !== undefined ? options.returnDetails : this.options.returnDetails;
             var keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator;
 
             var _this$extractFromKey = this.extractFromKey(keys[keys.length - 1], options),
@@ -823,7 +824,18 @@
             if (lng && lng.toLowerCase() === 'cimode') {
               if (appendNamespaceToCIMode) {
                 var nsSeparator = options.nsSeparator || this.options.nsSeparator;
-                return namespace + nsSeparator + key;
+
+                if (returnDetails) {
+                  resolved.res = "".concat(namespace).concat(nsSeparator).concat(key);
+                  return resolved;
+                }
+
+                return "".concat(namespace).concat(nsSeparator).concat(key);
+              }
+
+              if (returnDetails) {
+                resolved.res = key;
+                return resolved;
               }
 
               return key;
@@ -845,9 +857,16 @@
                   this.logger.warn('accessing an object - but returnObjects options is not enabled!');
                 }
 
-                return this.options.returnedObjectHandler ? this.options.returnedObjectHandler(resUsedKey, res, _objectSpread$2(_objectSpread$2({}, options), {}, {
+                var r = this.options.returnedObjectHandler ? this.options.returnedObjectHandler(resUsedKey, res, _objectSpread$2(_objectSpread$2({}, options), {}, {
                   ns: namespaces
                 })) : "key '".concat(key, " (").concat(this.language, ")' returned an object instead of string.");
+
+                if (returnDetails) {
+                  resolved.res = r;
+                  return resolved;
+                }
+
+                return r;
               }
 
               if (keySeparator) {
@@ -953,6 +972,11 @@
               }
             }
 
+            if (returnDetails) {
+              resolved.res = res;
+              return resolved;
+            }
+
             return res;
           }
         }, {
@@ -961,7 +985,7 @@
             var _this3 = this;
 
             if (this.i18nFormat && this.i18nFormat.parse) {
-              res = this.i18nFormat.parse(res, options, resolved.usedLng, resolved.usedNS, resolved.usedKey, {
+              res = this.i18nFormat.parse(res, _objectSpread$2(_objectSpread$2({}, this.options.interpolation.defaultVariables), options), resolved.usedLng, resolved.usedNS, resolved.usedKey, {
                 resolved: resolved
               });
             } else if (!options.skipInterpolation) {
@@ -1859,10 +1883,10 @@
                   rest = _opt$split2.slice(1);
 
               var val = rest.join(':');
+              if (!formatOptions[key.trim()]) formatOptions[key.trim()] = val.trim();
               if (val.trim() === 'false') formatOptions[key.trim()] = false;
               if (val.trim() === 'true') formatOptions[key.trim()] = true;
               if (!isNaN(val.trim())) formatOptions[key.trim()] = parseInt(val.trim(), 10);
-              if (!formatOptions[key.trim()]) formatOptions[key.trim()] = val.trim();
             });
           }
         }
@@ -1962,13 +1986,9 @@
 
       function _isNativeReflectConstruct$2() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
 
-      function remove(arr, what) {
-        var found = arr.indexOf(what);
-
-        while (found !== -1) {
-          arr.splice(found, 1);
-          found = arr.indexOf(what);
-        }
+      function removePending(q, name) {
+        delete q.pending[name];
+        q.pendingCount--;
       }
 
       var Connector = function (_EventEmitter) {
@@ -1995,6 +2015,9 @@
           _this.languageUtils = services.languageUtils;
           _this.options = options;
           _this.logger = baseLogger.create('backendConnector');
+          _this.waitingReads = [];
+          _this.maxParallelReads = options.maxParallelReads || 10;
+          _this.readingCalls = 0;
           _this.state = {};
           _this.queue = [];
 
@@ -2010,10 +2033,10 @@
           value: function queueLoad(languages, namespaces, options, callback) {
             var _this2 = this;
 
-            var toLoad = [];
-            var pending = [];
-            var toLoadLanguages = [];
-            var toLoadNamespaces = [];
+            var toLoad = {};
+            var pending = {};
+            var toLoadLanguages = {};
+            var toLoadNamespaces = {};
             languages.forEach(function (lng) {
               var hasAllNamespaces = true;
               namespaces.forEach(function (ns) {
@@ -2022,21 +2045,22 @@
                 if (!options.reload && _this2.store.hasResourceBundle(lng, ns)) {
                   _this2.state[name] = 2;
                 } else if (_this2.state[name] < 0) ; else if (_this2.state[name] === 1) {
-                  if (pending.indexOf(name) < 0) pending.push(name);
+                  if (pending[name] !== undefined) pending[name] = true;
                 } else {
                   _this2.state[name] = 1;
                   hasAllNamespaces = false;
-                  if (pending.indexOf(name) < 0) pending.push(name);
-                  if (toLoad.indexOf(name) < 0) toLoad.push(name);
-                  if (toLoadNamespaces.indexOf(ns) < 0) toLoadNamespaces.push(ns);
+                  pending[name] = true;
+                  toLoad[name] = true;
+                  toLoadNamespaces[ns] = true;
                 }
               });
-              if (!hasAllNamespaces) toLoadLanguages.push(lng);
+              if (!hasAllNamespaces) toLoadLanguages[lng] = true;
             });
 
-            if (toLoad.length || pending.length) {
+            if (Object.keys(toLoad).length || Object.keys(pending).length) {
               this.queue.push({
                 pending: pending,
+                pendingCount: Object.keys(pending).length,
                 loaded: {},
                 errors: [],
                 callback: callback
@@ -2044,10 +2068,10 @@
             }
 
             return {
-              toLoad: toLoad,
-              pending: pending,
-              toLoadLanguages: toLoadLanguages,
-              toLoadNamespaces: toLoadNamespaces
+              toLoad: Object.keys(toLoad),
+              pending: Object.keys(pending),
+              toLoadLanguages: Object.keys(toLoadLanguages),
+              toLoadNamespaces: Object.keys(toLoadNamespaces)
             };
           }
         }, {
@@ -2066,16 +2090,17 @@
             var loaded = {};
             this.queue.forEach(function (q) {
               pushPath(q.loaded, [lng], ns);
-              remove(q.pending, name);
+              removePending(q, name);
               if (err) q.errors.push(err);
 
-              if (q.pending.length === 0 && !q.done) {
+              if (q.pendingCount === 0 && !q.done) {
                 Object.keys(q.loaded).forEach(function (l) {
-                  if (!loaded[l]) loaded[l] = [];
+                  if (!loaded[l]) loaded[l] = {};
+                  var loadedKeys = Object.keys(loaded[l]);
 
-                  if (q.loaded[l].length) {
-                    q.loaded[l].forEach(function (ns) {
-                      if (loaded[l].indexOf(ns) < 0) loaded[l].push(ns);
+                  if (loadedKeys.length) {
+                    loadedKeys.forEach(function (ns) {
+                      if (loadedKeys[ns] !== undefined) loaded[l][ns] = true;
                     });
                   }
                 });
@@ -2102,12 +2127,34 @@
             var wait = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 350;
             var callback = arguments.length > 5 ? arguments[5] : undefined;
             if (!lng.length) return callback(null, {});
+
+            if (this.readingCalls >= this.maxParallelReads) {
+              this.waitingReads.push({
+                lng: lng,
+                ns: ns,
+                fcName: fcName,
+                tried: tried,
+                wait: wait,
+                callback: callback
+              });
+              return;
+            }
+
+            this.readingCalls++;
             return this.backend[fcName](lng, ns, function (err, data) {
               if (err && data && tried < 5) {
                 setTimeout(function () {
                   _this3.read.call(_this3, lng, ns, fcName, tried + 1, wait * 2, callback);
                 }, wait);
                 return;
+              }
+
+              _this3.readingCalls--;
+
+              if (_this3.waitingReads.length > 0) {
+                var next = _this3.waitingReads.shift();
+
+                _this3.read(next.lng, next.ns, next.fcName, next.tried, next.wait, next.callback);
               }
 
               callback(err, data);
@@ -2769,7 +2816,7 @@
             }
 
             if (this.hasResourceBundle(lng, ns)) return true;
-            if (!this.services.backendConnector.backend) return true;
+            if (!this.services.backendConnector.backend || this.options.resources && !this.options.partialBundledLanguages) return true;
             if (loadNotPending(lng, ns) && (!fallbackLng || loadNotPending(lastLng, ns))) return true;
             return false;
           }
@@ -2886,749 +2933,154 @@
       var instance = I18n.createInstance();
       instance.createInstance = I18n.createInstance;
 
-      var createInstance = instance.createInstance;
-      var init = instance.init;
-      var loadResources = instance.loadResources;
-      var reloadResources = instance.reloadResources;
-      var use = instance.use;
-      var changeLanguage = instance.changeLanguage;
-      var getFixedT = instance.getFixedT;
-      var t = instance.t;
-      var exists = instance.exists;
-      var setDefaultNamespace = instance.setDefaultNamespace;
-      var hasLoadedNamespace = instance.hasLoadedNamespace;
-      var loadNamespaces = instance.loadNamespaces;
-      var loadLanguages = instance.loadLanguages;
+      instance.createInstance;
+      instance.init;
+      instance.loadResources;
+      instance.reloadResources;
+      instance.use;
+      instance.changeLanguage;
+      instance.getFixedT;
+      instance.t;
+      instance.exists;
+      instance.setDefaultNamespace;
+      instance.hasLoadedNamespace;
+      instance.loadNamespaces;
+      instance.loadLanguages;
 
-      var cli_usage_hint = "";
-      var cli_example_folder = "";
-      var cli_example_file = "";
-      var cli_option_input_description = "";
-      var cli_option_type_description = "";
-      var cli_option_output_description = "";
-      var cli_option_verbose_description = "";
-      var cli_outdated_version_message = "";
-      var cli_windows_paste_hint = "";
-      var cli_linux_paste_hint = "";
-      var cli_input_message = "";
-      var cli_input_suffix = "";
-      var cli_types_message = "";
-      var cli_output_message = "";
-      var cli_file_error = "";
-      var cli_input_error = "";
-      var cli_parts_message = "";
-      var cli_saved_message = "";
-      var cli_done_message = "";
-      var cli_url_error = "";
-      var cli_url_type_error = "";
-      var cli_score_not_found = "";
-      var button_parent_not_found = "";
-      var unknown_button_list_mode = "";
-      var cli_example_url = "";
-      var path_to_folder = "";
-      var path_to_file = "";
-      var cli_type_error = "";
-      var cli_file_extension_error = "";
-      var cli_file_loaded_message = "";
-      var cli_score_loaded_message = "";
-      var cli_confirm_message = "";
-      var id = "";
-      var title = "";
-      var no_sheet_images_error = "";
-      var source_code = "";
-      var version = "";
-      var processing = "";
-      var download = "";
-      var full_score = "";
-      var download_audio = "";
+      var cli_usage_hint$9 = "";
+      var cli_example_folder$9 = "";
+      var cli_example_file$9 = "";
+      var cli_option_input_description$9 = "";
+      var cli_option_type_description$9 = "";
+      var cli_option_output_description$9 = "";
+      var cli_option_verbose_description$9 = "";
+      var cli_outdated_version_message$9 = "";
+      var cli_windows_paste_hint$9 = "";
+      var cli_linux_paste_hint$9 = "";
+      var cli_input_message$9 = "";
+      var cli_input_suffix$9 = "";
+      var cli_types_message$9 = "";
+      var cli_output_message$9 = "";
+      var cli_file_error$9 = "";
+      var cli_input_error$9 = "";
+      var cli_parts_message$9 = "";
+      var cli_saved_message$9 = "";
+      var cli_done_message$9 = "";
+      var cli_url_error$9 = "";
+      var cli_url_type_error$9 = "";
+      var cli_score_not_found$9 = "";
+      var button_parent_not_found$9 = "";
+      var unknown_button_list_mode$9 = "";
+      var cli_example_url$9 = "";
+      var path_to_folder$9 = "";
+      var path_to_file$9 = "";
+      var cli_type_error$9 = "";
+      var cli_file_extension_error$9 = "";
+      var cli_file_loaded_message$9 = "";
+      var cli_score_loaded_message$9 = "";
+      var cli_confirm_message$9 = "";
+      var id$9 = "";
+      var title$9 = "";
+      var no_sheet_images_error$9 = "";
+      var source_code$9 = "";
+      var version$9 = "";
+      var processing$9 = "";
+      var download$9 = "";
+      var full_score$9 = "";
+      var download_audio$9 = "";
       var ar = {
-      	cli_usage_hint: cli_usage_hint,
-      	cli_example_folder: cli_example_folder,
-      	cli_example_file: cli_example_file,
-      	cli_option_input_description: cli_option_input_description,
-      	cli_option_type_description: cli_option_type_description,
-      	cli_option_output_description: cli_option_output_description,
-      	cli_option_verbose_description: cli_option_verbose_description,
-      	cli_outdated_version_message: cli_outdated_version_message,
-      	cli_windows_paste_hint: cli_windows_paste_hint,
-      	cli_linux_paste_hint: cli_linux_paste_hint,
-      	cli_input_message: cli_input_message,
-      	cli_input_suffix: cli_input_suffix,
-      	cli_types_message: cli_types_message,
-      	cli_output_message: cli_output_message,
-      	cli_file_error: cli_file_error,
-      	cli_input_error: cli_input_error,
-      	cli_parts_message: cli_parts_message,
-      	cli_saved_message: cli_saved_message,
-      	cli_done_message: cli_done_message,
-      	cli_url_error: cli_url_error,
-      	cli_url_type_error: cli_url_type_error,
-      	cli_score_not_found: cli_score_not_found,
-      	button_parent_not_found: button_parent_not_found,
-      	unknown_button_list_mode: unknown_button_list_mode,
-      	cli_example_url: cli_example_url,
-      	path_to_folder: path_to_folder,
-      	path_to_file: path_to_file,
-      	cli_type_error: cli_type_error,
-      	cli_file_extension_error: cli_file_extension_error,
-      	cli_file_loaded_message: cli_file_loaded_message,
-      	cli_score_loaded_message: cli_score_loaded_message,
-      	cli_confirm_message: cli_confirm_message,
-      	id: id,
-      	title: title,
-      	no_sheet_images_error: no_sheet_images_error,
-      	source_code: source_code,
-      	version: version,
-      	processing: processing,
-      	download: download,
-      	full_score: full_score,
-      	download_audio: download_audio
+      	cli_usage_hint: cli_usage_hint$9,
+      	cli_example_folder: cli_example_folder$9,
+      	cli_example_file: cli_example_file$9,
+      	cli_option_input_description: cli_option_input_description$9,
+      	cli_option_type_description: cli_option_type_description$9,
+      	cli_option_output_description: cli_option_output_description$9,
+      	cli_option_verbose_description: cli_option_verbose_description$9,
+      	cli_outdated_version_message: cli_outdated_version_message$9,
+      	cli_windows_paste_hint: cli_windows_paste_hint$9,
+      	cli_linux_paste_hint: cli_linux_paste_hint$9,
+      	cli_input_message: cli_input_message$9,
+      	cli_input_suffix: cli_input_suffix$9,
+      	cli_types_message: cli_types_message$9,
+      	cli_output_message: cli_output_message$9,
+      	cli_file_error: cli_file_error$9,
+      	cli_input_error: cli_input_error$9,
+      	cli_parts_message: cli_parts_message$9,
+      	cli_saved_message: cli_saved_message$9,
+      	cli_done_message: cli_done_message$9,
+      	cli_url_error: cli_url_error$9,
+      	cli_url_type_error: cli_url_type_error$9,
+      	cli_score_not_found: cli_score_not_found$9,
+      	button_parent_not_found: button_parent_not_found$9,
+      	unknown_button_list_mode: unknown_button_list_mode$9,
+      	cli_example_url: cli_example_url$9,
+      	path_to_folder: path_to_folder$9,
+      	path_to_file: path_to_file$9,
+      	cli_type_error: cli_type_error$9,
+      	cli_file_extension_error: cli_file_extension_error$9,
+      	cli_file_loaded_message: cli_file_loaded_message$9,
+      	cli_score_loaded_message: cli_score_loaded_message$9,
+      	cli_confirm_message: cli_confirm_message$9,
+      	id: id$9,
+      	title: title$9,
+      	no_sheet_images_error: no_sheet_images_error$9,
+      	source_code: source_code$9,
+      	version: version$9,
+      	processing: processing$9,
+      	download: download$9,
+      	full_score: full_score$9,
+      	download_audio: download_audio$9
       };
 
-      var processing$1 = "Processing…";
-      var download$1 = "Download {{fileType}}";
-      var download_audio$1 = "Download {{fileType}} audio";
-      var full_score$1 = "Full score";
-      var button_parent_not_found$1 = "Button parent not found";
-      var unknown_button_list_mode$1 = "Unknown button list mode";
-      var cli_usage_hint$1 = "Usage: {{bin}} [options]";
-      var cli_example_url$1 = "download MP3 of URL to specified directory";
-      var path_to_folder$1 = "path/to/folder";
-      var path_to_file$1 = "path/to/file";
-      var cli_example_folder$1 = "export MIDI and PDF of all files in specified folder to current folder";
-      var cli_example_file$1 = "export FLAC of specified MusicXML file to current folder";
-      var cli_option_input_description$1 = "URL, file, or folder to download or convert from";
-      var cli_option_type_description$1 = "Type of files to download";
-      var cli_option_output_description$1 = "Folder to save files to";
-      var cli_option_verbose_description$1 = "Run with verbose logging";
-      var cli_outdated_version_message$1 = "\nNew version is available! Current version is {{installed}}\nRun npm i -g dl-librescore@{{latest}} to update";
-      var cli_windows_paste_hint$1 = "right-click to paste";
-      var cli_linux_paste_hint$1 = "usually Ctrl+Shift+V to paste";
-      var cli_input_message$1 = "MuseScore URL or path to file or folder:";
-      var cli_input_suffix$1 = "starts with https://musescore.com/ or is a path";
-      var cli_types_message$1 = "Filetype Selection";
-      var cli_output_message$1 = "Output Directory:";
-      var cli_file_error$1 = "File does not exist";
-      var cli_type_error$1 = "No types chosen";
-      var cli_file_extension_error$1 = "Invalid file extension, only gp, gp3, gp4, gp5, gpx, gtp, kar, mid, midi, mscx, mscz, musicxml, mxl, ptb, and xml are supported";
-      var cli_file_loaded_message$1 = "File loaded";
-      var cli_score_loaded_message$1 = "Score loaded by Webmscore";
-      var cli_input_error$1 = "Try using the Webmscore website instead: https://librescore.github.io";
-      var cli_parts_message$1 = "Part Selection";
-      var cli_saved_message$1 = "Saved {{file}}";
-      var cli_done_message$1 = "Done";
-      var cli_url_error$1 = "Invalid URL";
-      var cli_url_type_error$1 = "Only MIDI, MP3, and PDF are downloadable from a URL";
-      var cli_score_not_found$1 = "Score not found";
-      var cli_confirm_message$1 = "Continue?";
-      var id$1 = "ID: {{id}}";
-      var title$1 = "Title: {{title}}";
-      var no_sheet_images_error$1 = "No sheet images found";
-      var source_code$1 = "Source Code";
-      var version$1 = "Version: {{version}}";
+      var processing$8 = "Processing…";
+      var download$8 = "Download {{fileType}}";
+      var download_audio$8 = "Download {{fileType}} audio";
+      var full_score$8 = "Full score";
+      var button_parent_not_found$8 = "Button parent not found";
+      var unknown_button_list_mode$8 = "Unknown button list mode";
+      var cli_usage_hint$8 = "Usage: {{bin}} [options]";
+      var cli_example_url$8 = "download MP3 of URL to specified directory";
+      var path_to_folder$8 = "path/to/folder";
+      var path_to_file$8 = "path/to/file";
+      var cli_example_folder$8 = "export MIDI and PDF of all files in specified folder to current folder";
+      var cli_example_file$8 = "export FLAC of specified MusicXML file to current folder";
+      var cli_option_input_description$8 = "URL, file, or folder to download or convert from";
+      var cli_option_type_description$8 = "Type of files to download";
+      var cli_option_output_description$8 = "Folder to save files to";
+      var cli_option_verbose_description$8 = "Run with verbose logging";
+      var cli_outdated_version_message$8 = "\nNew version is available! Current version is {{installed}}\nRun npm i -g dl-librescore@{{latest}} to update";
+      var cli_windows_paste_hint$8 = "right-click to paste";
+      var cli_linux_paste_hint$8 = "usually Ctrl+Shift+V to paste";
+      var cli_input_message$8 = "MuseScore URL or path to file or folder:";
+      var cli_input_suffix$8 = "starts with https://musescore.com/ or is a path";
+      var cli_types_message$8 = "Filetype Selection";
+      var cli_output_message$8 = "Output Directory:";
+      var cli_file_error$8 = "File does not exist";
+      var cli_type_error$8 = "No types chosen";
+      var cli_file_extension_error$8 = "Invalid file extension, only gp, gp3, gp4, gp5, gpx, gtp, kar, mid, midi, mscx, mscz, musicxml, mxl, ptb, and xml are supported";
+      var cli_file_loaded_message$8 = "File loaded";
+      var cli_score_loaded_message$8 = "Score loaded by Webmscore";
+      var cli_input_error$8 = "Try using the Webmscore website instead: https://librescore.github.io";
+      var cli_parts_message$8 = "Part Selection";
+      var cli_saved_message$8 = "Saved {{file}}";
+      var cli_done_message$8 = "Done";
+      var cli_url_error$8 = "Invalid URL";
+      var cli_url_type_error$8 = "Only MIDI, MP3, and PDF are downloadable from a URL";
+      var cli_score_not_found$8 = "Score not found";
+      var cli_confirm_message$8 = "Continue?";
+      var id$8 = "ID: {{id}}";
+      var title$8 = "Title: {{title}}";
+      var no_sheet_images_error$8 = "No sheet images found";
+      var source_code$8 = "Source Code";
+      var version$8 = "Version: {{version}}";
       var en = {
-      	processing: processing$1,
-      	download: download$1,
-      	download_audio: download_audio$1,
-      	full_score: full_score$1,
-      	button_parent_not_found: button_parent_not_found$1,
-      	unknown_button_list_mode: unknown_button_list_mode$1,
-      	cli_usage_hint: cli_usage_hint$1,
-      	cli_example_url: cli_example_url$1,
-      	path_to_folder: path_to_folder$1,
-      	path_to_file: path_to_file$1,
-      	cli_example_folder: cli_example_folder$1,
-      	cli_example_file: cli_example_file$1,
-      	cli_option_input_description: cli_option_input_description$1,
-      	cli_option_type_description: cli_option_type_description$1,
-      	cli_option_output_description: cli_option_output_description$1,
-      	cli_option_verbose_description: cli_option_verbose_description$1,
-      	cli_outdated_version_message: cli_outdated_version_message$1,
-      	cli_windows_paste_hint: cli_windows_paste_hint$1,
-      	cli_linux_paste_hint: cli_linux_paste_hint$1,
-      	cli_input_message: cli_input_message$1,
-      	cli_input_suffix: cli_input_suffix$1,
-      	cli_types_message: cli_types_message$1,
-      	cli_output_message: cli_output_message$1,
-      	cli_file_error: cli_file_error$1,
-      	cli_type_error: cli_type_error$1,
-      	cli_file_extension_error: cli_file_extension_error$1,
-      	cli_file_loaded_message: cli_file_loaded_message$1,
-      	cli_score_loaded_message: cli_score_loaded_message$1,
-      	cli_input_error: cli_input_error$1,
-      	cli_parts_message: cli_parts_message$1,
-      	cli_saved_message: cli_saved_message$1,
-      	cli_done_message: cli_done_message$1,
-      	cli_url_error: cli_url_error$1,
-      	cli_url_type_error: cli_url_type_error$1,
-      	cli_score_not_found: cli_score_not_found$1,
-      	cli_confirm_message: cli_confirm_message$1,
-      	id: id$1,
-      	title: title$1,
-      	no_sheet_images_error: no_sheet_images_error$1,
-      	source_code: source_code$1,
-      	version: version$1
-      };
-
-      var processing$2 = "Cargando…";
-      var download$2 = "Descargar {{fileType}}";
-      var download_audio$2 = "Descargar audio {{fileType}}";
-      var full_score$2 = "Partitura completa";
-      var cli_file_error$2 = "";
-      var cli_type_error$2 = "";
-      var cli_file_extension_error$2 = "";
-      var cli_file_loaded_message$2 = "";
-      var cli_score_loaded_message$2 = "";
-      var cli_input_error$2 = "";
-      var cli_parts_message$2 = "";
-      var cli_saved_message$2 = "";
-      var cli_done_message$2 = "";
-      var cli_url_error$2 = "";
-      var cli_url_type_error$2 = "";
-      var cli_score_not_found$2 = "";
-      var cli_confirm_message$2 = "";
-      var id$2 = "";
-      var title$2 = "";
-      var no_sheet_images_error$2 = "";
-      var source_code$2 = "";
-      var version$2 = "";
-      var cli_usage_hint$2 = "";
-      var button_parent_not_found$2 = "";
-      var unknown_button_list_mode$2 = "";
-      var cli_example_url$2 = "";
-      var path_to_folder$2 = "";
-      var path_to_file$2 = "";
-      var cli_example_folder$2 = "";
-      var cli_example_file$2 = "";
-      var cli_option_input_description$2 = "";
-      var cli_option_type_description$2 = "";
-      var cli_option_output_description$2 = "";
-      var cli_option_verbose_description$2 = "";
-      var cli_outdated_version_message$2 = "";
-      var cli_windows_paste_hint$2 = "";
-      var cli_linux_paste_hint$2 = "";
-      var cli_input_message$2 = "";
-      var cli_input_suffix$2 = "";
-      var cli_types_message$2 = "";
-      var cli_output_message$2 = "";
-      var es = {
-      	processing: processing$2,
-      	download: download$2,
-      	download_audio: download_audio$2,
-      	full_score: full_score$2,
-      	cli_file_error: cli_file_error$2,
-      	cli_type_error: cli_type_error$2,
-      	cli_file_extension_error: cli_file_extension_error$2,
-      	cli_file_loaded_message: cli_file_loaded_message$2,
-      	cli_score_loaded_message: cli_score_loaded_message$2,
-      	cli_input_error: cli_input_error$2,
-      	cli_parts_message: cli_parts_message$2,
-      	cli_saved_message: cli_saved_message$2,
-      	cli_done_message: cli_done_message$2,
-      	cli_url_error: cli_url_error$2,
-      	cli_url_type_error: cli_url_type_error$2,
-      	cli_score_not_found: cli_score_not_found$2,
-      	cli_confirm_message: cli_confirm_message$2,
-      	id: id$2,
-      	title: title$2,
-      	no_sheet_images_error: no_sheet_images_error$2,
-      	source_code: source_code$2,
-      	version: version$2,
-      	cli_usage_hint: cli_usage_hint$2,
-      	button_parent_not_found: button_parent_not_found$2,
-      	unknown_button_list_mode: unknown_button_list_mode$2,
-      	cli_example_url: cli_example_url$2,
-      	path_to_folder: path_to_folder$2,
-      	path_to_file: path_to_file$2,
-      	cli_example_folder: cli_example_folder$2,
-      	cli_example_file: cli_example_file$2,
-      	cli_option_input_description: cli_option_input_description$2,
-      	cli_option_type_description: cli_option_type_description$2,
-      	cli_option_output_description: cli_option_output_description$2,
-      	cli_option_verbose_description: cli_option_verbose_description$2,
-      	cli_outdated_version_message: cli_outdated_version_message$2,
-      	cli_windows_paste_hint: cli_windows_paste_hint$2,
-      	cli_linux_paste_hint: cli_linux_paste_hint$2,
-      	cli_input_message: cli_input_message$2,
-      	cli_input_suffix: cli_input_suffix$2,
-      	cli_types_message: cli_types_message$2,
-      	cli_output_message: cli_output_message$2
-      };
-
-      var processing$3 = "En traitement…";
-      var download$3 = "Télécharger {{fileType}}";
-      var full_score$3 = "Grande partition";
-      var download_audio$3 = "Télécharger audio {{fileType}}";
-      var cli_usage_hint$3 = "";
-      var button_parent_not_found$3 = "";
-      var unknown_button_list_mode$3 = "";
-      var cli_example_url$3 = "";
-      var path_to_folder$3 = "";
-      var path_to_file$3 = "";
-      var cli_example_folder$3 = "";
-      var cli_example_file$3 = "";
-      var cli_option_input_description$3 = "";
-      var cli_option_type_description$3 = "";
-      var cli_option_output_description$3 = "";
-      var cli_option_verbose_description$3 = "";
-      var cli_outdated_version_message$3 = "";
-      var cli_windows_paste_hint$3 = "";
-      var cli_linux_paste_hint$3 = "";
-      var cli_input_message$3 = "";
-      var cli_input_suffix$3 = "";
-      var cli_types_message$3 = "";
-      var cli_output_message$3 = "";
-      var cli_file_error$3 = "";
-      var cli_type_error$3 = "";
-      var cli_file_extension_error$3 = "";
-      var cli_file_loaded_message$3 = "";
-      var cli_score_loaded_message$3 = "";
-      var cli_input_error$3 = "";
-      var cli_parts_message$3 = "";
-      var cli_saved_message$3 = "";
-      var cli_done_message$3 = "";
-      var cli_url_error$3 = "";
-      var cli_url_type_error$3 = "";
-      var cli_score_not_found$3 = "";
-      var cli_confirm_message$3 = "";
-      var id$3 = "";
-      var title$3 = "";
-      var no_sheet_images_error$3 = "";
-      var source_code$3 = "";
-      var version$3 = "";
-      var fr = {
-      	processing: processing$3,
-      	download: download$3,
-      	full_score: full_score$3,
-      	download_audio: download_audio$3,
-      	cli_usage_hint: cli_usage_hint$3,
-      	button_parent_not_found: button_parent_not_found$3,
-      	unknown_button_list_mode: unknown_button_list_mode$3,
-      	cli_example_url: cli_example_url$3,
-      	path_to_folder: path_to_folder$3,
-      	path_to_file: path_to_file$3,
-      	cli_example_folder: cli_example_folder$3,
-      	cli_example_file: cli_example_file$3,
-      	cli_option_input_description: cli_option_input_description$3,
-      	cli_option_type_description: cli_option_type_description$3,
-      	cli_option_output_description: cli_option_output_description$3,
-      	cli_option_verbose_description: cli_option_verbose_description$3,
-      	cli_outdated_version_message: cli_outdated_version_message$3,
-      	cli_windows_paste_hint: cli_windows_paste_hint$3,
-      	cli_linux_paste_hint: cli_linux_paste_hint$3,
-      	cli_input_message: cli_input_message$3,
-      	cli_input_suffix: cli_input_suffix$3,
-      	cli_types_message: cli_types_message$3,
-      	cli_output_message: cli_output_message$3,
-      	cli_file_error: cli_file_error$3,
-      	cli_type_error: cli_type_error$3,
-      	cli_file_extension_error: cli_file_extension_error$3,
-      	cli_file_loaded_message: cli_file_loaded_message$3,
-      	cli_score_loaded_message: cli_score_loaded_message$3,
-      	cli_input_error: cli_input_error$3,
-      	cli_parts_message: cli_parts_message$3,
-      	cli_saved_message: cli_saved_message$3,
-      	cli_done_message: cli_done_message$3,
-      	cli_url_error: cli_url_error$3,
-      	cli_url_type_error: cli_url_type_error$3,
-      	cli_score_not_found: cli_score_not_found$3,
-      	cli_confirm_message: cli_confirm_message$3,
-      	id: id$3,
-      	title: title$3,
-      	no_sheet_images_error: no_sheet_images_error$3,
-      	source_code: source_code$3,
-      	version: version$3
-      };
-
-      var processing$4 = "Caricamento…";
-      var download$4 = "Scaricare {{fileType}}";
-      var download_audio$4 = "Scaricare {{fileType}} audio";
-      var full_score$4 = "Partitura completa";
-      var cli_usage_hint$4 = "";
-      var button_parent_not_found$4 = "";
-      var unknown_button_list_mode$4 = "";
-      var cli_example_url$4 = "";
-      var path_to_folder$4 = "";
-      var path_to_file$4 = "";
-      var cli_example_folder$4 = "";
-      var cli_example_file$4 = "";
-      var cli_option_input_description$4 = "";
-      var cli_option_type_description$4 = "";
-      var cli_option_output_description$4 = "";
-      var cli_option_verbose_description$4 = "";
-      var cli_outdated_version_message$4 = "";
-      var cli_windows_paste_hint$4 = "";
-      var cli_linux_paste_hint$4 = "";
-      var cli_input_message$4 = "";
-      var cli_input_suffix$4 = "";
-      var cli_types_message$4 = "";
-      var cli_output_message$4 = "";
-      var cli_file_error$4 = "";
-      var cli_type_error$4 = "";
-      var cli_file_extension_error$4 = "";
-      var cli_file_loaded_message$4 = "";
-      var cli_score_loaded_message$4 = "";
-      var cli_input_error$4 = "";
-      var cli_parts_message$4 = "";
-      var cli_saved_message$4 = "";
-      var cli_done_message$4 = "";
-      var cli_url_error$4 = "";
-      var cli_url_type_error$4 = "";
-      var cli_score_not_found$4 = "";
-      var cli_confirm_message$4 = "";
-      var id$4 = "";
-      var title$4 = "";
-      var no_sheet_images_error$4 = "";
-      var source_code$4 = "";
-      var version$4 = "";
-      var it = {
-      	processing: processing$4,
-      	download: download$4,
-      	download_audio: download_audio$4,
-      	full_score: full_score$4,
-      	cli_usage_hint: cli_usage_hint$4,
-      	button_parent_not_found: button_parent_not_found$4,
-      	unknown_button_list_mode: unknown_button_list_mode$4,
-      	cli_example_url: cli_example_url$4,
-      	path_to_folder: path_to_folder$4,
-      	path_to_file: path_to_file$4,
-      	cli_example_folder: cli_example_folder$4,
-      	cli_example_file: cli_example_file$4,
-      	cli_option_input_description: cli_option_input_description$4,
-      	cli_option_type_description: cli_option_type_description$4,
-      	cli_option_output_description: cli_option_output_description$4,
-      	cli_option_verbose_description: cli_option_verbose_description$4,
-      	cli_outdated_version_message: cli_outdated_version_message$4,
-      	cli_windows_paste_hint: cli_windows_paste_hint$4,
-      	cli_linux_paste_hint: cli_linux_paste_hint$4,
-      	cli_input_message: cli_input_message$4,
-      	cli_input_suffix: cli_input_suffix$4,
-      	cli_types_message: cli_types_message$4,
-      	cli_output_message: cli_output_message$4,
-      	cli_file_error: cli_file_error$4,
-      	cli_type_error: cli_type_error$4,
-      	cli_file_extension_error: cli_file_extension_error$4,
-      	cli_file_loaded_message: cli_file_loaded_message$4,
-      	cli_score_loaded_message: cli_score_loaded_message$4,
-      	cli_input_error: cli_input_error$4,
-      	cli_parts_message: cli_parts_message$4,
-      	cli_saved_message: cli_saved_message$4,
-      	cli_done_message: cli_done_message$4,
-      	cli_url_error: cli_url_error$4,
-      	cli_url_type_error: cli_url_type_error$4,
-      	cli_score_not_found: cli_score_not_found$4,
-      	cli_confirm_message: cli_confirm_message$4,
-      	id: id$4,
-      	title: title$4,
-      	no_sheet_images_error: no_sheet_images_error$4,
-      	source_code: source_code$4,
-      	version: version$4
-      };
-
-      var processing$5 = "処理中…";
-      var download$5 = "{{fileType}}をダウンロード";
-      var download_audio$5 = "{{fileType}}オーディオをダウンロード";
-      var full_score$5 = "フルスコア";
-      var cli_url_error$5 = "";
-      var cli_url_type_error$5 = "";
-      var cli_score_not_found$5 = "";
-      var cli_usage_hint$5 = "";
-      var button_parent_not_found$5 = "";
-      var unknown_button_list_mode$5 = "";
-      var cli_example_url$5 = "";
-      var path_to_folder$5 = "";
-      var path_to_file$5 = "";
-      var cli_example_folder$5 = "";
-      var cli_example_file$5 = "";
-      var cli_option_input_description$5 = "";
-      var cli_option_type_description$5 = "";
-      var cli_option_output_description$5 = "";
-      var cli_option_verbose_description$5 = "";
-      var cli_outdated_version_message$5 = "";
-      var cli_windows_paste_hint$5 = "";
-      var cli_linux_paste_hint$5 = "";
-      var cli_input_message$5 = "";
-      var cli_input_suffix$5 = "";
-      var cli_types_message$5 = "";
-      var cli_output_message$5 = "";
-      var cli_file_error$5 = "";
-      var cli_type_error$5 = "";
-      var cli_file_extension_error$5 = "";
-      var cli_file_loaded_message$5 = "";
-      var cli_score_loaded_message$5 = "";
-      var cli_input_error$5 = "";
-      var cli_parts_message$5 = "";
-      var cli_saved_message$5 = "";
-      var cli_done_message$5 = "";
-      var id$5 = "";
-      var cli_confirm_message$5 = "";
-      var title$5 = "";
-      var no_sheet_images_error$5 = "";
-      var source_code$5 = "";
-      var version$5 = "";
-      var ja = {
-      	processing: processing$5,
-      	download: download$5,
-      	download_audio: download_audio$5,
-      	full_score: full_score$5,
-      	cli_url_error: cli_url_error$5,
-      	cli_url_type_error: cli_url_type_error$5,
-      	cli_score_not_found: cli_score_not_found$5,
-      	cli_usage_hint: cli_usage_hint$5,
-      	button_parent_not_found: button_parent_not_found$5,
-      	unknown_button_list_mode: unknown_button_list_mode$5,
-      	cli_example_url: cli_example_url$5,
-      	path_to_folder: path_to_folder$5,
-      	path_to_file: path_to_file$5,
-      	cli_example_folder: cli_example_folder$5,
-      	cli_example_file: cli_example_file$5,
-      	cli_option_input_description: cli_option_input_description$5,
-      	cli_option_type_description: cli_option_type_description$5,
-      	cli_option_output_description: cli_option_output_description$5,
-      	cli_option_verbose_description: cli_option_verbose_description$5,
-      	cli_outdated_version_message: cli_outdated_version_message$5,
-      	cli_windows_paste_hint: cli_windows_paste_hint$5,
-      	cli_linux_paste_hint: cli_linux_paste_hint$5,
-      	cli_input_message: cli_input_message$5,
-      	cli_input_suffix: cli_input_suffix$5,
-      	cli_types_message: cli_types_message$5,
-      	cli_output_message: cli_output_message$5,
-      	cli_file_error: cli_file_error$5,
-      	cli_type_error: cli_type_error$5,
-      	cli_file_extension_error: cli_file_extension_error$5,
-      	cli_file_loaded_message: cli_file_loaded_message$5,
-      	cli_score_loaded_message: cli_score_loaded_message$5,
-      	cli_input_error: cli_input_error$5,
-      	cli_parts_message: cli_parts_message$5,
-      	cli_saved_message: cli_saved_message$5,
-      	cli_done_message: cli_done_message$5,
-      	id: id$5,
-      	cli_confirm_message: cli_confirm_message$5,
-      	title: title$5,
-      	no_sheet_images_error: no_sheet_images_error$5,
-      	source_code: source_code$5,
-      	version: version$5
-      };
-
-      var processing$6 = "처리중…";
-      var download$6 = "다운로드 {{fileType}}";
-      var download_audio$6 = "{{fileType}} 오디오 다운로드";
-      var full_score$6 = "풀 스코어";
-      var cli_done_message$6 = "";
-      var cli_score_not_found$6 = "";
-      var cli_confirm_message$6 = "";
-      var cli_usage_hint$6 = "";
-      var button_parent_not_found$6 = "";
-      var unknown_button_list_mode$6 = "";
-      var cli_example_url$6 = "";
-      var path_to_folder$6 = "";
-      var path_to_file$6 = "";
-      var cli_example_folder$6 = "";
-      var cli_example_file$6 = "";
-      var cli_option_input_description$6 = "";
-      var cli_option_type_description$6 = "";
-      var cli_option_output_description$6 = "";
-      var cli_option_verbose_description$6 = "";
-      var cli_outdated_version_message$6 = "";
-      var cli_windows_paste_hint$6 = "";
-      var cli_linux_paste_hint$6 = "";
-      var cli_input_message$6 = "";
-      var cli_input_suffix$6 = "";
-      var cli_types_message$6 = "";
-      var cli_output_message$6 = "";
-      var cli_file_error$6 = "";
-      var cli_type_error$6 = "";
-      var cli_file_extension_error$6 = "";
-      var cli_file_loaded_message$6 = "";
-      var cli_score_loaded_message$6 = "";
-      var cli_input_error$6 = "";
-      var cli_parts_message$6 = "";
-      var cli_saved_message$6 = "";
-      var cli_url_error$6 = "";
-      var cli_url_type_error$6 = "";
-      var id$6 = "";
-      var title$6 = "";
-      var no_sheet_images_error$6 = "";
-      var source_code$6 = "";
-      var version$6 = "";
-      var ko = {
-      	processing: processing$6,
-      	download: download$6,
-      	download_audio: download_audio$6,
-      	full_score: full_score$6,
-      	cli_done_message: cli_done_message$6,
-      	cli_score_not_found: cli_score_not_found$6,
-      	cli_confirm_message: cli_confirm_message$6,
-      	cli_usage_hint: cli_usage_hint$6,
-      	button_parent_not_found: button_parent_not_found$6,
-      	unknown_button_list_mode: unknown_button_list_mode$6,
-      	cli_example_url: cli_example_url$6,
-      	path_to_folder: path_to_folder$6,
-      	path_to_file: path_to_file$6,
-      	cli_example_folder: cli_example_folder$6,
-      	cli_example_file: cli_example_file$6,
-      	cli_option_input_description: cli_option_input_description$6,
-      	cli_option_type_description: cli_option_type_description$6,
-      	cli_option_output_description: cli_option_output_description$6,
-      	cli_option_verbose_description: cli_option_verbose_description$6,
-      	cli_outdated_version_message: cli_outdated_version_message$6,
-      	cli_windows_paste_hint: cli_windows_paste_hint$6,
-      	cli_linux_paste_hint: cli_linux_paste_hint$6,
-      	cli_input_message: cli_input_message$6,
-      	cli_input_suffix: cli_input_suffix$6,
-      	cli_types_message: cli_types_message$6,
-      	cli_output_message: cli_output_message$6,
-      	cli_file_error: cli_file_error$6,
-      	cli_type_error: cli_type_error$6,
-      	cli_file_extension_error: cli_file_extension_error$6,
-      	cli_file_loaded_message: cli_file_loaded_message$6,
-      	cli_score_loaded_message: cli_score_loaded_message$6,
-      	cli_input_error: cli_input_error$6,
-      	cli_parts_message: cli_parts_message$6,
-      	cli_saved_message: cli_saved_message$6,
-      	cli_url_error: cli_url_error$6,
-      	cli_url_type_error: cli_url_type_error$6,
-      	id: id$6,
-      	title: title$6,
-      	no_sheet_images_error: no_sheet_images_error$6,
-      	source_code: source_code$6,
-      	version: version$6
-      };
-
-      var cli_usage_hint$7 = "";
-      var processing$7 = "";
-      var download$7 = "";
-      var full_score$7 = "";
-      var download_audio$7 = "";
-      var button_parent_not_found$7 = "";
-      var unknown_button_list_mode$7 = "";
-      var cli_example_url$7 = "";
-      var path_to_folder$7 = "";
-      var path_to_file$7 = "";
-      var cli_example_folder$7 = "";
-      var cli_example_file$7 = "";
-      var cli_option_input_description$7 = "";
-      var cli_option_type_description$7 = "";
-      var cli_option_output_description$7 = "";
-      var cli_option_verbose_description$7 = "";
-      var cli_outdated_version_message$7 = "";
-      var cli_windows_paste_hint$7 = "";
-      var cli_linux_paste_hint$7 = "";
-      var cli_input_message$7 = "";
-      var cli_input_suffix$7 = "";
-      var cli_types_message$7 = "";
-      var cli_output_message$7 = "";
-      var cli_file_error$7 = "";
-      var cli_type_error$7 = "";
-      var cli_file_extension_error$7 = "";
-      var cli_file_loaded_message$7 = "";
-      var cli_score_loaded_message$7 = "";
-      var cli_input_error$7 = "";
-      var cli_parts_message$7 = "";
-      var cli_saved_message$7 = "";
-      var cli_done_message$7 = "";
-      var cli_url_error$7 = "";
-      var cli_url_type_error$7 = "";
-      var cli_score_not_found$7 = "";
-      var cli_confirm_message$7 = "";
-      var id$7 = "";
-      var title$7 = "";
-      var no_sheet_images_error$7 = "";
-      var source_code$7 = "";
-      var version$7 = "";
-      var ru = {
-      	cli_usage_hint: cli_usage_hint$7,
-      	processing: processing$7,
-      	download: download$7,
-      	full_score: full_score$7,
-      	download_audio: download_audio$7,
-      	button_parent_not_found: button_parent_not_found$7,
-      	unknown_button_list_mode: unknown_button_list_mode$7,
-      	cli_example_url: cli_example_url$7,
-      	path_to_folder: path_to_folder$7,
-      	path_to_file: path_to_file$7,
-      	cli_example_folder: cli_example_folder$7,
-      	cli_example_file: cli_example_file$7,
-      	cli_option_input_description: cli_option_input_description$7,
-      	cli_option_type_description: cli_option_type_description$7,
-      	cli_option_output_description: cli_option_output_description$7,
-      	cli_option_verbose_description: cli_option_verbose_description$7,
-      	cli_outdated_version_message: cli_outdated_version_message$7,
-      	cli_windows_paste_hint: cli_windows_paste_hint$7,
-      	cli_linux_paste_hint: cli_linux_paste_hint$7,
-      	cli_input_message: cli_input_message$7,
-      	cli_input_suffix: cli_input_suffix$7,
-      	cli_types_message: cli_types_message$7,
-      	cli_output_message: cli_output_message$7,
-      	cli_file_error: cli_file_error$7,
-      	cli_type_error: cli_type_error$7,
-      	cli_file_extension_error: cli_file_extension_error$7,
-      	cli_file_loaded_message: cli_file_loaded_message$7,
-      	cli_score_loaded_message: cli_score_loaded_message$7,
-      	cli_input_error: cli_input_error$7,
-      	cli_parts_message: cli_parts_message$7,
-      	cli_saved_message: cli_saved_message$7,
-      	cli_done_message: cli_done_message$7,
-      	cli_url_error: cli_url_error$7,
-      	cli_url_type_error: cli_url_type_error$7,
-      	cli_score_not_found: cli_score_not_found$7,
-      	cli_confirm_message: cli_confirm_message$7,
-      	id: id$7,
-      	title: title$7,
-      	no_sheet_images_error: no_sheet_images_error$7,
-      	source_code: source_code$7,
-      	version: version$7
-      };
-
-      var processing$8 = "处理中…";
-      var download$8 = "下载 {{fileType}}";
-      var download_audio$8 = "下载 {{fileType}} 音频";
-      var full_score$8 = "完整乐谱";
-      var cli_usage_hint$8 = "";
-      var button_parent_not_found$8 = "";
-      var unknown_button_list_mode$8 = "";
-      var cli_example_url$8 = "";
-      var path_to_folder$8 = "";
-      var path_to_file$8 = "";
-      var cli_example_folder$8 = "";
-      var cli_example_file$8 = "";
-      var cli_option_input_description$8 = "";
-      var cli_option_type_description$8 = "";
-      var cli_option_output_description$8 = "";
-      var cli_option_verbose_description$8 = "";
-      var cli_outdated_version_message$8 = "";
-      var cli_windows_paste_hint$8 = "";
-      var cli_linux_paste_hint$8 = "";
-      var cli_input_message$8 = "";
-      var cli_input_suffix$8 = "";
-      var cli_types_message$8 = "";
-      var cli_output_message$8 = "";
-      var cli_file_error$8 = "";
-      var cli_type_error$8 = "";
-      var cli_file_extension_error$8 = "";
-      var cli_file_loaded_message$8 = "";
-      var cli_score_loaded_message$8 = "";
-      var cli_input_error$8 = "";
-      var cli_parts_message$8 = "";
-      var cli_saved_message$8 = "";
-      var cli_done_message$8 = "";
-      var cli_url_error$8 = "";
-      var cli_url_type_error$8 = "";
-      var cli_score_not_found$8 = "";
-      var cli_confirm_message$8 = "";
-      var id$8 = "";
-      var title$8 = "";
-      var no_sheet_images_error$8 = "";
-      var source_code$8 = "";
-      var version$8 = "";
-      var zh_Hans = {
       	processing: processing$8,
       	download: download$8,
       	download_audio: download_audio$8,
       	full_score: full_score$8,
-      	cli_usage_hint: cli_usage_hint$8,
       	button_parent_not_found: button_parent_not_found$8,
       	unknown_button_list_mode: unknown_button_list_mode$8,
+      	cli_usage_hint: cli_usage_hint$8,
       	cli_example_url: cli_example_url$8,
       	path_to_folder: path_to_folder$8,
       	path_to_file: path_to_file$8,
@@ -3665,6 +3117,686 @@
       	version: version$8
       };
 
+      var processing$7 = "Cargando…";
+      var download$7 = "Descargar {{fileType}}";
+      var download_audio$7 = "Descargar audio {{fileType}}";
+      var full_score$7 = "Partitura completa";
+      var cli_file_error$7 = "";
+      var cli_type_error$7 = "";
+      var cli_file_extension_error$7 = "";
+      var cli_file_loaded_message$7 = "";
+      var cli_score_loaded_message$7 = "";
+      var cli_input_error$7 = "";
+      var cli_parts_message$7 = "";
+      var cli_saved_message$7 = "";
+      var cli_done_message$7 = "";
+      var cli_url_error$7 = "";
+      var cli_url_type_error$7 = "";
+      var cli_score_not_found$7 = "";
+      var cli_confirm_message$7 = "";
+      var id$7 = "";
+      var title$7 = "";
+      var no_sheet_images_error$7 = "";
+      var source_code$7 = "";
+      var version$7 = "";
+      var cli_usage_hint$7 = "";
+      var button_parent_not_found$7 = "";
+      var unknown_button_list_mode$7 = "";
+      var cli_example_url$7 = "";
+      var path_to_folder$7 = "";
+      var path_to_file$7 = "";
+      var cli_example_folder$7 = "";
+      var cli_example_file$7 = "";
+      var cli_option_input_description$7 = "";
+      var cli_option_type_description$7 = "";
+      var cli_option_output_description$7 = "";
+      var cli_option_verbose_description$7 = "";
+      var cli_outdated_version_message$7 = "";
+      var cli_windows_paste_hint$7 = "";
+      var cli_linux_paste_hint$7 = "";
+      var cli_input_message$7 = "";
+      var cli_input_suffix$7 = "";
+      var cli_types_message$7 = "";
+      var cli_output_message$7 = "";
+      var es = {
+      	processing: processing$7,
+      	download: download$7,
+      	download_audio: download_audio$7,
+      	full_score: full_score$7,
+      	cli_file_error: cli_file_error$7,
+      	cli_type_error: cli_type_error$7,
+      	cli_file_extension_error: cli_file_extension_error$7,
+      	cli_file_loaded_message: cli_file_loaded_message$7,
+      	cli_score_loaded_message: cli_score_loaded_message$7,
+      	cli_input_error: cli_input_error$7,
+      	cli_parts_message: cli_parts_message$7,
+      	cli_saved_message: cli_saved_message$7,
+      	cli_done_message: cli_done_message$7,
+      	cli_url_error: cli_url_error$7,
+      	cli_url_type_error: cli_url_type_error$7,
+      	cli_score_not_found: cli_score_not_found$7,
+      	cli_confirm_message: cli_confirm_message$7,
+      	id: id$7,
+      	title: title$7,
+      	no_sheet_images_error: no_sheet_images_error$7,
+      	source_code: source_code$7,
+      	version: version$7,
+      	cli_usage_hint: cli_usage_hint$7,
+      	button_parent_not_found: button_parent_not_found$7,
+      	unknown_button_list_mode: unknown_button_list_mode$7,
+      	cli_example_url: cli_example_url$7,
+      	path_to_folder: path_to_folder$7,
+      	path_to_file: path_to_file$7,
+      	cli_example_folder: cli_example_folder$7,
+      	cli_example_file: cli_example_file$7,
+      	cli_option_input_description: cli_option_input_description$7,
+      	cli_option_type_description: cli_option_type_description$7,
+      	cli_option_output_description: cli_option_output_description$7,
+      	cli_option_verbose_description: cli_option_verbose_description$7,
+      	cli_outdated_version_message: cli_outdated_version_message$7,
+      	cli_windows_paste_hint: cli_windows_paste_hint$7,
+      	cli_linux_paste_hint: cli_linux_paste_hint$7,
+      	cli_input_message: cli_input_message$7,
+      	cli_input_suffix: cli_input_suffix$7,
+      	cli_types_message: cli_types_message$7,
+      	cli_output_message: cli_output_message$7
+      };
+
+      var processing$6 = "En traitement…";
+      var download$6 = "Télécharger {{fileType}}";
+      var full_score$6 = "Partition complète";
+      var download_audio$6 = "Télécharger audio {{fileType}}";
+      var cli_usage_hint$6 = "";
+      var button_parent_not_found$6 = "";
+      var unknown_button_list_mode$6 = "";
+      var cli_example_url$6 = "";
+      var path_to_folder$6 = "";
+      var path_to_file$6 = "";
+      var cli_example_folder$6 = "";
+      var cli_example_file$6 = "";
+      var cli_option_input_description$6 = "";
+      var cli_option_type_description$6 = "";
+      var cli_option_output_description$6 = "";
+      var cli_option_verbose_description$6 = "";
+      var cli_outdated_version_message$6 = "";
+      var cli_windows_paste_hint$6 = "";
+      var cli_linux_paste_hint$6 = "";
+      var cli_input_message$6 = "";
+      var cli_input_suffix$6 = "";
+      var cli_types_message$6 = "";
+      var cli_output_message$6 = "";
+      var cli_file_error$6 = "";
+      var cli_type_error$6 = "";
+      var cli_file_extension_error$6 = "";
+      var cli_file_loaded_message$6 = "";
+      var cli_score_loaded_message$6 = "";
+      var cli_input_error$6 = "";
+      var cli_parts_message$6 = "";
+      var cli_saved_message$6 = "";
+      var cli_done_message$6 = "";
+      var cli_url_error$6 = "";
+      var cli_url_type_error$6 = "";
+      var cli_score_not_found$6 = "";
+      var cli_confirm_message$6 = "";
+      var id$6 = "";
+      var title$6 = "";
+      var no_sheet_images_error$6 = "";
+      var source_code$6 = "";
+      var version$6 = "";
+      var fr = {
+      	processing: processing$6,
+      	download: download$6,
+      	full_score: full_score$6,
+      	download_audio: download_audio$6,
+      	cli_usage_hint: cli_usage_hint$6,
+      	button_parent_not_found: button_parent_not_found$6,
+      	unknown_button_list_mode: unknown_button_list_mode$6,
+      	cli_example_url: cli_example_url$6,
+      	path_to_folder: path_to_folder$6,
+      	path_to_file: path_to_file$6,
+      	cli_example_folder: cli_example_folder$6,
+      	cli_example_file: cli_example_file$6,
+      	cli_option_input_description: cli_option_input_description$6,
+      	cli_option_type_description: cli_option_type_description$6,
+      	cli_option_output_description: cli_option_output_description$6,
+      	cli_option_verbose_description: cli_option_verbose_description$6,
+      	cli_outdated_version_message: cli_outdated_version_message$6,
+      	cli_windows_paste_hint: cli_windows_paste_hint$6,
+      	cli_linux_paste_hint: cli_linux_paste_hint$6,
+      	cli_input_message: cli_input_message$6,
+      	cli_input_suffix: cli_input_suffix$6,
+      	cli_types_message: cli_types_message$6,
+      	cli_output_message: cli_output_message$6,
+      	cli_file_error: cli_file_error$6,
+      	cli_type_error: cli_type_error$6,
+      	cli_file_extension_error: cli_file_extension_error$6,
+      	cli_file_loaded_message: cli_file_loaded_message$6,
+      	cli_score_loaded_message: cli_score_loaded_message$6,
+      	cli_input_error: cli_input_error$6,
+      	cli_parts_message: cli_parts_message$6,
+      	cli_saved_message: cli_saved_message$6,
+      	cli_done_message: cli_done_message$6,
+      	cli_url_error: cli_url_error$6,
+      	cli_url_type_error: cli_url_type_error$6,
+      	cli_score_not_found: cli_score_not_found$6,
+      	cli_confirm_message: cli_confirm_message$6,
+      	id: id$6,
+      	title: title$6,
+      	no_sheet_images_error: no_sheet_images_error$6,
+      	source_code: source_code$6,
+      	version: version$6
+      };
+
+      var processing$5 = "Caricamento…";
+      var download$5 = "Scaricare {{fileType}}";
+      var download_audio$5 = "Scaricare {{fileType}} audio";
+      var full_score$5 = "Partitura completa";
+      var cli_usage_hint$5 = "";
+      var button_parent_not_found$5 = "";
+      var unknown_button_list_mode$5 = "";
+      var cli_example_url$5 = "";
+      var path_to_folder$5 = "";
+      var path_to_file$5 = "";
+      var cli_example_folder$5 = "";
+      var cli_example_file$5 = "";
+      var cli_option_input_description$5 = "";
+      var cli_option_type_description$5 = "";
+      var cli_option_output_description$5 = "";
+      var cli_option_verbose_description$5 = "";
+      var cli_outdated_version_message$5 = "";
+      var cli_windows_paste_hint$5 = "";
+      var cli_linux_paste_hint$5 = "";
+      var cli_input_message$5 = "";
+      var cli_input_suffix$5 = "";
+      var cli_types_message$5 = "";
+      var cli_output_message$5 = "";
+      var cli_file_error$5 = "";
+      var cli_type_error$5 = "";
+      var cli_file_extension_error$5 = "";
+      var cli_file_loaded_message$5 = "";
+      var cli_score_loaded_message$5 = "";
+      var cli_input_error$5 = "";
+      var cli_parts_message$5 = "";
+      var cli_saved_message$5 = "";
+      var cli_done_message$5 = "";
+      var cli_url_error$5 = "";
+      var cli_url_type_error$5 = "";
+      var cli_score_not_found$5 = "";
+      var cli_confirm_message$5 = "";
+      var id$5 = "";
+      var title$5 = "";
+      var no_sheet_images_error$5 = "";
+      var source_code$5 = "";
+      var version$5 = "";
+      var it = {
+      	processing: processing$5,
+      	download: download$5,
+      	download_audio: download_audio$5,
+      	full_score: full_score$5,
+      	cli_usage_hint: cli_usage_hint$5,
+      	button_parent_not_found: button_parent_not_found$5,
+      	unknown_button_list_mode: unknown_button_list_mode$5,
+      	cli_example_url: cli_example_url$5,
+      	path_to_folder: path_to_folder$5,
+      	path_to_file: path_to_file$5,
+      	cli_example_folder: cli_example_folder$5,
+      	cli_example_file: cli_example_file$5,
+      	cli_option_input_description: cli_option_input_description$5,
+      	cli_option_type_description: cli_option_type_description$5,
+      	cli_option_output_description: cli_option_output_description$5,
+      	cli_option_verbose_description: cli_option_verbose_description$5,
+      	cli_outdated_version_message: cli_outdated_version_message$5,
+      	cli_windows_paste_hint: cli_windows_paste_hint$5,
+      	cli_linux_paste_hint: cli_linux_paste_hint$5,
+      	cli_input_message: cli_input_message$5,
+      	cli_input_suffix: cli_input_suffix$5,
+      	cli_types_message: cli_types_message$5,
+      	cli_output_message: cli_output_message$5,
+      	cli_file_error: cli_file_error$5,
+      	cli_type_error: cli_type_error$5,
+      	cli_file_extension_error: cli_file_extension_error$5,
+      	cli_file_loaded_message: cli_file_loaded_message$5,
+      	cli_score_loaded_message: cli_score_loaded_message$5,
+      	cli_input_error: cli_input_error$5,
+      	cli_parts_message: cli_parts_message$5,
+      	cli_saved_message: cli_saved_message$5,
+      	cli_done_message: cli_done_message$5,
+      	cli_url_error: cli_url_error$5,
+      	cli_url_type_error: cli_url_type_error$5,
+      	cli_score_not_found: cli_score_not_found$5,
+      	cli_confirm_message: cli_confirm_message$5,
+      	id: id$5,
+      	title: title$5,
+      	no_sheet_images_error: no_sheet_images_error$5,
+      	source_code: source_code$5,
+      	version: version$5
+      };
+
+      var processing$4 = "処理中…";
+      var download$4 = "{{fileType}}をダウンロード";
+      var download_audio$4 = "{{fileType}}オーディオをダウンロード";
+      var full_score$4 = "フルスコア";
+      var cli_url_error$4 = "";
+      var cli_url_type_error$4 = "";
+      var cli_score_not_found$4 = "";
+      var cli_usage_hint$4 = "";
+      var button_parent_not_found$4 = "";
+      var unknown_button_list_mode$4 = "";
+      var cli_example_url$4 = "";
+      var path_to_folder$4 = "";
+      var path_to_file$4 = "";
+      var cli_example_folder$4 = "";
+      var cli_example_file$4 = "";
+      var cli_option_input_description$4 = "";
+      var cli_option_type_description$4 = "";
+      var cli_option_output_description$4 = "";
+      var cli_option_verbose_description$4 = "";
+      var cli_outdated_version_message$4 = "";
+      var cli_windows_paste_hint$4 = "";
+      var cli_linux_paste_hint$4 = "";
+      var cli_input_message$4 = "";
+      var cli_input_suffix$4 = "";
+      var cli_types_message$4 = "";
+      var cli_output_message$4 = "";
+      var cli_file_error$4 = "";
+      var cli_type_error$4 = "";
+      var cli_file_extension_error$4 = "";
+      var cli_file_loaded_message$4 = "";
+      var cli_score_loaded_message$4 = "";
+      var cli_input_error$4 = "";
+      var cli_parts_message$4 = "";
+      var cli_saved_message$4 = "";
+      var cli_done_message$4 = "";
+      var id$4 = "";
+      var cli_confirm_message$4 = "";
+      var title$4 = "";
+      var no_sheet_images_error$4 = "";
+      var source_code$4 = "";
+      var version$4 = "";
+      var ja = {
+      	processing: processing$4,
+      	download: download$4,
+      	download_audio: download_audio$4,
+      	full_score: full_score$4,
+      	cli_url_error: cli_url_error$4,
+      	cli_url_type_error: cli_url_type_error$4,
+      	cli_score_not_found: cli_score_not_found$4,
+      	cli_usage_hint: cli_usage_hint$4,
+      	button_parent_not_found: button_parent_not_found$4,
+      	unknown_button_list_mode: unknown_button_list_mode$4,
+      	cli_example_url: cli_example_url$4,
+      	path_to_folder: path_to_folder$4,
+      	path_to_file: path_to_file$4,
+      	cli_example_folder: cli_example_folder$4,
+      	cli_example_file: cli_example_file$4,
+      	cli_option_input_description: cli_option_input_description$4,
+      	cli_option_type_description: cli_option_type_description$4,
+      	cli_option_output_description: cli_option_output_description$4,
+      	cli_option_verbose_description: cli_option_verbose_description$4,
+      	cli_outdated_version_message: cli_outdated_version_message$4,
+      	cli_windows_paste_hint: cli_windows_paste_hint$4,
+      	cli_linux_paste_hint: cli_linux_paste_hint$4,
+      	cli_input_message: cli_input_message$4,
+      	cli_input_suffix: cli_input_suffix$4,
+      	cli_types_message: cli_types_message$4,
+      	cli_output_message: cli_output_message$4,
+      	cli_file_error: cli_file_error$4,
+      	cli_type_error: cli_type_error$4,
+      	cli_file_extension_error: cli_file_extension_error$4,
+      	cli_file_loaded_message: cli_file_loaded_message$4,
+      	cli_score_loaded_message: cli_score_loaded_message$4,
+      	cli_input_error: cli_input_error$4,
+      	cli_parts_message: cli_parts_message$4,
+      	cli_saved_message: cli_saved_message$4,
+      	cli_done_message: cli_done_message$4,
+      	id: id$4,
+      	cli_confirm_message: cli_confirm_message$4,
+      	title: title$4,
+      	no_sheet_images_error: no_sheet_images_error$4,
+      	source_code: source_code$4,
+      	version: version$4
+      };
+
+      var processing$3 = "처리중…";
+      var download$3 = "다운로드 {{fileType}}";
+      var download_audio$3 = "{{fileType}} 오디오 다운로드";
+      var full_score$3 = "풀 스코어";
+      var cli_done_message$3 = "";
+      var cli_score_not_found$3 = "";
+      var cli_confirm_message$3 = "";
+      var cli_usage_hint$3 = "";
+      var button_parent_not_found$3 = "";
+      var unknown_button_list_mode$3 = "";
+      var cli_example_url$3 = "";
+      var path_to_folder$3 = "";
+      var path_to_file$3 = "";
+      var cli_example_folder$3 = "";
+      var cli_example_file$3 = "";
+      var cli_option_input_description$3 = "";
+      var cli_option_type_description$3 = "";
+      var cli_option_output_description$3 = "";
+      var cli_option_verbose_description$3 = "";
+      var cli_outdated_version_message$3 = "";
+      var cli_windows_paste_hint$3 = "";
+      var cli_linux_paste_hint$3 = "";
+      var cli_input_message$3 = "";
+      var cli_input_suffix$3 = "";
+      var cli_types_message$3 = "";
+      var cli_output_message$3 = "";
+      var cli_file_error$3 = "";
+      var cli_type_error$3 = "";
+      var cli_file_extension_error$3 = "";
+      var cli_file_loaded_message$3 = "";
+      var cli_score_loaded_message$3 = "";
+      var cli_input_error$3 = "";
+      var cli_parts_message$3 = "";
+      var cli_saved_message$3 = "";
+      var cli_url_error$3 = "";
+      var cli_url_type_error$3 = "";
+      var id$3 = "";
+      var title$3 = "";
+      var no_sheet_images_error$3 = "";
+      var source_code$3 = "";
+      var version$3 = "";
+      var ko = {
+      	processing: processing$3,
+      	download: download$3,
+      	download_audio: download_audio$3,
+      	full_score: full_score$3,
+      	cli_done_message: cli_done_message$3,
+      	cli_score_not_found: cli_score_not_found$3,
+      	cli_confirm_message: cli_confirm_message$3,
+      	cli_usage_hint: cli_usage_hint$3,
+      	button_parent_not_found: button_parent_not_found$3,
+      	unknown_button_list_mode: unknown_button_list_mode$3,
+      	cli_example_url: cli_example_url$3,
+      	path_to_folder: path_to_folder$3,
+      	path_to_file: path_to_file$3,
+      	cli_example_folder: cli_example_folder$3,
+      	cli_example_file: cli_example_file$3,
+      	cli_option_input_description: cli_option_input_description$3,
+      	cli_option_type_description: cli_option_type_description$3,
+      	cli_option_output_description: cli_option_output_description$3,
+      	cli_option_verbose_description: cli_option_verbose_description$3,
+      	cli_outdated_version_message: cli_outdated_version_message$3,
+      	cli_windows_paste_hint: cli_windows_paste_hint$3,
+      	cli_linux_paste_hint: cli_linux_paste_hint$3,
+      	cli_input_message: cli_input_message$3,
+      	cli_input_suffix: cli_input_suffix$3,
+      	cli_types_message: cli_types_message$3,
+      	cli_output_message: cli_output_message$3,
+      	cli_file_error: cli_file_error$3,
+      	cli_type_error: cli_type_error$3,
+      	cli_file_extension_error: cli_file_extension_error$3,
+      	cli_file_loaded_message: cli_file_loaded_message$3,
+      	cli_score_loaded_message: cli_score_loaded_message$3,
+      	cli_input_error: cli_input_error$3,
+      	cli_parts_message: cli_parts_message$3,
+      	cli_saved_message: cli_saved_message$3,
+      	cli_url_error: cli_url_error$3,
+      	cli_url_type_error: cli_url_type_error$3,
+      	id: id$3,
+      	title: title$3,
+      	no_sheet_images_error: no_sheet_images_error$3,
+      	source_code: source_code$3,
+      	version: version$3
+      };
+
+      var processing$2 = "Memproses…";
+      var download$2 = "Muat turun {{fileType}}";
+      var download_audio$2 = "Muat turun audio {{fileType}}";
+      var button_parent_not_found$2 = "Induk butang tidak ditemui";
+      var unknown_button_list_mode$2 = "Mod senarai butang tidak diketahui";
+      var cli_usage_hint$2 = "Penggunaan: {{bin}} [pilihan]";
+      var path_to_folder$2 = "laluan/ke/folder";
+      var path_to_file$2 = "laluan/ke/fail";
+      var cli_example_folder$2 = "eksport MIDI dan PDF semua fail dalam folder tertentu ke folder semasa";
+      var cli_example_file$2 = "eksport FLAC fail MusicXML yang ditentukan ke folder semasa";
+      var cli_option_type_description$2 = "Jenis fail untuk dimuat turun";
+      var cli_option_output_description$2 = "Folder untuk menyimpan fail ke";
+      var cli_option_verbose_description$2 = "Jalankan dengan pengelogan verbose";
+      var cli_windows_paste_hint$2 = "klik kanan untuk menampal";
+      var cli_linux_paste_hint$2 = "biasanya Ctrl+Shift+V untuk menampal";
+      var cli_input_message$2 = "URL MuseScore atau laluan ke fail atau folder:";
+      var cli_input_suffix$2 = "bermula dengan https://musescore.com/ atau ialah laluan";
+      var cli_types_message$2 = "Pemilihan jenis fail";
+      var cli_output_message$2 = "Direktori Output:";
+      var cli_file_error$2 = "Fail tidak wujud";
+      var cli_type_error$2 = "Tiada jenis yang dipilih";
+      var cli_file_loaded_message$2 = "Fail dimuatkan";
+      var cli_score_loaded_message$2 = "Skor dimuatkan oleh Webmscore";
+      var cli_parts_message$2 = "Pemilihan Bahagian";
+      var cli_saved_message$2 = "{{file}} disimpan";
+      var cli_done_message$2 = "Selesai";
+      var cli_url_error$2 = "URL tidak sah";
+      var cli_input_error$2 = "Cuba gunakan tapak web Webmscore: https://librescore.github.io";
+      var cli_score_not_found$2 = "Skor tidak ditemui";
+      var cli_confirm_message$2 = "Teruskan?";
+      var title$2 = "Tajuk: {{title}}";
+      var source_code$2 = "Kod sumber";
+      var version$2 = "Versi: {{version}}";
+      var id$2 = "ID : {{id}}";
+      var full_score$2 = "Skor penuh";
+      var cli_example_url$2 = "muat turun MP3 URL ke direktori tertentu";
+      var cli_option_input_description$2 = "URL, fail atau folder untuk memuat turun atau menukar daripada";
+      var cli_outdated_version_message$2 = "\nVersi baharu tersedia! Versi semasa {{installed}}\nJalankan npm i -g dl-librescore@{{latest}} untuk mengemas kini";
+      var cli_file_extension_error$2 = "Sambungan fail tidak sah, hanya gp, gp3, gp4, gp5, gpx, gtp, kar, mid, midi, mscx, mscz, musicxml, mxl, ptb dan xml disokong";
+      var cli_url_type_error$2 = "Hanya MIDI, MP3 dan PDF boleh dimuat turun daripada URL";
+      var no_sheet_images_error$2 = "Tiada imej helaian ditemui";
+      var ms = {
+      	processing: processing$2,
+      	download: download$2,
+      	download_audio: download_audio$2,
+      	button_parent_not_found: button_parent_not_found$2,
+      	unknown_button_list_mode: unknown_button_list_mode$2,
+      	cli_usage_hint: cli_usage_hint$2,
+      	path_to_folder: path_to_folder$2,
+      	path_to_file: path_to_file$2,
+      	cli_example_folder: cli_example_folder$2,
+      	cli_example_file: cli_example_file$2,
+      	cli_option_type_description: cli_option_type_description$2,
+      	cli_option_output_description: cli_option_output_description$2,
+      	cli_option_verbose_description: cli_option_verbose_description$2,
+      	cli_windows_paste_hint: cli_windows_paste_hint$2,
+      	cli_linux_paste_hint: cli_linux_paste_hint$2,
+      	cli_input_message: cli_input_message$2,
+      	cli_input_suffix: cli_input_suffix$2,
+      	cli_types_message: cli_types_message$2,
+      	cli_output_message: cli_output_message$2,
+      	cli_file_error: cli_file_error$2,
+      	cli_type_error: cli_type_error$2,
+      	cli_file_loaded_message: cli_file_loaded_message$2,
+      	cli_score_loaded_message: cli_score_loaded_message$2,
+      	cli_parts_message: cli_parts_message$2,
+      	cli_saved_message: cli_saved_message$2,
+      	cli_done_message: cli_done_message$2,
+      	cli_url_error: cli_url_error$2,
+      	cli_input_error: cli_input_error$2,
+      	cli_score_not_found: cli_score_not_found$2,
+      	cli_confirm_message: cli_confirm_message$2,
+      	title: title$2,
+      	source_code: source_code$2,
+      	version: version$2,
+      	id: id$2,
+      	full_score: full_score$2,
+      	cli_example_url: cli_example_url$2,
+      	cli_option_input_description: cli_option_input_description$2,
+      	cli_outdated_version_message: cli_outdated_version_message$2,
+      	cli_file_extension_error: cli_file_extension_error$2,
+      	cli_url_type_error: cli_url_type_error$2,
+      	no_sheet_images_error: no_sheet_images_error$2
+      };
+
+      var cli_usage_hint$1 = "";
+      var processing$1 = "";
+      var download$1 = "";
+      var full_score$1 = "Партитура целиком";
+      var download_audio$1 = "";
+      var button_parent_not_found$1 = "";
+      var unknown_button_list_mode$1 = "";
+      var cli_example_url$1 = "";
+      var path_to_folder$1 = "";
+      var path_to_file$1 = "";
+      var cli_example_folder$1 = "";
+      var cli_example_file$1 = "";
+      var cli_option_input_description$1 = "";
+      var cli_option_type_description$1 = "";
+      var cli_option_output_description$1 = "";
+      var cli_option_verbose_description$1 = "";
+      var cli_outdated_version_message$1 = "";
+      var cli_windows_paste_hint$1 = "";
+      var cli_linux_paste_hint$1 = "";
+      var cli_input_message$1 = "";
+      var cli_input_suffix$1 = "";
+      var cli_types_message$1 = "";
+      var cli_output_message$1 = "";
+      var cli_file_error$1 = "";
+      var cli_type_error$1 = "";
+      var cli_file_extension_error$1 = "";
+      var cli_file_loaded_message$1 = "";
+      var cli_score_loaded_message$1 = "";
+      var cli_input_error$1 = "";
+      var cli_parts_message$1 = "";
+      var cli_saved_message$1 = "";
+      var cli_done_message$1 = "";
+      var cli_url_error$1 = "";
+      var cli_url_type_error$1 = "";
+      var cli_score_not_found$1 = "";
+      var cli_confirm_message$1 = "";
+      var id$1 = "";
+      var title$1 = "";
+      var no_sheet_images_error$1 = "";
+      var source_code$1 = "";
+      var version$1 = "";
+      var ru = {
+      	cli_usage_hint: cli_usage_hint$1,
+      	processing: processing$1,
+      	download: download$1,
+      	full_score: full_score$1,
+      	download_audio: download_audio$1,
+      	button_parent_not_found: button_parent_not_found$1,
+      	unknown_button_list_mode: unknown_button_list_mode$1,
+      	cli_example_url: cli_example_url$1,
+      	path_to_folder: path_to_folder$1,
+      	path_to_file: path_to_file$1,
+      	cli_example_folder: cli_example_folder$1,
+      	cli_example_file: cli_example_file$1,
+      	cli_option_input_description: cli_option_input_description$1,
+      	cli_option_type_description: cli_option_type_description$1,
+      	cli_option_output_description: cli_option_output_description$1,
+      	cli_option_verbose_description: cli_option_verbose_description$1,
+      	cli_outdated_version_message: cli_outdated_version_message$1,
+      	cli_windows_paste_hint: cli_windows_paste_hint$1,
+      	cli_linux_paste_hint: cli_linux_paste_hint$1,
+      	cli_input_message: cli_input_message$1,
+      	cli_input_suffix: cli_input_suffix$1,
+      	cli_types_message: cli_types_message$1,
+      	cli_output_message: cli_output_message$1,
+      	cli_file_error: cli_file_error$1,
+      	cli_type_error: cli_type_error$1,
+      	cli_file_extension_error: cli_file_extension_error$1,
+      	cli_file_loaded_message: cli_file_loaded_message$1,
+      	cli_score_loaded_message: cli_score_loaded_message$1,
+      	cli_input_error: cli_input_error$1,
+      	cli_parts_message: cli_parts_message$1,
+      	cli_saved_message: cli_saved_message$1,
+      	cli_done_message: cli_done_message$1,
+      	cli_url_error: cli_url_error$1,
+      	cli_url_type_error: cli_url_type_error$1,
+      	cli_score_not_found: cli_score_not_found$1,
+      	cli_confirm_message: cli_confirm_message$1,
+      	id: id$1,
+      	title: title$1,
+      	no_sheet_images_error: no_sheet_images_error$1,
+      	source_code: source_code$1,
+      	version: version$1
+      };
+
+      var processing = "处理中…";
+      var download = "下载 {{fileType}}";
+      var download_audio = "下载 {{fileType}} 音频";
+      var full_score = "完整乐谱";
+      var cli_usage_hint = "";
+      var button_parent_not_found = "";
+      var unknown_button_list_mode = "";
+      var cli_example_url = "";
+      var path_to_folder = "";
+      var path_to_file = "";
+      var cli_example_folder = "";
+      var cli_example_file = "";
+      var cli_option_input_description = "";
+      var cli_option_type_description = "";
+      var cli_option_output_description = "";
+      var cli_option_verbose_description = "";
+      var cli_outdated_version_message = "";
+      var cli_windows_paste_hint = "";
+      var cli_linux_paste_hint = "";
+      var cli_input_message = "";
+      var cli_input_suffix = "";
+      var cli_types_message = "";
+      var cli_output_message = "";
+      var cli_file_error = "";
+      var cli_type_error = "";
+      var cli_file_extension_error = "";
+      var cli_file_loaded_message = "";
+      var cli_score_loaded_message = "";
+      var cli_input_error = "";
+      var cli_parts_message = "";
+      var cli_saved_message = "";
+      var cli_done_message = "";
+      var cli_url_error = "";
+      var cli_url_type_error = "";
+      var cli_score_not_found = "";
+      var cli_confirm_message = "";
+      var id = "";
+      var title = "";
+      var no_sheet_images_error = "";
+      var source_code = "";
+      var version = "";
+      var zh_Hans = {
+      	processing: processing,
+      	download: download,
+      	download_audio: download_audio,
+      	full_score: full_score,
+      	cli_usage_hint: cli_usage_hint,
+      	button_parent_not_found: button_parent_not_found,
+      	unknown_button_list_mode: unknown_button_list_mode,
+      	cli_example_url: cli_example_url,
+      	path_to_folder: path_to_folder,
+      	path_to_file: path_to_file,
+      	cli_example_folder: cli_example_folder,
+      	cli_example_file: cli_example_file,
+      	cli_option_input_description: cli_option_input_description,
+      	cli_option_type_description: cli_option_type_description,
+      	cli_option_output_description: cli_option_output_description,
+      	cli_option_verbose_description: cli_option_verbose_description,
+      	cli_outdated_version_message: cli_outdated_version_message,
+      	cli_windows_paste_hint: cli_windows_paste_hint,
+      	cli_linux_paste_hint: cli_linux_paste_hint,
+      	cli_input_message: cli_input_message,
+      	cli_input_suffix: cli_input_suffix,
+      	cli_types_message: cli_types_message,
+      	cli_output_message: cli_output_message,
+      	cli_file_error: cli_file_error,
+      	cli_type_error: cli_type_error,
+      	cli_file_extension_error: cli_file_extension_error,
+      	cli_file_loaded_message: cli_file_loaded_message,
+      	cli_score_loaded_message: cli_score_loaded_message,
+      	cli_input_error: cli_input_error,
+      	cli_parts_message: cli_parts_message,
+      	cli_saved_message: cli_saved_message,
+      	cli_done_message: cli_done_message,
+      	cli_url_error: cli_url_error,
+      	cli_url_type_error: cli_url_type_error,
+      	cli_score_not_found: cli_score_not_found,
+      	cli_confirm_message: cli_confirm_message,
+      	id: id,
+      	title: title,
+      	no_sheet_images_error: no_sheet_images_error,
+      	source_code: source_code,
+      	version: version
+      };
+
       instance.init({
           compatibilityJSON: "v3",
           lng: Intl.DateTimeFormat().resolvedOptions().locale,
@@ -3677,12 +3809,17 @@
               it: { translation: it },
               ja: { translation: ja },
               ko: { translation: ko },
+              ms: { translation: ms },
               ru: { translation: ru },
               "zh-Hans": { translation: zh_Hans },
           },
       });
 
       const i18next = instance;
+    
+      (async () => {
+          await i18nextInit;
+      })();
     
       /* eslint-disable */
       const w = typeof unsafeWindow == "object" ? unsafeWindow : window;
@@ -3906,25 +4043,25 @@
     Item.prototype.run = function () {
         this.fun.apply(null, this.array);
     };
-    var title = 'browser';
+    var title$a = 'browser';
     var platform = 'browser';
     var browser = true;
     var env = {};
     var argv = [];
-    var version = ''; // empty string to avoid regexp issues
+    var version$a = ''; // empty string to avoid regexp issues
     var versions = {};
     var release = {};
     var config = {};
 
-    function noop() {}
+    function noop$1() {}
 
-    var on = noop;
-    var addListener = noop;
-    var once = noop;
-    var off = noop;
-    var removeListener = noop;
-    var removeAllListeners = noop;
-    var emit = noop;
+    var on = noop$1;
+    var addListener = noop$1;
+    var once = noop$1;
+    var off = noop$1;
+    var removeListener = noop$1;
+    var removeAllListeners = noop$1;
+    var emit = noop$1;
 
     function binding(name) {
         throw new Error('process.binding is not supported');
@@ -3971,11 +4108,11 @@
 
     var process = {
       nextTick: nextTick,
-      title: title,
+      title: title$a,
       browser: browser,
       env: env,
       argv: argv,
-      version: version,
+      version: version$a,
       versions: versions,
       on: on,
       addListener: addListener,
@@ -4336,2881 +4473,9 @@
 
         var toString = {}.toString;
 
-        var isArray = Array.isArray || function (arr) {
+        var isArray$1 = Array.isArray || function (arr) {
           return toString.call(arr) == '[object Array]';
         };
-
-        var INSPECT_MAX_BYTES = 50;
-
-        /**
-         * If `Buffer.TYPED_ARRAY_SUPPORT`:
-         *   === true    Use Uint8Array implementation (fastest)
-         *   === false   Use Object implementation (most compatible, even IE6)
-         *
-         * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
-         * Opera 11.6+, iOS 4.2+.
-         *
-         * Due to various browser bugs, sometimes the Object implementation will be used even
-         * when the browser supports typed arrays.
-         *
-         * Note:
-         *
-         *   - Firefox 4-29 lacks support for adding new properties to `Uint8Array` instances,
-         *     See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
-         *
-         *   - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
-         *
-         *   - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
-         *     incorrect length in some situations.
-
-         * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they
-         * get the Object implementation, which is slower but behaves correctly.
-         */
-        Buffer.TYPED_ARRAY_SUPPORT = global$1$1.TYPED_ARRAY_SUPPORT !== undefined
-          ? global$1$1.TYPED_ARRAY_SUPPORT
-          : true;
-
-        function kMaxLength () {
-          return Buffer.TYPED_ARRAY_SUPPORT
-            ? 0x7fffffff
-            : 0x3fffffff
-        }
-
-        function createBuffer (that, length) {
-          if (kMaxLength() < length) {
-            throw new RangeError('Invalid typed array length')
-          }
-          if (Buffer.TYPED_ARRAY_SUPPORT) {
-            // Return an augmented `Uint8Array` instance, for best performance
-            that = new Uint8Array(length);
-            that.__proto__ = Buffer.prototype;
-          } else {
-            // Fallback: Return an object instance of the Buffer class
-            if (that === null) {
-              that = new Buffer(length);
-            }
-            that.length = length;
-          }
-
-          return that
-        }
-
-        /**
-         * The Buffer constructor returns instances of `Uint8Array` that have their
-         * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
-         * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
-         * and the `Uint8Array` methods. Square bracket notation works as expected -- it
-         * returns a single octet.
-         *
-         * The `Uint8Array` prototype remains unmodified.
-         */
-
-        function Buffer (arg, encodingOrOffset, length) {
-          if (!Buffer.TYPED_ARRAY_SUPPORT && !(this instanceof Buffer)) {
-            return new Buffer(arg, encodingOrOffset, length)
-          }
-
-          // Common case.
-          if (typeof arg === 'number') {
-            if (typeof encodingOrOffset === 'string') {
-              throw new Error(
-                'If encoding is specified then the first argument must be a string'
-              )
-            }
-            return allocUnsafe(this, arg)
-          }
-          return from(this, arg, encodingOrOffset, length)
-        }
-
-        Buffer.poolSize = 8192; // not used by this implementation
-
-        // TODO: Legacy, not needed anymore. Remove in next major version.
-        Buffer._augment = function (arr) {
-          arr.__proto__ = Buffer.prototype;
-          return arr
-        };
-
-        function from (that, value, encodingOrOffset, length) {
-          if (typeof value === 'number') {
-            throw new TypeError('"value" argument must not be a number')
-          }
-
-          if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
-            return fromArrayBuffer(that, value, encodingOrOffset, length)
-          }
-
-          if (typeof value === 'string') {
-            return fromString(that, value, encodingOrOffset)
-          }
-
-          return fromObject(that, value)
-        }
-
-        /**
-         * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
-         * if value is a number.
-         * Buffer.from(str[, encoding])
-         * Buffer.from(array)
-         * Buffer.from(buffer)
-         * Buffer.from(arrayBuffer[, byteOffset[, length]])
-         **/
-        Buffer.from = function (value, encodingOrOffset, length) {
-          return from(null, value, encodingOrOffset, length)
-        };
-
-        if (Buffer.TYPED_ARRAY_SUPPORT) {
-          Buffer.prototype.__proto__ = Uint8Array.prototype;
-          Buffer.__proto__ = Uint8Array;
-        }
-
-        function assertSize (size) {
-          if (typeof size !== 'number') {
-            throw new TypeError('"size" argument must be a number')
-          } else if (size < 0) {
-            throw new RangeError('"size" argument must not be negative')
-          }
-        }
-
-        function alloc (that, size, fill, encoding) {
-          assertSize(size);
-          if (size <= 0) {
-            return createBuffer(that, size)
-          }
-          if (fill !== undefined) {
-            // Only pay attention to encoding if it's a string. This
-            // prevents accidentally sending in a number that would
-            // be interpretted as a start offset.
-            return typeof encoding === 'string'
-              ? createBuffer(that, size).fill(fill, encoding)
-              : createBuffer(that, size).fill(fill)
-          }
-          return createBuffer(that, size)
-        }
-
-        /**
-         * Creates a new filled Buffer instance.
-         * alloc(size[, fill[, encoding]])
-         **/
-        Buffer.alloc = function (size, fill, encoding) {
-          return alloc(null, size, fill, encoding)
-        };
-
-        function allocUnsafe (that, size) {
-          assertSize(size);
-          that = createBuffer(that, size < 0 ? 0 : checked(size) | 0);
-          if (!Buffer.TYPED_ARRAY_SUPPORT) {
-            for (var i = 0; i < size; ++i) {
-              that[i] = 0;
-            }
-          }
-          return that
-        }
-
-        /**
-         * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
-         * */
-        Buffer.allocUnsafe = function (size) {
-          return allocUnsafe(null, size)
-        };
-        /**
-         * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
-         */
-        Buffer.allocUnsafeSlow = function (size) {
-          return allocUnsafe(null, size)
-        };
-
-        function fromString (that, string, encoding) {
-          if (typeof encoding !== 'string' || encoding === '') {
-            encoding = 'utf8';
-          }
-
-          if (!Buffer.isEncoding(encoding)) {
-            throw new TypeError('"encoding" must be a valid string encoding')
-          }
-
-          var length = byteLength(string, encoding) | 0;
-          that = createBuffer(that, length);
-
-          var actual = that.write(string, encoding);
-
-          if (actual !== length) {
-            // Writing a hex string, for example, that contains invalid characters will
-            // cause everything after the first invalid character to be ignored. (e.g.
-            // 'abxxcd' will be treated as 'ab')
-            that = that.slice(0, actual);
-          }
-
-          return that
-        }
-
-        function fromArrayLike (that, array) {
-          var length = array.length < 0 ? 0 : checked(array.length) | 0;
-          that = createBuffer(that, length);
-          for (var i = 0; i < length; i += 1) {
-            that[i] = array[i] & 255;
-          }
-          return that
-        }
-
-        function fromArrayBuffer (that, array, byteOffset, length) {
-          array.byteLength; // this throws if `array` is not a valid ArrayBuffer
-
-          if (byteOffset < 0 || array.byteLength < byteOffset) {
-            throw new RangeError('\'offset\' is out of bounds')
-          }
-
-          if (array.byteLength < byteOffset + (length || 0)) {
-            throw new RangeError('\'length\' is out of bounds')
-          }
-
-          if (byteOffset === undefined && length === undefined) {
-            array = new Uint8Array(array);
-          } else if (length === undefined) {
-            array = new Uint8Array(array, byteOffset);
-          } else {
-            array = new Uint8Array(array, byteOffset, length);
-          }
-
-          if (Buffer.TYPED_ARRAY_SUPPORT) {
-            // Return an augmented `Uint8Array` instance, for best performance
-            that = array;
-            that.__proto__ = Buffer.prototype;
-          } else {
-            // Fallback: Return an object instance of the Buffer class
-            that = fromArrayLike(that, array);
-          }
-          return that
-        }
-
-        function fromObject (that, obj) {
-          if (internalIsBuffer(obj)) {
-            var len = checked(obj.length) | 0;
-            that = createBuffer(that, len);
-
-            if (that.length === 0) {
-              return that
-            }
-
-            obj.copy(that, 0, 0, len);
-            return that
-          }
-
-          if (obj) {
-            if ((typeof ArrayBuffer !== 'undefined' &&
-                obj.buffer instanceof ArrayBuffer) || 'length' in obj) {
-              if (typeof obj.length !== 'number' || isnan(obj.length)) {
-                return createBuffer(that, 0)
-              }
-              return fromArrayLike(that, obj)
-            }
-
-            if (obj.type === 'Buffer' && isArray(obj.data)) {
-              return fromArrayLike(that, obj.data)
-            }
-          }
-
-          throw new TypeError('First argument must be a string, Buffer, ArrayBuffer, Array, or array-like object.')
-        }
-
-        function checked (length) {
-          // Note: cannot use `length < kMaxLength()` here because that fails when
-          // length is NaN (which is otherwise coerced to zero.)
-          if (length >= kMaxLength()) {
-            throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
-                                 'size: 0x' + kMaxLength().toString(16) + ' bytes')
-          }
-          return length | 0
-        }
-        Buffer.isBuffer = isBuffer;
-        function internalIsBuffer (b) {
-          return !!(b != null && b._isBuffer)
-        }
-
-        Buffer.compare = function compare (a, b) {
-          if (!internalIsBuffer(a) || !internalIsBuffer(b)) {
-            throw new TypeError('Arguments must be Buffers')
-          }
-
-          if (a === b) return 0
-
-          var x = a.length;
-          var y = b.length;
-
-          for (var i = 0, len = Math.min(x, y); i < len; ++i) {
-            if (a[i] !== b[i]) {
-              x = a[i];
-              y = b[i];
-              break
-            }
-          }
-
-          if (x < y) return -1
-          if (y < x) return 1
-          return 0
-        };
-
-        Buffer.isEncoding = function isEncoding (encoding) {
-          switch (String(encoding).toLowerCase()) {
-            case 'hex':
-            case 'utf8':
-            case 'utf-8':
-            case 'ascii':
-            case 'latin1':
-            case 'binary':
-            case 'base64':
-            case 'ucs2':
-            case 'ucs-2':
-            case 'utf16le':
-            case 'utf-16le':
-              return true
-            default:
-              return false
-          }
-        };
-
-        Buffer.concat = function concat (list, length) {
-          if (!isArray(list)) {
-            throw new TypeError('"list" argument must be an Array of Buffers')
-          }
-
-          if (list.length === 0) {
-            return Buffer.alloc(0)
-          }
-
-          var i;
-          if (length === undefined) {
-            length = 0;
-            for (i = 0; i < list.length; ++i) {
-              length += list[i].length;
-            }
-          }
-
-          var buffer = Buffer.allocUnsafe(length);
-          var pos = 0;
-          for (i = 0; i < list.length; ++i) {
-            var buf = list[i];
-            if (!internalIsBuffer(buf)) {
-              throw new TypeError('"list" argument must be an Array of Buffers')
-            }
-            buf.copy(buffer, pos);
-            pos += buf.length;
-          }
-          return buffer
-        };
-
-        function byteLength (string, encoding) {
-          if (internalIsBuffer(string)) {
-            return string.length
-          }
-          if (typeof ArrayBuffer !== 'undefined' && typeof ArrayBuffer.isView === 'function' &&
-              (ArrayBuffer.isView(string) || string instanceof ArrayBuffer)) {
-            return string.byteLength
-          }
-          if (typeof string !== 'string') {
-            string = '' + string;
-          }
-
-          var len = string.length;
-          if (len === 0) return 0
-
-          // Use a for loop to avoid recursion
-          var loweredCase = false;
-          for (;;) {
-            switch (encoding) {
-              case 'ascii':
-              case 'latin1':
-              case 'binary':
-                return len
-              case 'utf8':
-              case 'utf-8':
-              case undefined:
-                return utf8ToBytes(string).length
-              case 'ucs2':
-              case 'ucs-2':
-              case 'utf16le':
-              case 'utf-16le':
-                return len * 2
-              case 'hex':
-                return len >>> 1
-              case 'base64':
-                return base64ToBytes(string).length
-              default:
-                if (loweredCase) return utf8ToBytes(string).length // assume utf8
-                encoding = ('' + encoding).toLowerCase();
-                loweredCase = true;
-            }
-          }
-        }
-        Buffer.byteLength = byteLength;
-
-        function slowToString (encoding, start, end) {
-          var loweredCase = false;
-
-          // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
-          // property of a typed array.
-
-          // This behaves neither like String nor Uint8Array in that we set start/end
-          // to their upper/lower bounds if the value passed is out of range.
-          // undefined is handled specially as per ECMA-262 6th Edition,
-          // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
-          if (start === undefined || start < 0) {
-            start = 0;
-          }
-          // Return early if start > this.length. Done here to prevent potential uint32
-          // coercion fail below.
-          if (start > this.length) {
-            return ''
-          }
-
-          if (end === undefined || end > this.length) {
-            end = this.length;
-          }
-
-          if (end <= 0) {
-            return ''
-          }
-
-          // Force coersion to uint32. This will also coerce falsey/NaN values to 0.
-          end >>>= 0;
-          start >>>= 0;
-
-          if (end <= start) {
-            return ''
-          }
-
-          if (!encoding) encoding = 'utf8';
-
-          while (true) {
-            switch (encoding) {
-              case 'hex':
-                return hexSlice(this, start, end)
-
-              case 'utf8':
-              case 'utf-8':
-                return utf8Slice(this, start, end)
-
-              case 'ascii':
-                return asciiSlice(this, start, end)
-
-              case 'latin1':
-              case 'binary':
-                return latin1Slice(this, start, end)
-
-              case 'base64':
-                return base64Slice(this, start, end)
-
-              case 'ucs2':
-              case 'ucs-2':
-              case 'utf16le':
-              case 'utf-16le':
-                return utf16leSlice(this, start, end)
-
-              default:
-                if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
-                encoding = (encoding + '').toLowerCase();
-                loweredCase = true;
-            }
-          }
-        }
-
-        // The property is used by `Buffer.isBuffer` and `is-buffer` (in Safari 5-7) to detect
-        // Buffer instances.
-        Buffer.prototype._isBuffer = true;
-
-        function swap (b, n, m) {
-          var i = b[n];
-          b[n] = b[m];
-          b[m] = i;
-        }
-
-        Buffer.prototype.swap16 = function swap16 () {
-          var len = this.length;
-          if (len % 2 !== 0) {
-            throw new RangeError('Buffer size must be a multiple of 16-bits')
-          }
-          for (var i = 0; i < len; i += 2) {
-            swap(this, i, i + 1);
-          }
-          return this
-        };
-
-        Buffer.prototype.swap32 = function swap32 () {
-          var len = this.length;
-          if (len % 4 !== 0) {
-            throw new RangeError('Buffer size must be a multiple of 32-bits')
-          }
-          for (var i = 0; i < len; i += 4) {
-            swap(this, i, i + 3);
-            swap(this, i + 1, i + 2);
-          }
-          return this
-        };
-
-        Buffer.prototype.swap64 = function swap64 () {
-          var len = this.length;
-          if (len % 8 !== 0) {
-            throw new RangeError('Buffer size must be a multiple of 64-bits')
-          }
-          for (var i = 0; i < len; i += 8) {
-            swap(this, i, i + 7);
-            swap(this, i + 1, i + 6);
-            swap(this, i + 2, i + 5);
-            swap(this, i + 3, i + 4);
-          }
-          return this
-        };
-
-        Buffer.prototype.toString = function toString () {
-          var length = this.length | 0;
-          if (length === 0) return ''
-          if (arguments.length === 0) return utf8Slice(this, 0, length)
-          return slowToString.apply(this, arguments)
-        };
-
-        Buffer.prototype.equals = function equals (b) {
-          if (!internalIsBuffer(b)) throw new TypeError('Argument must be a Buffer')
-          if (this === b) return true
-          return Buffer.compare(this, b) === 0
-        };
-
-        Buffer.prototype.inspect = function inspect () {
-          var str = '';
-          var max = INSPECT_MAX_BYTES;
-          if (this.length > 0) {
-            str = this.toString('hex', 0, max).match(/.{2}/g).join(' ');
-            if (this.length > max) str += ' ... ';
-          }
-          return '<Buffer ' + str + '>'
-        };
-
-        Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
-          if (!internalIsBuffer(target)) {
-            throw new TypeError('Argument must be a Buffer')
-          }
-
-          if (start === undefined) {
-            start = 0;
-          }
-          if (end === undefined) {
-            end = target ? target.length : 0;
-          }
-          if (thisStart === undefined) {
-            thisStart = 0;
-          }
-          if (thisEnd === undefined) {
-            thisEnd = this.length;
-          }
-
-          if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
-            throw new RangeError('out of range index')
-          }
-
-          if (thisStart >= thisEnd && start >= end) {
-            return 0
-          }
-          if (thisStart >= thisEnd) {
-            return -1
-          }
-          if (start >= end) {
-            return 1
-          }
-
-          start >>>= 0;
-          end >>>= 0;
-          thisStart >>>= 0;
-          thisEnd >>>= 0;
-
-          if (this === target) return 0
-
-          var x = thisEnd - thisStart;
-          var y = end - start;
-          var len = Math.min(x, y);
-
-          var thisCopy = this.slice(thisStart, thisEnd);
-          var targetCopy = target.slice(start, end);
-
-          for (var i = 0; i < len; ++i) {
-            if (thisCopy[i] !== targetCopy[i]) {
-              x = thisCopy[i];
-              y = targetCopy[i];
-              break
-            }
-          }
-
-          if (x < y) return -1
-          if (y < x) return 1
-          return 0
-        };
-
-        // Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
-        // OR the last index of `val` in `buffer` at offset <= `byteOffset`.
-        //
-        // Arguments:
-        // - buffer - a Buffer to search
-        // - val - a string, Buffer, or number
-        // - byteOffset - an index into `buffer`; will be clamped to an int32
-        // - encoding - an optional encoding, relevant is val is a string
-        // - dir - true for indexOf, false for lastIndexOf
-        function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
-          // Empty buffer means no match
-          if (buffer.length === 0) return -1
-
-          // Normalize byteOffset
-          if (typeof byteOffset === 'string') {
-            encoding = byteOffset;
-            byteOffset = 0;
-          } else if (byteOffset > 0x7fffffff) {
-            byteOffset = 0x7fffffff;
-          } else if (byteOffset < -0x80000000) {
-            byteOffset = -0x80000000;
-          }
-          byteOffset = +byteOffset;  // Coerce to Number.
-          if (isNaN(byteOffset)) {
-            // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
-            byteOffset = dir ? 0 : (buffer.length - 1);
-          }
-
-          // Normalize byteOffset: negative offsets start from the end of the buffer
-          if (byteOffset < 0) byteOffset = buffer.length + byteOffset;
-          if (byteOffset >= buffer.length) {
-            if (dir) return -1
-            else byteOffset = buffer.length - 1;
-          } else if (byteOffset < 0) {
-            if (dir) byteOffset = 0;
-            else return -1
-          }
-
-          // Normalize val
-          if (typeof val === 'string') {
-            val = Buffer.from(val, encoding);
-          }
-
-          // Finally, search either indexOf (if dir is true) or lastIndexOf
-          if (internalIsBuffer(val)) {
-            // Special case: looking for empty string/buffer always fails
-            if (val.length === 0) {
-              return -1
-            }
-            return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
-          } else if (typeof val === 'number') {
-            val = val & 0xFF; // Search for a byte value [0-255]
-            if (Buffer.TYPED_ARRAY_SUPPORT &&
-                typeof Uint8Array.prototype.indexOf === 'function') {
-              if (dir) {
-                return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
-              } else {
-                return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
-              }
-            }
-            return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
-          }
-
-          throw new TypeError('val must be string, number or Buffer')
-        }
-
-        function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
-          var indexSize = 1;
-          var arrLength = arr.length;
-          var valLength = val.length;
-
-          if (encoding !== undefined) {
-            encoding = String(encoding).toLowerCase();
-            if (encoding === 'ucs2' || encoding === 'ucs-2' ||
-                encoding === 'utf16le' || encoding === 'utf-16le') {
-              if (arr.length < 2 || val.length < 2) {
-                return -1
-              }
-              indexSize = 2;
-              arrLength /= 2;
-              valLength /= 2;
-              byteOffset /= 2;
-            }
-          }
-
-          function read (buf, i) {
-            if (indexSize === 1) {
-              return buf[i]
-            } else {
-              return buf.readUInt16BE(i * indexSize)
-            }
-          }
-
-          var i;
-          if (dir) {
-            var foundIndex = -1;
-            for (i = byteOffset; i < arrLength; i++) {
-              if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
-                if (foundIndex === -1) foundIndex = i;
-                if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
-              } else {
-                if (foundIndex !== -1) i -= i - foundIndex;
-                foundIndex = -1;
-              }
-            }
-          } else {
-            if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength;
-            for (i = byteOffset; i >= 0; i--) {
-              var found = true;
-              for (var j = 0; j < valLength; j++) {
-                if (read(arr, i + j) !== read(val, j)) {
-                  found = false;
-                  break
-                }
-              }
-              if (found) return i
-            }
-          }
-
-          return -1
-        }
-
-        Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
-          return this.indexOf(val, byteOffset, encoding) !== -1
-        };
-
-        Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
-          return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
-        };
-
-        Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
-          return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
-        };
-
-        function hexWrite (buf, string, offset, length) {
-          offset = Number(offset) || 0;
-          var remaining = buf.length - offset;
-          if (!length) {
-            length = remaining;
-          } else {
-            length = Number(length);
-            if (length > remaining) {
-              length = remaining;
-            }
-          }
-
-          // must be an even number of digits
-          var strLen = string.length;
-          if (strLen % 2 !== 0) throw new TypeError('Invalid hex string')
-
-          if (length > strLen / 2) {
-            length = strLen / 2;
-          }
-          for (var i = 0; i < length; ++i) {
-            var parsed = parseInt(string.substr(i * 2, 2), 16);
-            if (isNaN(parsed)) return i
-            buf[offset + i] = parsed;
-          }
-          return i
-        }
-
-        function utf8Write (buf, string, offset, length) {
-          return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
-        }
-
-        function asciiWrite (buf, string, offset, length) {
-          return blitBuffer(asciiToBytes(string), buf, offset, length)
-        }
-
-        function latin1Write (buf, string, offset, length) {
-          return asciiWrite(buf, string, offset, length)
-        }
-
-        function base64Write (buf, string, offset, length) {
-          return blitBuffer(base64ToBytes(string), buf, offset, length)
-        }
-
-        function ucs2Write (buf, string, offset, length) {
-          return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
-        }
-
-        Buffer.prototype.write = function write (string, offset, length, encoding) {
-          // Buffer#write(string)
-          if (offset === undefined) {
-            encoding = 'utf8';
-            length = this.length;
-            offset = 0;
-          // Buffer#write(string, encoding)
-          } else if (length === undefined && typeof offset === 'string') {
-            encoding = offset;
-            length = this.length;
-            offset = 0;
-          // Buffer#write(string, offset[, length][, encoding])
-          } else if (isFinite(offset)) {
-            offset = offset | 0;
-            if (isFinite(length)) {
-              length = length | 0;
-              if (encoding === undefined) encoding = 'utf8';
-            } else {
-              encoding = length;
-              length = undefined;
-            }
-          // legacy write(string, encoding, offset, length) - remove in v0.13
-          } else {
-            throw new Error(
-              'Buffer.write(string, encoding, offset[, length]) is no longer supported'
-            )
-          }
-
-          var remaining = this.length - offset;
-          if (length === undefined || length > remaining) length = remaining;
-
-          if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
-            throw new RangeError('Attempt to write outside buffer bounds')
-          }
-
-          if (!encoding) encoding = 'utf8';
-
-          var loweredCase = false;
-          for (;;) {
-            switch (encoding) {
-              case 'hex':
-                return hexWrite(this, string, offset, length)
-
-              case 'utf8':
-              case 'utf-8':
-                return utf8Write(this, string, offset, length)
-
-              case 'ascii':
-                return asciiWrite(this, string, offset, length)
-
-              case 'latin1':
-              case 'binary':
-                return latin1Write(this, string, offset, length)
-
-              case 'base64':
-                // Warning: maxLength not taken into account in base64Write
-                return base64Write(this, string, offset, length)
-
-              case 'ucs2':
-              case 'ucs-2':
-              case 'utf16le':
-              case 'utf-16le':
-                return ucs2Write(this, string, offset, length)
-
-              default:
-                if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
-                encoding = ('' + encoding).toLowerCase();
-                loweredCase = true;
-            }
-          }
-        };
-
-        Buffer.prototype.toJSON = function toJSON () {
-          return {
-            type: 'Buffer',
-            data: Array.prototype.slice.call(this._arr || this, 0)
-          }
-        };
-
-        function base64Slice (buf, start, end) {
-          if (start === 0 && end === buf.length) {
-            return fromByteArray(buf)
-          } else {
-            return fromByteArray(buf.slice(start, end))
-          }
-        }
-
-        function utf8Slice (buf, start, end) {
-          end = Math.min(buf.length, end);
-          var res = [];
-
-          var i = start;
-          while (i < end) {
-            var firstByte = buf[i];
-            var codePoint = null;
-            var bytesPerSequence = (firstByte > 0xEF) ? 4
-              : (firstByte > 0xDF) ? 3
-              : (firstByte > 0xBF) ? 2
-              : 1;
-
-            if (i + bytesPerSequence <= end) {
-              var secondByte, thirdByte, fourthByte, tempCodePoint;
-
-              switch (bytesPerSequence) {
-                case 1:
-                  if (firstByte < 0x80) {
-                    codePoint = firstByte;
-                  }
-                  break
-                case 2:
-                  secondByte = buf[i + 1];
-                  if ((secondByte & 0xC0) === 0x80) {
-                    tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F);
-                    if (tempCodePoint > 0x7F) {
-                      codePoint = tempCodePoint;
-                    }
-                  }
-                  break
-                case 3:
-                  secondByte = buf[i + 1];
-                  thirdByte = buf[i + 2];
-                  if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
-                    tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F);
-                    if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
-                      codePoint = tempCodePoint;
-                    }
-                  }
-                  break
-                case 4:
-                  secondByte = buf[i + 1];
-                  thirdByte = buf[i + 2];
-                  fourthByte = buf[i + 3];
-                  if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
-                    tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F);
-                    if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
-                      codePoint = tempCodePoint;
-                    }
-                  }
-              }
-            }
-
-            if (codePoint === null) {
-              // we did not generate a valid codePoint so insert a
-              // replacement char (U+FFFD) and advance only 1 byte
-              codePoint = 0xFFFD;
-              bytesPerSequence = 1;
-            } else if (codePoint > 0xFFFF) {
-              // encode to utf16 (surrogate pair dance)
-              codePoint -= 0x10000;
-              res.push(codePoint >>> 10 & 0x3FF | 0xD800);
-              codePoint = 0xDC00 | codePoint & 0x3FF;
-            }
-
-            res.push(codePoint);
-            i += bytesPerSequence;
-          }
-
-          return decodeCodePointsArray(res)
-        }
-
-        // Based on http://stackoverflow.com/a/22747272/680742, the browser with
-        // the lowest limit is Chrome, with 0x10000 args.
-        // We go 1 magnitude less, for safety
-        var MAX_ARGUMENTS_LENGTH = 0x1000;
-
-        function decodeCodePointsArray (codePoints) {
-          var len = codePoints.length;
-          if (len <= MAX_ARGUMENTS_LENGTH) {
-            return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
-          }
-
-          // Decode in chunks to avoid "call stack size exceeded".
-          var res = '';
-          var i = 0;
-          while (i < len) {
-            res += String.fromCharCode.apply(
-              String,
-              codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
-            );
-          }
-          return res
-        }
-
-        function asciiSlice (buf, start, end) {
-          var ret = '';
-          end = Math.min(buf.length, end);
-
-          for (var i = start; i < end; ++i) {
-            ret += String.fromCharCode(buf[i] & 0x7F);
-          }
-          return ret
-        }
-
-        function latin1Slice (buf, start, end) {
-          var ret = '';
-          end = Math.min(buf.length, end);
-
-          for (var i = start; i < end; ++i) {
-            ret += String.fromCharCode(buf[i]);
-          }
-          return ret
-        }
-
-        function hexSlice (buf, start, end) {
-          var len = buf.length;
-
-          if (!start || start < 0) start = 0;
-          if (!end || end < 0 || end > len) end = len;
-
-          var out = '';
-          for (var i = start; i < end; ++i) {
-            out += toHex(buf[i]);
-          }
-          return out
-        }
-
-        function utf16leSlice (buf, start, end) {
-          var bytes = buf.slice(start, end);
-          var res = '';
-          for (var i = 0; i < bytes.length; i += 2) {
-            res += String.fromCharCode(bytes[i] + bytes[i + 1] * 256);
-          }
-          return res
-        }
-
-        Buffer.prototype.slice = function slice (start, end) {
-          var len = this.length;
-          start = ~~start;
-          end = end === undefined ? len : ~~end;
-
-          if (start < 0) {
-            start += len;
-            if (start < 0) start = 0;
-          } else if (start > len) {
-            start = len;
-          }
-
-          if (end < 0) {
-            end += len;
-            if (end < 0) end = 0;
-          } else if (end > len) {
-            end = len;
-          }
-
-          if (end < start) end = start;
-
-          var newBuf;
-          if (Buffer.TYPED_ARRAY_SUPPORT) {
-            newBuf = this.subarray(start, end);
-            newBuf.__proto__ = Buffer.prototype;
-          } else {
-            var sliceLen = end - start;
-            newBuf = new Buffer(sliceLen, undefined);
-            for (var i = 0; i < sliceLen; ++i) {
-              newBuf[i] = this[i + start];
-            }
-          }
-
-          return newBuf
-        };
-
-        /*
-         * Need to make sure that buffer isn't trying to write out of bounds.
-         */
-        function checkOffset (offset, ext, length) {
-          if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
-          if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
-        }
-
-        Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
-          offset = offset | 0;
-          byteLength = byteLength | 0;
-          if (!noAssert) checkOffset(offset, byteLength, this.length);
-
-          var val = this[offset];
-          var mul = 1;
-          var i = 0;
-          while (++i < byteLength && (mul *= 0x100)) {
-            val += this[offset + i] * mul;
-          }
-
-          return val
-        };
-
-        Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
-          offset = offset | 0;
-          byteLength = byteLength | 0;
-          if (!noAssert) {
-            checkOffset(offset, byteLength, this.length);
-          }
-
-          var val = this[offset + --byteLength];
-          var mul = 1;
-          while (byteLength > 0 && (mul *= 0x100)) {
-            val += this[offset + --byteLength] * mul;
-          }
-
-          return val
-        };
-
-        Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 1, this.length);
-          return this[offset]
-        };
-
-        Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 2, this.length);
-          return this[offset] | (this[offset + 1] << 8)
-        };
-
-        Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 2, this.length);
-          return (this[offset] << 8) | this[offset + 1]
-        };
-
-        Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 4, this.length);
-
-          return ((this[offset]) |
-              (this[offset + 1] << 8) |
-              (this[offset + 2] << 16)) +
-              (this[offset + 3] * 0x1000000)
-        };
-
-        Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 4, this.length);
-
-          return (this[offset] * 0x1000000) +
-            ((this[offset + 1] << 16) |
-            (this[offset + 2] << 8) |
-            this[offset + 3])
-        };
-
-        Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
-          offset = offset | 0;
-          byteLength = byteLength | 0;
-          if (!noAssert) checkOffset(offset, byteLength, this.length);
-
-          var val = this[offset];
-          var mul = 1;
-          var i = 0;
-          while (++i < byteLength && (mul *= 0x100)) {
-            val += this[offset + i] * mul;
-          }
-          mul *= 0x80;
-
-          if (val >= mul) val -= Math.pow(2, 8 * byteLength);
-
-          return val
-        };
-
-        Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
-          offset = offset | 0;
-          byteLength = byteLength | 0;
-          if (!noAssert) checkOffset(offset, byteLength, this.length);
-
-          var i = byteLength;
-          var mul = 1;
-          var val = this[offset + --i];
-          while (i > 0 && (mul *= 0x100)) {
-            val += this[offset + --i] * mul;
-          }
-          mul *= 0x80;
-
-          if (val >= mul) val -= Math.pow(2, 8 * byteLength);
-
-          return val
-        };
-
-        Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 1, this.length);
-          if (!(this[offset] & 0x80)) return (this[offset])
-          return ((0xff - this[offset] + 1) * -1)
-        };
-
-        Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 2, this.length);
-          var val = this[offset] | (this[offset + 1] << 8);
-          return (val & 0x8000) ? val | 0xFFFF0000 : val
-        };
-
-        Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 2, this.length);
-          var val = this[offset + 1] | (this[offset] << 8);
-          return (val & 0x8000) ? val | 0xFFFF0000 : val
-        };
-
-        Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 4, this.length);
-
-          return (this[offset]) |
-            (this[offset + 1] << 8) |
-            (this[offset + 2] << 16) |
-            (this[offset + 3] << 24)
-        };
-
-        Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 4, this.length);
-
-          return (this[offset] << 24) |
-            (this[offset + 1] << 16) |
-            (this[offset + 2] << 8) |
-            (this[offset + 3])
-        };
-
-        Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 4, this.length);
-          return read(this, offset, true, 23, 4)
-        };
-
-        Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 4, this.length);
-          return read(this, offset, false, 23, 4)
-        };
-
-        Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 8, this.length);
-          return read(this, offset, true, 52, 8)
-        };
-
-        Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
-          if (!noAssert) checkOffset(offset, 8, this.length);
-          return read(this, offset, false, 52, 8)
-        };
-
-        function checkInt (buf, value, offset, ext, max, min) {
-          if (!internalIsBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
-          if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
-          if (offset + ext > buf.length) throw new RangeError('Index out of range')
-        }
-
-        Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          byteLength = byteLength | 0;
-          if (!noAssert) {
-            var maxBytes = Math.pow(2, 8 * byteLength) - 1;
-            checkInt(this, value, offset, byteLength, maxBytes, 0);
-          }
-
-          var mul = 1;
-          var i = 0;
-          this[offset] = value & 0xFF;
-          while (++i < byteLength && (mul *= 0x100)) {
-            this[offset + i] = (value / mul) & 0xFF;
-          }
-
-          return offset + byteLength
-        };
-
-        Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          byteLength = byteLength | 0;
-          if (!noAssert) {
-            var maxBytes = Math.pow(2, 8 * byteLength) - 1;
-            checkInt(this, value, offset, byteLength, maxBytes, 0);
-          }
-
-          var i = byteLength - 1;
-          var mul = 1;
-          this[offset + i] = value & 0xFF;
-          while (--i >= 0 && (mul *= 0x100)) {
-            this[offset + i] = (value / mul) & 0xFF;
-          }
-
-          return offset + byteLength
-        };
-
-        Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0);
-          if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value);
-          this[offset] = (value & 0xff);
-          return offset + 1
-        };
-
-        function objectWriteUInt16 (buf, value, offset, littleEndian) {
-          if (value < 0) value = 0xffff + value + 1;
-          for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; ++i) {
-            buf[offset + i] = (value & (0xff << (8 * (littleEndian ? i : 1 - i)))) >>>
-              (littleEndian ? i : 1 - i) * 8;
-          }
-        }
-
-        Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0);
-          if (Buffer.TYPED_ARRAY_SUPPORT) {
-            this[offset] = (value & 0xff);
-            this[offset + 1] = (value >>> 8);
-          } else {
-            objectWriteUInt16(this, value, offset, true);
-          }
-          return offset + 2
-        };
-
-        Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0);
-          if (Buffer.TYPED_ARRAY_SUPPORT) {
-            this[offset] = (value >>> 8);
-            this[offset + 1] = (value & 0xff);
-          } else {
-            objectWriteUInt16(this, value, offset, false);
-          }
-          return offset + 2
-        };
-
-        function objectWriteUInt32 (buf, value, offset, littleEndian) {
-          if (value < 0) value = 0xffffffff + value + 1;
-          for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; ++i) {
-            buf[offset + i] = (value >>> (littleEndian ? i : 3 - i) * 8) & 0xff;
-          }
-        }
-
-        Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0);
-          if (Buffer.TYPED_ARRAY_SUPPORT) {
-            this[offset + 3] = (value >>> 24);
-            this[offset + 2] = (value >>> 16);
-            this[offset + 1] = (value >>> 8);
-            this[offset] = (value & 0xff);
-          } else {
-            objectWriteUInt32(this, value, offset, true);
-          }
-          return offset + 4
-        };
-
-        Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0);
-          if (Buffer.TYPED_ARRAY_SUPPORT) {
-            this[offset] = (value >>> 24);
-            this[offset + 1] = (value >>> 16);
-            this[offset + 2] = (value >>> 8);
-            this[offset + 3] = (value & 0xff);
-          } else {
-            objectWriteUInt32(this, value, offset, false);
-          }
-          return offset + 4
-        };
-
-        Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          if (!noAssert) {
-            var limit = Math.pow(2, 8 * byteLength - 1);
-
-            checkInt(this, value, offset, byteLength, limit - 1, -limit);
-          }
-
-          var i = 0;
-          var mul = 1;
-          var sub = 0;
-          this[offset] = value & 0xFF;
-          while (++i < byteLength && (mul *= 0x100)) {
-            if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
-              sub = 1;
-            }
-            this[offset + i] = ((value / mul) >> 0) - sub & 0xFF;
-          }
-
-          return offset + byteLength
-        };
-
-        Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          if (!noAssert) {
-            var limit = Math.pow(2, 8 * byteLength - 1);
-
-            checkInt(this, value, offset, byteLength, limit - 1, -limit);
-          }
-
-          var i = byteLength - 1;
-          var mul = 1;
-          var sub = 0;
-          this[offset + i] = value & 0xFF;
-          while (--i >= 0 && (mul *= 0x100)) {
-            if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
-              sub = 1;
-            }
-            this[offset + i] = ((value / mul) >> 0) - sub & 0xFF;
-          }
-
-          return offset + byteLength
-        };
-
-        Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80);
-          if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value);
-          if (value < 0) value = 0xff + value + 1;
-          this[offset] = (value & 0xff);
-          return offset + 1
-        };
-
-        Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000);
-          if (Buffer.TYPED_ARRAY_SUPPORT) {
-            this[offset] = (value & 0xff);
-            this[offset + 1] = (value >>> 8);
-          } else {
-            objectWriteUInt16(this, value, offset, true);
-          }
-          return offset + 2
-        };
-
-        Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000);
-          if (Buffer.TYPED_ARRAY_SUPPORT) {
-            this[offset] = (value >>> 8);
-            this[offset + 1] = (value & 0xff);
-          } else {
-            objectWriteUInt16(this, value, offset, false);
-          }
-          return offset + 2
-        };
-
-        Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000);
-          if (Buffer.TYPED_ARRAY_SUPPORT) {
-            this[offset] = (value & 0xff);
-            this[offset + 1] = (value >>> 8);
-            this[offset + 2] = (value >>> 16);
-            this[offset + 3] = (value >>> 24);
-          } else {
-            objectWriteUInt32(this, value, offset, true);
-          }
-          return offset + 4
-        };
-
-        Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
-          value = +value;
-          offset = offset | 0;
-          if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000);
-          if (value < 0) value = 0xffffffff + value + 1;
-          if (Buffer.TYPED_ARRAY_SUPPORT) {
-            this[offset] = (value >>> 24);
-            this[offset + 1] = (value >>> 16);
-            this[offset + 2] = (value >>> 8);
-            this[offset + 3] = (value & 0xff);
-          } else {
-            objectWriteUInt32(this, value, offset, false);
-          }
-          return offset + 4
-        };
-
-        function checkIEEE754 (buf, value, offset, ext, max, min) {
-          if (offset + ext > buf.length) throw new RangeError('Index out of range')
-          if (offset < 0) throw new RangeError('Index out of range')
-        }
-
-        function writeFloat (buf, value, offset, littleEndian, noAssert) {
-          if (!noAssert) {
-            checkIEEE754(buf, value, offset, 4);
-          }
-          write(buf, value, offset, littleEndian, 23, 4);
-          return offset + 4
-        }
-
-        Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
-          return writeFloat(this, value, offset, true, noAssert)
-        };
-
-        Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
-          return writeFloat(this, value, offset, false, noAssert)
-        };
-
-        function writeDouble (buf, value, offset, littleEndian, noAssert) {
-          if (!noAssert) {
-            checkIEEE754(buf, value, offset, 8);
-          }
-          write(buf, value, offset, littleEndian, 52, 8);
-          return offset + 8
-        }
-
-        Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
-          return writeDouble(this, value, offset, true, noAssert)
-        };
-
-        Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
-          return writeDouble(this, value, offset, false, noAssert)
-        };
-
-        // copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
-        Buffer.prototype.copy = function copy (target, targetStart, start, end) {
-          if (!start) start = 0;
-          if (!end && end !== 0) end = this.length;
-          if (targetStart >= target.length) targetStart = target.length;
-          if (!targetStart) targetStart = 0;
-          if (end > 0 && end < start) end = start;
-
-          // Copy 0 bytes; we're done
-          if (end === start) return 0
-          if (target.length === 0 || this.length === 0) return 0
-
-          // Fatal error conditions
-          if (targetStart < 0) {
-            throw new RangeError('targetStart out of bounds')
-          }
-          if (start < 0 || start >= this.length) throw new RangeError('sourceStart out of bounds')
-          if (end < 0) throw new RangeError('sourceEnd out of bounds')
-
-          // Are we oob?
-          if (end > this.length) end = this.length;
-          if (target.length - targetStart < end - start) {
-            end = target.length - targetStart + start;
-          }
-
-          var len = end - start;
-          var i;
-
-          if (this === target && start < targetStart && targetStart < end) {
-            // descending copy from end
-            for (i = len - 1; i >= 0; --i) {
-              target[i + targetStart] = this[i + start];
-            }
-          } else if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
-            // ascending copy from start
-            for (i = 0; i < len; ++i) {
-              target[i + targetStart] = this[i + start];
-            }
-          } else {
-            Uint8Array.prototype.set.call(
-              target,
-              this.subarray(start, start + len),
-              targetStart
-            );
-          }
-
-          return len
-        };
-
-        // Usage:
-        //    buffer.fill(number[, offset[, end]])
-        //    buffer.fill(buffer[, offset[, end]])
-        //    buffer.fill(string[, offset[, end]][, encoding])
-        Buffer.prototype.fill = function fill (val, start, end, encoding) {
-          // Handle string cases:
-          if (typeof val === 'string') {
-            if (typeof start === 'string') {
-              encoding = start;
-              start = 0;
-              end = this.length;
-            } else if (typeof end === 'string') {
-              encoding = end;
-              end = this.length;
-            }
-            if (val.length === 1) {
-              var code = val.charCodeAt(0);
-              if (code < 256) {
-                val = code;
-              }
-            }
-            if (encoding !== undefined && typeof encoding !== 'string') {
-              throw new TypeError('encoding must be a string')
-            }
-            if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
-              throw new TypeError('Unknown encoding: ' + encoding)
-            }
-          } else if (typeof val === 'number') {
-            val = val & 255;
-          }
-
-          // Invalid ranges are not set to a default, so can range check early.
-          if (start < 0 || this.length < start || this.length < end) {
-            throw new RangeError('Out of range index')
-          }
-
-          if (end <= start) {
-            return this
-          }
-
-          start = start >>> 0;
-          end = end === undefined ? this.length : end >>> 0;
-
-          if (!val) val = 0;
-
-          var i;
-          if (typeof val === 'number') {
-            for (i = start; i < end; ++i) {
-              this[i] = val;
-            }
-          } else {
-            var bytes = internalIsBuffer(val)
-              ? val
-              : utf8ToBytes(new Buffer(val, encoding).toString());
-            var len = bytes.length;
-            for (i = 0; i < end - start; ++i) {
-              this[i + start] = bytes[i % len];
-            }
-          }
-
-          return this
-        };
-
-        // HELPER FUNCTIONS
-        // ================
-
-        var INVALID_BASE64_RE = /[^+\/0-9A-Za-z-_]/g;
-
-        function base64clean (str) {
-          // Node strips out invalid characters like \n and \t from the string, base64-js does not
-          str = stringtrim(str).replace(INVALID_BASE64_RE, '');
-          // Node converts strings with length < 2 to ''
-          if (str.length < 2) return ''
-          // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
-          while (str.length % 4 !== 0) {
-            str = str + '=';
-          }
-          return str
-        }
-
-        function stringtrim (str) {
-          if (str.trim) return str.trim()
-          return str.replace(/^\s+|\s+$/g, '')
-        }
-
-        function toHex (n) {
-          if (n < 16) return '0' + n.toString(16)
-          return n.toString(16)
-        }
-
-        function utf8ToBytes (string, units) {
-          units = units || Infinity;
-          var codePoint;
-          var length = string.length;
-          var leadSurrogate = null;
-          var bytes = [];
-
-          for (var i = 0; i < length; ++i) {
-            codePoint = string.charCodeAt(i);
-
-            // is surrogate component
-            if (codePoint > 0xD7FF && codePoint < 0xE000) {
-              // last char was a lead
-              if (!leadSurrogate) {
-                // no lead yet
-                if (codePoint > 0xDBFF) {
-                  // unexpected trail
-                  if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD);
-                  continue
-                } else if (i + 1 === length) {
-                  // unpaired lead
-                  if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD);
-                  continue
-                }
-
-                // valid lead
-                leadSurrogate = codePoint;
-
-                continue
-              }
-
-              // 2 leads in a row
-              if (codePoint < 0xDC00) {
-                if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD);
-                leadSurrogate = codePoint;
-                continue
-              }
-
-              // valid surrogate pair
-              codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000;
-            } else if (leadSurrogate) {
-              // valid bmp char, but last char was a lead
-              if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD);
-            }
-
-            leadSurrogate = null;
-
-            // encode utf8
-            if (codePoint < 0x80) {
-              if ((units -= 1) < 0) break
-              bytes.push(codePoint);
-            } else if (codePoint < 0x800) {
-              if ((units -= 2) < 0) break
-              bytes.push(
-                codePoint >> 0x6 | 0xC0,
-                codePoint & 0x3F | 0x80
-              );
-            } else if (codePoint < 0x10000) {
-              if ((units -= 3) < 0) break
-              bytes.push(
-                codePoint >> 0xC | 0xE0,
-                codePoint >> 0x6 & 0x3F | 0x80,
-                codePoint & 0x3F | 0x80
-              );
-            } else if (codePoint < 0x110000) {
-              if ((units -= 4) < 0) break
-              bytes.push(
-                codePoint >> 0x12 | 0xF0,
-                codePoint >> 0xC & 0x3F | 0x80,
-                codePoint >> 0x6 & 0x3F | 0x80,
-                codePoint & 0x3F | 0x80
-              );
-            } else {
-              throw new Error('Invalid code point')
-            }
-          }
-
-          return bytes
-        }
-
-        function asciiToBytes (str) {
-          var byteArray = [];
-          for (var i = 0; i < str.length; ++i) {
-            // Node's code seems to be doing this and not & 0x7F..
-            byteArray.push(str.charCodeAt(i) & 0xFF);
-          }
-          return byteArray
-        }
-
-        function utf16leToBytes (str, units) {
-          var c, hi, lo;
-          var byteArray = [];
-          for (var i = 0; i < str.length; ++i) {
-            if ((units -= 2) < 0) break
-
-            c = str.charCodeAt(i);
-            hi = c >> 8;
-            lo = c % 256;
-            byteArray.push(lo);
-            byteArray.push(hi);
-          }
-
-          return byteArray
-        }
-
-
-        function base64ToBytes (str) {
-          return toByteArray(base64clean(str))
-        }
-
-        function blitBuffer (src, dst, offset, length) {
-          for (var i = 0; i < length; ++i) {
-            if ((i + offset >= dst.length) || (i >= src.length)) break
-            dst[i + offset] = src[i];
-          }
-          return i
-        }
-
-        function isnan (val) {
-          return val !== val // eslint-disable-line no-self-compare
-        }
-
-
-        // the following is from is-buffer, also by Feross Aboukhadijeh and with same lisence
-        // The _isBuffer check is for Safari 5-7 support, because it's missing
-        // Object.prototype.constructor. Remove this eventually
-        function isBuffer(obj) {
-          return obj != null && (!!obj._isBuffer || isFastBuffer(obj) || isSlowBuffer(obj))
-        }
-
-        function isFastBuffer (obj) {
-          return !!obj.constructor && typeof obj.constructor.isBuffer === 'function' && obj.constructor.isBuffer(obj)
-        }
-
-        // For Node v0.10 support. Remove this eventually.
-        function isSlowBuffer (obj) {
-          return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isFastBuffer(obj.slice(0, 0))
-        }
-
-        var domain;
-
-        // This constructor is used to store event handlers. Instantiating this is
-        // faster than explicitly calling `Object.create(null)` to get a "clean" empty
-        // object (tested with v8 v4.9).
-        function EventHandlers() {}
-        EventHandlers.prototype = Object.create(null);
-
-        function EventEmitter() {
-          EventEmitter.init.call(this);
-        }
-
-        // nodejs oddity
-        // require('events') === require('events').EventEmitter
-        EventEmitter.EventEmitter = EventEmitter;
-
-        EventEmitter.usingDomains = false;
-
-        EventEmitter.prototype.domain = undefined;
-        EventEmitter.prototype._events = undefined;
-        EventEmitter.prototype._maxListeners = undefined;
-
-        // By default EventEmitters will print a warning if more than 10 listeners are
-        // added to it. This is a useful default which helps finding memory leaks.
-        EventEmitter.defaultMaxListeners = 10;
-
-        EventEmitter.init = function() {
-          this.domain = null;
-          if (EventEmitter.usingDomains) {
-            // if there is an active domain, then attach to it.
-            if (domain.active ) ;
-          }
-
-          if (!this._events || this._events === Object.getPrototypeOf(this)._events) {
-            this._events = new EventHandlers();
-            this._eventsCount = 0;
-          }
-
-          this._maxListeners = this._maxListeners || undefined;
-        };
-
-        // Obviously not all Emitters should be limited to 10. This function allows
-        // that to be increased. Set to zero for unlimited.
-        EventEmitter.prototype.setMaxListeners = function setMaxListeners(n) {
-          if (typeof n !== 'number' || n < 0 || isNaN(n))
-            throw new TypeError('"n" argument must be a positive number');
-          this._maxListeners = n;
-          return this;
-        };
-
-        function $getMaxListeners(that) {
-          if (that._maxListeners === undefined)
-            return EventEmitter.defaultMaxListeners;
-          return that._maxListeners;
-        }
-
-        EventEmitter.prototype.getMaxListeners = function getMaxListeners() {
-          return $getMaxListeners(this);
-        };
-
-        // These standalone emit* functions are used to optimize calling of event
-        // handlers for fast cases because emit() itself often has a variable number of
-        // arguments and can be deoptimized because of that. These functions always have
-        // the same number of arguments and thus do not get deoptimized, so the code
-        // inside them can execute faster.
-        function emitNone(handler, isFn, self) {
-          if (isFn)
-            handler.call(self);
-          else {
-            var len = handler.length;
-            var listeners = arrayClone(handler, len);
-            for (var i = 0; i < len; ++i)
-              listeners[i].call(self);
-          }
-        }
-        function emitOne(handler, isFn, self, arg1) {
-          if (isFn)
-            handler.call(self, arg1);
-          else {
-            var len = handler.length;
-            var listeners = arrayClone(handler, len);
-            for (var i = 0; i < len; ++i)
-              listeners[i].call(self, arg1);
-          }
-        }
-        function emitTwo(handler, isFn, self, arg1, arg2) {
-          if (isFn)
-            handler.call(self, arg1, arg2);
-          else {
-            var len = handler.length;
-            var listeners = arrayClone(handler, len);
-            for (var i = 0; i < len; ++i)
-              listeners[i].call(self, arg1, arg2);
-          }
-        }
-        function emitThree(handler, isFn, self, arg1, arg2, arg3) {
-          if (isFn)
-            handler.call(self, arg1, arg2, arg3);
-          else {
-            var len = handler.length;
-            var listeners = arrayClone(handler, len);
-            for (var i = 0; i < len; ++i)
-              listeners[i].call(self, arg1, arg2, arg3);
-          }
-        }
-
-        function emitMany(handler, isFn, self, args) {
-          if (isFn)
-            handler.apply(self, args);
-          else {
-            var len = handler.length;
-            var listeners = arrayClone(handler, len);
-            for (var i = 0; i < len; ++i)
-              listeners[i].apply(self, args);
-          }
-        }
-
-        EventEmitter.prototype.emit = function emit(type) {
-          var er, handler, len, args, i, events, domain;
-          var doError = (type === 'error');
-
-          events = this._events;
-          if (events)
-            doError = (doError && events.error == null);
-          else if (!doError)
-            return false;
-
-          domain = this.domain;
-
-          // If there is no 'error' event listener then throw.
-          if (doError) {
-            er = arguments[1];
-            if (domain) {
-              if (!er)
-                er = new Error('Uncaught, unspecified "error" event');
-              er.domainEmitter = this;
-              er.domain = domain;
-              er.domainThrown = false;
-              domain.emit('error', er);
-            } else if (er instanceof Error) {
-              throw er; // Unhandled 'error' event
-            } else {
-              // At least give some kind of context to the user
-              var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
-              err.context = er;
-              throw err;
-            }
-            return false;
-          }
-
-          handler = events[type];
-
-          if (!handler)
-            return false;
-
-          var isFn = typeof handler === 'function';
-          len = arguments.length;
-          switch (len) {
-            // fast cases
-            case 1:
-              emitNone(handler, isFn, this);
-              break;
-            case 2:
-              emitOne(handler, isFn, this, arguments[1]);
-              break;
-            case 3:
-              emitTwo(handler, isFn, this, arguments[1], arguments[2]);
-              break;
-            case 4:
-              emitThree(handler, isFn, this, arguments[1], arguments[2], arguments[3]);
-              break;
-            // slower
-            default:
-              args = new Array(len - 1);
-              for (i = 1; i < len; i++)
-                args[i - 1] = arguments[i];
-              emitMany(handler, isFn, this, args);
-          }
-
-          return true;
-        };
-
-        function _addListener(target, type, listener, prepend) {
-          var m;
-          var events;
-          var existing;
-
-          if (typeof listener !== 'function')
-            throw new TypeError('"listener" argument must be a function');
-
-          events = target._events;
-          if (!events) {
-            events = target._events = new EventHandlers();
-            target._eventsCount = 0;
-          } else {
-            // To avoid recursion in the case that type === "newListener"! Before
-            // adding it to the listeners, first emit "newListener".
-            if (events.newListener) {
-              target.emit('newListener', type,
-                          listener.listener ? listener.listener : listener);
-
-              // Re-assign `events` because a newListener handler could have caused the
-              // this._events to be assigned to a new object
-              events = target._events;
-            }
-            existing = events[type];
-          }
-
-          if (!existing) {
-            // Optimize the case of one listener. Don't need the extra array object.
-            existing = events[type] = listener;
-            ++target._eventsCount;
-          } else {
-            if (typeof existing === 'function') {
-              // Adding the second element, need to change to array.
-              existing = events[type] = prepend ? [listener, existing] :
-                                                  [existing, listener];
-            } else {
-              // If we've already got an array, just append.
-              if (prepend) {
-                existing.unshift(listener);
-              } else {
-                existing.push(listener);
-              }
-            }
-
-            // Check for listener leak
-            if (!existing.warned) {
-              m = $getMaxListeners(target);
-              if (m && m > 0 && existing.length > m) {
-                existing.warned = true;
-                var w = new Error('Possible EventEmitter memory leak detected. ' +
-                                    existing.length + ' ' + type + ' listeners added. ' +
-                                    'Use emitter.setMaxListeners() to increase limit');
-                w.name = 'MaxListenersExceededWarning';
-                w.emitter = target;
-                w.type = type;
-                w.count = existing.length;
-                emitWarning(w);
-              }
-            }
-          }
-
-          return target;
-        }
-        function emitWarning(e) {
-          typeof console.warn === 'function' ? console.warn(e) : console.log(e);
-        }
-        EventEmitter.prototype.addListener = function addListener(type, listener) {
-          return _addListener(this, type, listener, false);
-        };
-
-        EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-        EventEmitter.prototype.prependListener =
-            function prependListener(type, listener) {
-              return _addListener(this, type, listener, true);
-            };
-
-        function _onceWrap(target, type, listener) {
-          var fired = false;
-          function g() {
-            target.removeListener(type, g);
-            if (!fired) {
-              fired = true;
-              listener.apply(target, arguments);
-            }
-          }
-          g.listener = listener;
-          return g;
-        }
-
-        EventEmitter.prototype.once = function once(type, listener) {
-          if (typeof listener !== 'function')
-            throw new TypeError('"listener" argument must be a function');
-          this.on(type, _onceWrap(this, type, listener));
-          return this;
-        };
-
-        EventEmitter.prototype.prependOnceListener =
-            function prependOnceListener(type, listener) {
-              if (typeof listener !== 'function')
-                throw new TypeError('"listener" argument must be a function');
-              this.prependListener(type, _onceWrap(this, type, listener));
-              return this;
-            };
-
-        // emits a 'removeListener' event iff the listener was removed
-        EventEmitter.prototype.removeListener =
-            function removeListener(type, listener) {
-              var list, events, position, i, originalListener;
-
-              if (typeof listener !== 'function')
-                throw new TypeError('"listener" argument must be a function');
-
-              events = this._events;
-              if (!events)
-                return this;
-
-              list = events[type];
-              if (!list)
-                return this;
-
-              if (list === listener || (list.listener && list.listener === listener)) {
-                if (--this._eventsCount === 0)
-                  this._events = new EventHandlers();
-                else {
-                  delete events[type];
-                  if (events.removeListener)
-                    this.emit('removeListener', type, list.listener || listener);
-                }
-              } else if (typeof list !== 'function') {
-                position = -1;
-
-                for (i = list.length; i-- > 0;) {
-                  if (list[i] === listener ||
-                      (list[i].listener && list[i].listener === listener)) {
-                    originalListener = list[i].listener;
-                    position = i;
-                    break;
-                  }
-                }
-
-                if (position < 0)
-                  return this;
-
-                if (list.length === 1) {
-                  list[0] = undefined;
-                  if (--this._eventsCount === 0) {
-                    this._events = new EventHandlers();
-                    return this;
-                  } else {
-                    delete events[type];
-                  }
-                } else {
-                  spliceOne(list, position);
-                }
-
-                if (events.removeListener)
-                  this.emit('removeListener', type, originalListener || listener);
-              }
-
-              return this;
-            };
-
-        EventEmitter.prototype.removeAllListeners =
-            function removeAllListeners(type) {
-              var listeners, events;
-
-              events = this._events;
-              if (!events)
-                return this;
-
-              // not listening for removeListener, no need to emit
-              if (!events.removeListener) {
-                if (arguments.length === 0) {
-                  this._events = new EventHandlers();
-                  this._eventsCount = 0;
-                } else if (events[type]) {
-                  if (--this._eventsCount === 0)
-                    this._events = new EventHandlers();
-                  else
-                    delete events[type];
-                }
-                return this;
-              }
-
-              // emit removeListener for all listeners on all events
-              if (arguments.length === 0) {
-                var keys = Object.keys(events);
-                for (var i = 0, key; i < keys.length; ++i) {
-                  key = keys[i];
-                  if (key === 'removeListener') continue;
-                  this.removeAllListeners(key);
-                }
-                this.removeAllListeners('removeListener');
-                this._events = new EventHandlers();
-                this._eventsCount = 0;
-                return this;
-              }
-
-              listeners = events[type];
-
-              if (typeof listeners === 'function') {
-                this.removeListener(type, listeners);
-              } else if (listeners) {
-                // LIFO order
-                do {
-                  this.removeListener(type, listeners[listeners.length - 1]);
-                } while (listeners[0]);
-              }
-
-              return this;
-            };
-
-        EventEmitter.prototype.listeners = function listeners(type) {
-          var evlistener;
-          var ret;
-          var events = this._events;
-
-          if (!events)
-            ret = [];
-          else {
-            evlistener = events[type];
-            if (!evlistener)
-              ret = [];
-            else if (typeof evlistener === 'function')
-              ret = [evlistener.listener || evlistener];
-            else
-              ret = unwrapListeners(evlistener);
-          }
-
-          return ret;
-        };
-
-        EventEmitter.listenerCount = function(emitter, type) {
-          if (typeof emitter.listenerCount === 'function') {
-            return emitter.listenerCount(type);
-          } else {
-            return listenerCount.call(emitter, type);
-          }
-        };
-
-        EventEmitter.prototype.listenerCount = listenerCount;
-        function listenerCount(type) {
-          var events = this._events;
-
-          if (events) {
-            var evlistener = events[type];
-
-            if (typeof evlistener === 'function') {
-              return 1;
-            } else if (evlistener) {
-              return evlistener.length;
-            }
-          }
-
-          return 0;
-        }
-
-        EventEmitter.prototype.eventNames = function eventNames() {
-          return this._eventsCount > 0 ? Reflect.ownKeys(this._events) : [];
-        };
-
-        // About 1.5x faster than the two-arg version of Array#splice().
-        function spliceOne(list, index) {
-          for (var i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1)
-            list[i] = list[k];
-          list.pop();
-        }
-
-        function arrayClone(arr, i) {
-          var copy = new Array(i);
-          while (i--)
-            copy[i] = arr[i];
-          return copy;
-        }
-
-        function unwrapListeners(arr) {
-          var ret = new Array(arr.length);
-          for (var i = 0; i < ret.length; ++i) {
-            ret[i] = arr[i].listener || arr[i];
-          }
-          return ret;
-        }
-
-        // shim for using process in browser
-        // based off https://github.com/defunctzombie/node-process/blob/master/browser.js
-
-        function defaultSetTimout() {
-            throw new Error('setTimeout has not been defined');
-        }
-        function defaultClearTimeout () {
-            throw new Error('clearTimeout has not been defined');
-        }
-        var cachedSetTimeout = defaultSetTimout;
-        var cachedClearTimeout = defaultClearTimeout;
-        if (typeof global$1$1.setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        }
-        if (typeof global$1$1.clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        }
-
-        function runTimeout(fun) {
-            if (cachedSetTimeout === setTimeout) {
-                //normal enviroments in sane situations
-                return setTimeout(fun, 0);
-            }
-            // if setTimeout wasn't available but was latter defined
-            if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-                cachedSetTimeout = setTimeout;
-                return setTimeout(fun, 0);
-            }
-            try {
-                // when when somebody has screwed with setTimeout but no I.E. maddness
-                return cachedSetTimeout(fun, 0);
-            } catch(e){
-                try {
-                    // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-                    return cachedSetTimeout.call(null, fun, 0);
-                } catch(e){
-                    // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-                    return cachedSetTimeout.call(this, fun, 0);
-                }
-            }
-
-
-        }
-        function runClearTimeout(marker) {
-            if (cachedClearTimeout === clearTimeout) {
-                //normal enviroments in sane situations
-                return clearTimeout(marker);
-            }
-            // if clearTimeout wasn't available but was latter defined
-            if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-                cachedClearTimeout = clearTimeout;
-                return clearTimeout(marker);
-            }
-            try {
-                // when when somebody has screwed with setTimeout but no I.E. maddness
-                return cachedClearTimeout(marker);
-            } catch (e){
-                try {
-                    // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-                    return cachedClearTimeout.call(null, marker);
-                } catch (e){
-                    // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-                    // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-                    return cachedClearTimeout.call(this, marker);
-                }
-            }
-
-
-
-        }
-        var queue = [];
-        var draining = false;
-        var currentQueue;
-        var queueIndex = -1;
-
-        function cleanUpNextTick() {
-            if (!draining || !currentQueue) {
-                return;
-            }
-            draining = false;
-            if (currentQueue.length) {
-                queue = currentQueue.concat(queue);
-            } else {
-                queueIndex = -1;
-            }
-            if (queue.length) {
-                drainQueue();
-            }
-        }
-
-        function drainQueue() {
-            if (draining) {
-                return;
-            }
-            var timeout = runTimeout(cleanUpNextTick);
-            draining = true;
-
-            var len = queue.length;
-            while(len) {
-                currentQueue = queue;
-                queue = [];
-                while (++queueIndex < len) {
-                    if (currentQueue) {
-                        currentQueue[queueIndex].run();
-                    }
-                }
-                queueIndex = -1;
-                len = queue.length;
-            }
-            currentQueue = null;
-            draining = false;
-            runClearTimeout(timeout);
-        }
-        function nextTick(fun) {
-            var args = new Array(arguments.length - 1);
-            if (arguments.length > 1) {
-                for (var i = 1; i < arguments.length; i++) {
-                    args[i - 1] = arguments[i];
-                }
-            }
-            queue.push(new Item(fun, args));
-            if (queue.length === 1 && !draining) {
-                runTimeout(drainQueue);
-            }
-        }
-        // v8 likes predictible objects
-        function Item(fun, array) {
-            this.fun = fun;
-            this.array = array;
-        }
-        Item.prototype.run = function () {
-            this.fun.apply(null, this.array);
-        };
-
-        // from https://github.com/kumavis/browser-process-hrtime/blob/master/index.js
-        var performance = global$1$1.performance || {};
-        var performanceNow =
-          performance.now        ||
-          performance.mozNow     ||
-          performance.msNow      ||
-          performance.oNow       ||
-          performance.webkitNow  ||
-          function(){ return (new Date()).getTime() };
-
-        var inherits;
-        if (typeof Object.create === 'function'){
-          inherits = function inherits(ctor, superCtor) {
-            // implementation from standard node.js 'util' module
-            ctor.super_ = superCtor;
-            ctor.prototype = Object.create(superCtor.prototype, {
-              constructor: {
-                value: ctor,
-                enumerable: false,
-                writable: true,
-                configurable: true
-              }
-            });
-          };
-        } else {
-          inherits = function inherits(ctor, superCtor) {
-            ctor.super_ = superCtor;
-            var TempCtor = function () {};
-            TempCtor.prototype = superCtor.prototype;
-            ctor.prototype = new TempCtor();
-            ctor.prototype.constructor = ctor;
-          };
-        }
-        var inherits$1 = inherits;
-
-        var formatRegExp = /%[sdj%]/g;
-        function format(f) {
-          if (!isString(f)) {
-            var objects = [];
-            for (var i = 0; i < arguments.length; i++) {
-              objects.push(inspect(arguments[i]));
-            }
-            return objects.join(' ');
-          }
-
-          var i = 1;
-          var args = arguments;
-          var len = args.length;
-          var str = String(f).replace(formatRegExp, function(x) {
-            if (x === '%%') return '%';
-            if (i >= len) return x;
-            switch (x) {
-              case '%s': return String(args[i++]);
-              case '%d': return Number(args[i++]);
-              case '%j':
-                try {
-                  return JSON.stringify(args[i++]);
-                } catch (_) {
-                  return '[Circular]';
-                }
-              default:
-                return x;
-            }
-          });
-          for (var x = args[i]; i < len; x = args[++i]) {
-            if (isNull(x) || !isObject(x)) {
-              str += ' ' + x;
-            } else {
-              str += ' ' + inspect(x);
-            }
-          }
-          return str;
-        }
-
-        // Mark that a method should not be used.
-        // Returns a modified function which warns once by default.
-        // If --no-deprecation is set, then it is a no-op.
-        function deprecate(fn, msg) {
-          // Allow for deprecating things in the process of starting up.
-          if (isUndefined(global$1$1.process)) {
-            return function() {
-              return deprecate(fn, msg).apply(this, arguments);
-            };
-          }
-
-          var warned = false;
-          function deprecated() {
-            if (!warned) {
-              {
-                console.error(msg);
-              }
-              warned = true;
-            }
-            return fn.apply(this, arguments);
-          }
-
-          return deprecated;
-        }
-
-        var debugs = {};
-        var debugEnviron;
-        function debuglog(set) {
-          if (isUndefined(debugEnviron))
-            debugEnviron =  '';
-          set = set.toUpperCase();
-          if (!debugs[set]) {
-            if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
-              var pid = 0;
-              debugs[set] = function() {
-                var msg = format.apply(null, arguments);
-                console.error('%s %d: %s', set, pid, msg);
-              };
-            } else {
-              debugs[set] = function() {};
-            }
-          }
-          return debugs[set];
-        }
-
-        /**
-         * Echos the value of a value. Trys to print the value out
-         * in the best way possible given the different types.
-         *
-         * @param {Object} obj The object to print out.
-         * @param {Object} opts Optional options object that alters the output.
-         */
-        /* legacy: obj, showHidden, depth, colors*/
-        function inspect(obj, opts) {
-          // default options
-          var ctx = {
-            seen: [],
-            stylize: stylizeNoColor
-          };
-          // legacy...
-          if (arguments.length >= 3) ctx.depth = arguments[2];
-          if (arguments.length >= 4) ctx.colors = arguments[3];
-          if (isBoolean(opts)) {
-            // legacy...
-            ctx.showHidden = opts;
-          } else if (opts) {
-            // got an "options" object
-            _extend(ctx, opts);
-          }
-          // set default options
-          if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
-          if (isUndefined(ctx.depth)) ctx.depth = 2;
-          if (isUndefined(ctx.colors)) ctx.colors = false;
-          if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
-          if (ctx.colors) ctx.stylize = stylizeWithColor;
-          return formatValue(ctx, obj, ctx.depth);
-        }
-
-        // http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
-        inspect.colors = {
-          'bold' : [1, 22],
-          'italic' : [3, 23],
-          'underline' : [4, 24],
-          'inverse' : [7, 27],
-          'white' : [37, 39],
-          'grey' : [90, 39],
-          'black' : [30, 39],
-          'blue' : [34, 39],
-          'cyan' : [36, 39],
-          'green' : [32, 39],
-          'magenta' : [35, 39],
-          'red' : [31, 39],
-          'yellow' : [33, 39]
-        };
-
-        // Don't use 'blue' not visible on cmd.exe
-        inspect.styles = {
-          'special': 'cyan',
-          'number': 'yellow',
-          'boolean': 'yellow',
-          'undefined': 'grey',
-          'null': 'bold',
-          'string': 'green',
-          'date': 'magenta',
-          // "name": intentionally not styling
-          'regexp': 'red'
-        };
-
-
-        function stylizeWithColor(str, styleType) {
-          var style = inspect.styles[styleType];
-
-          if (style) {
-            return '\u001b[' + inspect.colors[style][0] + 'm' + str +
-                   '\u001b[' + inspect.colors[style][1] + 'm';
-          } else {
-            return str;
-          }
-        }
-
-
-        function stylizeNoColor(str, styleType) {
-          return str;
-        }
-
-
-        function arrayToHash(array) {
-          var hash = {};
-
-          array.forEach(function(val, idx) {
-            hash[val] = true;
-          });
-
-          return hash;
-        }
-
-
-        function formatValue(ctx, value, recurseTimes) {
-          // Provide a hook for user-specified inspect functions.
-          // Check that value is an object with an inspect function on it
-          if (ctx.customInspect &&
-              value &&
-              isFunction(value.inspect) &&
-              // Filter out the util module, it's inspect function is special
-              value.inspect !== inspect &&
-              // Also filter out any prototype objects using the circular check.
-              !(value.constructor && value.constructor.prototype === value)) {
-            var ret = value.inspect(recurseTimes, ctx);
-            if (!isString(ret)) {
-              ret = formatValue(ctx, ret, recurseTimes);
-            }
-            return ret;
-          }
-
-          // Primitive types cannot have properties
-          var primitive = formatPrimitive(ctx, value);
-          if (primitive) {
-            return primitive;
-          }
-
-          // Look up the keys of the object.
-          var keys = Object.keys(value);
-          var visibleKeys = arrayToHash(keys);
-
-          if (ctx.showHidden) {
-            keys = Object.getOwnPropertyNames(value);
-          }
-
-          // IE doesn't make error fields non-enumerable
-          // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
-          if (isError(value)
-              && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
-            return formatError(value);
-          }
-
-          // Some type of object without properties can be shortcutted.
-          if (keys.length === 0) {
-            if (isFunction(value)) {
-              var name = value.name ? ': ' + value.name : '';
-              return ctx.stylize('[Function' + name + ']', 'special');
-            }
-            if (isRegExp(value)) {
-              return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
-            }
-            if (isDate(value)) {
-              return ctx.stylize(Date.prototype.toString.call(value), 'date');
-            }
-            if (isError(value)) {
-              return formatError(value);
-            }
-          }
-
-          var base = '', array = false, braces = ['{', '}'];
-
-          // Make Array say that they are Array
-          if (isArray$1(value)) {
-            array = true;
-            braces = ['[', ']'];
-          }
-
-          // Make functions say that they are functions
-          if (isFunction(value)) {
-            var n = value.name ? ': ' + value.name : '';
-            base = ' [Function' + n + ']';
-          }
-
-          // Make RegExps say that they are RegExps
-          if (isRegExp(value)) {
-            base = ' ' + RegExp.prototype.toString.call(value);
-          }
-
-          // Make dates with properties first say the date
-          if (isDate(value)) {
-            base = ' ' + Date.prototype.toUTCString.call(value);
-          }
-
-          // Make error with message first say the error
-          if (isError(value)) {
-            base = ' ' + formatError(value);
-          }
-
-          if (keys.length === 0 && (!array || value.length == 0)) {
-            return braces[0] + base + braces[1];
-          }
-
-          if (recurseTimes < 0) {
-            if (isRegExp(value)) {
-              return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
-            } else {
-              return ctx.stylize('[Object]', 'special');
-            }
-          }
-
-          ctx.seen.push(value);
-
-          var output;
-          if (array) {
-            output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
-          } else {
-            output = keys.map(function(key) {
-              return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
-            });
-          }
-
-          ctx.seen.pop();
-
-          return reduceToSingleString(output, base, braces);
-        }
-
-
-        function formatPrimitive(ctx, value) {
-          if (isUndefined(value))
-            return ctx.stylize('undefined', 'undefined');
-          if (isString(value)) {
-            var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
-                                                     .replace(/'/g, "\\'")
-                                                     .replace(/\\"/g, '"') + '\'';
-            return ctx.stylize(simple, 'string');
-          }
-          if (isNumber(value))
-            return ctx.stylize('' + value, 'number');
-          if (isBoolean(value))
-            return ctx.stylize('' + value, 'boolean');
-          // For some reason typeof null is "object", so special case here.
-          if (isNull(value))
-            return ctx.stylize('null', 'null');
-        }
-
-
-        function formatError(value) {
-          return '[' + Error.prototype.toString.call(value) + ']';
-        }
-
-
-        function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
-          var output = [];
-          for (var i = 0, l = value.length; i < l; ++i) {
-            if (hasOwnProperty(value, String(i))) {
-              output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-                  String(i), true));
-            } else {
-              output.push('');
-            }
-          }
-          keys.forEach(function(key) {
-            if (!key.match(/^\d+$/)) {
-              output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-                  key, true));
-            }
-          });
-          return output;
-        }
-
-
-        function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
-          var name, str, desc;
-          desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
-          if (desc.get) {
-            if (desc.set) {
-              str = ctx.stylize('[Getter/Setter]', 'special');
-            } else {
-              str = ctx.stylize('[Getter]', 'special');
-            }
-          } else {
-            if (desc.set) {
-              str = ctx.stylize('[Setter]', 'special');
-            }
-          }
-          if (!hasOwnProperty(visibleKeys, key)) {
-            name = '[' + key + ']';
-          }
-          if (!str) {
-            if (ctx.seen.indexOf(desc.value) < 0) {
-              if (isNull(recurseTimes)) {
-                str = formatValue(ctx, desc.value, null);
-              } else {
-                str = formatValue(ctx, desc.value, recurseTimes - 1);
-              }
-              if (str.indexOf('\n') > -1) {
-                if (array) {
-                  str = str.split('\n').map(function(line) {
-                    return '  ' + line;
-                  }).join('\n').substr(2);
-                } else {
-                  str = '\n' + str.split('\n').map(function(line) {
-                    return '   ' + line;
-                  }).join('\n');
-                }
-              }
-            } else {
-              str = ctx.stylize('[Circular]', 'special');
-            }
-          }
-          if (isUndefined(name)) {
-            if (array && key.match(/^\d+$/)) {
-              return str;
-            }
-            name = JSON.stringify('' + key);
-            if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
-              name = name.substr(1, name.length - 2);
-              name = ctx.stylize(name, 'name');
-            } else {
-              name = name.replace(/'/g, "\\'")
-                         .replace(/\\"/g, '"')
-                         .replace(/(^"|"$)/g, "'");
-              name = ctx.stylize(name, 'string');
-            }
-          }
-
-          return name + ': ' + str;
-        }
-
-
-        function reduceToSingleString(output, base, braces) {
-          var length = output.reduce(function(prev, cur) {
-            if (cur.indexOf('\n') >= 0) ;
-            return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
-          }, 0);
-
-          if (length > 60) {
-            return braces[0] +
-                   (base === '' ? '' : base + '\n ') +
-                   ' ' +
-                   output.join(',\n  ') +
-                   ' ' +
-                   braces[1];
-          }
-
-          return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
-        }
-
-
-        // NOTE: These type checking functions intentionally don't use `instanceof`
-        // because it is fragile and can be easily faked with `Object.create()`.
-        function isArray$1(ar) {
-          return Array.isArray(ar);
-        }
-
-        function isBoolean(arg) {
-          return typeof arg === 'boolean';
-        }
-
-        function isNull(arg) {
-          return arg === null;
-        }
-
-        function isNumber(arg) {
-          return typeof arg === 'number';
-        }
-
-        function isString(arg) {
-          return typeof arg === 'string';
-        }
-
-        function isUndefined(arg) {
-          return arg === void 0;
-        }
-
-        function isRegExp(re) {
-          return isObject(re) && objectToString(re) === '[object RegExp]';
-        }
-
-        function isObject(arg) {
-          return typeof arg === 'object' && arg !== null;
-        }
-
-        function isDate(d) {
-          return isObject(d) && objectToString(d) === '[object Date]';
-        }
-
-        function isError(e) {
-          return isObject(e) &&
-              (objectToString(e) === '[object Error]' || e instanceof Error);
-        }
-
-        function isFunction(arg) {
-          return typeof arg === 'function';
-        }
-
-        function objectToString(o) {
-          return Object.prototype.toString.call(o);
-        }
-
-        function _extend(origin, add) {
-          // Don't do anything if add isn't an object
-          if (!add || !isObject(add)) return origin;
-
-          var keys = Object.keys(add);
-          var i = keys.length;
-          while (i--) {
-            origin[keys[i]] = add[keys[i]];
-          }
-          return origin;
-        }
-        function hasOwnProperty(obj, prop) {
-          return Object.prototype.hasOwnProperty.call(obj, prop);
-        }
 
         var INSPECT_MAX_BYTES$1 = 50;
 
@@ -7476,7 +4741,7 @@
               return fromArrayLike$1(that, obj)
             }
 
-            if (obj.type === 'Buffer' && isArray(obj.data)) {
+            if (obj.type === 'Buffer' && isArray$1(obj.data)) {
               return fromArrayLike$1(that, obj.data)
             }
           }
@@ -7541,7 +4806,7 @@
         };
 
         Buffer$1.concat = function concat (list, length) {
-          if (!isArray(list)) {
+          if (!isArray$1(list)) {
             throw new TypeError('"list" argument must be an Array of Buffers')
           }
 
@@ -8972,6 +6237,2964 @@
           return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isFastBuffer$1(obj.slice(0, 0))
         }
 
+        var domain;
+
+        // This constructor is used to store event handlers. Instantiating this is
+        // faster than explicitly calling `Object.create(null)` to get a "clean" empty
+        // object (tested with v8 v4.9).
+        function EventHandlers() {}
+        EventHandlers.prototype = Object.create(null);
+
+        function EventEmitter() {
+          EventEmitter.init.call(this);
+        }
+
+        // nodejs oddity
+        // require('events') === require('events').EventEmitter
+        EventEmitter.EventEmitter = EventEmitter;
+
+        EventEmitter.usingDomains = false;
+
+        EventEmitter.prototype.domain = undefined;
+        EventEmitter.prototype._events = undefined;
+        EventEmitter.prototype._maxListeners = undefined;
+
+        // By default EventEmitters will print a warning if more than 10 listeners are
+        // added to it. This is a useful default which helps finding memory leaks.
+        EventEmitter.defaultMaxListeners = 10;
+
+        EventEmitter.init = function() {
+          this.domain = null;
+          if (EventEmitter.usingDomains) {
+            // if there is an active domain, then attach to it.
+            if (domain.active ) ;
+          }
+
+          if (!this._events || this._events === Object.getPrototypeOf(this)._events) {
+            this._events = new EventHandlers();
+            this._eventsCount = 0;
+          }
+
+          this._maxListeners = this._maxListeners || undefined;
+        };
+
+        // Obviously not all Emitters should be limited to 10. This function allows
+        // that to be increased. Set to zero for unlimited.
+        EventEmitter.prototype.setMaxListeners = function setMaxListeners(n) {
+          if (typeof n !== 'number' || n < 0 || isNaN(n))
+            throw new TypeError('"n" argument must be a positive number');
+          this._maxListeners = n;
+          return this;
+        };
+
+        function $getMaxListeners(that) {
+          if (that._maxListeners === undefined)
+            return EventEmitter.defaultMaxListeners;
+          return that._maxListeners;
+        }
+
+        EventEmitter.prototype.getMaxListeners = function getMaxListeners() {
+          return $getMaxListeners(this);
+        };
+
+        // These standalone emit* functions are used to optimize calling of event
+        // handlers for fast cases because emit() itself often has a variable number of
+        // arguments and can be deoptimized because of that. These functions always have
+        // the same number of arguments and thus do not get deoptimized, so the code
+        // inside them can execute faster.
+        function emitNone(handler, isFn, self) {
+          if (isFn)
+            handler.call(self);
+          else {
+            var len = handler.length;
+            var listeners = arrayClone(handler, len);
+            for (var i = 0; i < len; ++i)
+              listeners[i].call(self);
+          }
+        }
+        function emitOne(handler, isFn, self, arg1) {
+          if (isFn)
+            handler.call(self, arg1);
+          else {
+            var len = handler.length;
+            var listeners = arrayClone(handler, len);
+            for (var i = 0; i < len; ++i)
+              listeners[i].call(self, arg1);
+          }
+        }
+        function emitTwo(handler, isFn, self, arg1, arg2) {
+          if (isFn)
+            handler.call(self, arg1, arg2);
+          else {
+            var len = handler.length;
+            var listeners = arrayClone(handler, len);
+            for (var i = 0; i < len; ++i)
+              listeners[i].call(self, arg1, arg2);
+          }
+        }
+        function emitThree(handler, isFn, self, arg1, arg2, arg3) {
+          if (isFn)
+            handler.call(self, arg1, arg2, arg3);
+          else {
+            var len = handler.length;
+            var listeners = arrayClone(handler, len);
+            for (var i = 0; i < len; ++i)
+              listeners[i].call(self, arg1, arg2, arg3);
+          }
+        }
+
+        function emitMany(handler, isFn, self, args) {
+          if (isFn)
+            handler.apply(self, args);
+          else {
+            var len = handler.length;
+            var listeners = arrayClone(handler, len);
+            for (var i = 0; i < len; ++i)
+              listeners[i].apply(self, args);
+          }
+        }
+
+        EventEmitter.prototype.emit = function emit(type) {
+          var er, handler, len, args, i, events, domain;
+          var doError = (type === 'error');
+
+          events = this._events;
+          if (events)
+            doError = (doError && events.error == null);
+          else if (!doError)
+            return false;
+
+          domain = this.domain;
+
+          // If there is no 'error' event listener then throw.
+          if (doError) {
+            er = arguments[1];
+            if (domain) {
+              if (!er)
+                er = new Error('Uncaught, unspecified "error" event');
+              er.domainEmitter = this;
+              er.domain = domain;
+              er.domainThrown = false;
+              domain.emit('error', er);
+            } else if (er instanceof Error) {
+              throw er; // Unhandled 'error' event
+            } else {
+              // At least give some kind of context to the user
+              var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+              err.context = er;
+              throw err;
+            }
+            return false;
+          }
+
+          handler = events[type];
+
+          if (!handler)
+            return false;
+
+          var isFn = typeof handler === 'function';
+          len = arguments.length;
+          switch (len) {
+            // fast cases
+            case 1:
+              emitNone(handler, isFn, this);
+              break;
+            case 2:
+              emitOne(handler, isFn, this, arguments[1]);
+              break;
+            case 3:
+              emitTwo(handler, isFn, this, arguments[1], arguments[2]);
+              break;
+            case 4:
+              emitThree(handler, isFn, this, arguments[1], arguments[2], arguments[3]);
+              break;
+            // slower
+            default:
+              args = new Array(len - 1);
+              for (i = 1; i < len; i++)
+                args[i - 1] = arguments[i];
+              emitMany(handler, isFn, this, args);
+          }
+
+          return true;
+        };
+
+        function _addListener(target, type, listener, prepend) {
+          var m;
+          var events;
+          var existing;
+
+          if (typeof listener !== 'function')
+            throw new TypeError('"listener" argument must be a function');
+
+          events = target._events;
+          if (!events) {
+            events = target._events = new EventHandlers();
+            target._eventsCount = 0;
+          } else {
+            // To avoid recursion in the case that type === "newListener"! Before
+            // adding it to the listeners, first emit "newListener".
+            if (events.newListener) {
+              target.emit('newListener', type,
+                          listener.listener ? listener.listener : listener);
+
+              // Re-assign `events` because a newListener handler could have caused the
+              // this._events to be assigned to a new object
+              events = target._events;
+            }
+            existing = events[type];
+          }
+
+          if (!existing) {
+            // Optimize the case of one listener. Don't need the extra array object.
+            existing = events[type] = listener;
+            ++target._eventsCount;
+          } else {
+            if (typeof existing === 'function') {
+              // Adding the second element, need to change to array.
+              existing = events[type] = prepend ? [listener, existing] :
+                                                  [existing, listener];
+            } else {
+              // If we've already got an array, just append.
+              if (prepend) {
+                existing.unshift(listener);
+              } else {
+                existing.push(listener);
+              }
+            }
+
+            // Check for listener leak
+            if (!existing.warned) {
+              m = $getMaxListeners(target);
+              if (m && m > 0 && existing.length > m) {
+                existing.warned = true;
+                var w = new Error('Possible EventEmitter memory leak detected. ' +
+                                    existing.length + ' ' + type + ' listeners added. ' +
+                                    'Use emitter.setMaxListeners() to increase limit');
+                w.name = 'MaxListenersExceededWarning';
+                w.emitter = target;
+                w.type = type;
+                w.count = existing.length;
+                emitWarning(w);
+              }
+            }
+          }
+
+          return target;
+        }
+        function emitWarning(e) {
+          typeof console.warn === 'function' ? console.warn(e) : console.log(e);
+        }
+        EventEmitter.prototype.addListener = function addListener(type, listener) {
+          return _addListener(this, type, listener, false);
+        };
+
+        EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+        EventEmitter.prototype.prependListener =
+            function prependListener(type, listener) {
+              return _addListener(this, type, listener, true);
+            };
+
+        function _onceWrap(target, type, listener) {
+          var fired = false;
+          function g() {
+            target.removeListener(type, g);
+            if (!fired) {
+              fired = true;
+              listener.apply(target, arguments);
+            }
+          }
+          g.listener = listener;
+          return g;
+        }
+
+        EventEmitter.prototype.once = function once(type, listener) {
+          if (typeof listener !== 'function')
+            throw new TypeError('"listener" argument must be a function');
+          this.on(type, _onceWrap(this, type, listener));
+          return this;
+        };
+
+        EventEmitter.prototype.prependOnceListener =
+            function prependOnceListener(type, listener) {
+              if (typeof listener !== 'function')
+                throw new TypeError('"listener" argument must be a function');
+              this.prependListener(type, _onceWrap(this, type, listener));
+              return this;
+            };
+
+        // emits a 'removeListener' event iff the listener was removed
+        EventEmitter.prototype.removeListener =
+            function removeListener(type, listener) {
+              var list, events, position, i, originalListener;
+
+              if (typeof listener !== 'function')
+                throw new TypeError('"listener" argument must be a function');
+
+              events = this._events;
+              if (!events)
+                return this;
+
+              list = events[type];
+              if (!list)
+                return this;
+
+              if (list === listener || (list.listener && list.listener === listener)) {
+                if (--this._eventsCount === 0)
+                  this._events = new EventHandlers();
+                else {
+                  delete events[type];
+                  if (events.removeListener)
+                    this.emit('removeListener', type, list.listener || listener);
+                }
+              } else if (typeof list !== 'function') {
+                position = -1;
+
+                for (i = list.length; i-- > 0;) {
+                  if (list[i] === listener ||
+                      (list[i].listener && list[i].listener === listener)) {
+                    originalListener = list[i].listener;
+                    position = i;
+                    break;
+                  }
+                }
+
+                if (position < 0)
+                  return this;
+
+                if (list.length === 1) {
+                  list[0] = undefined;
+                  if (--this._eventsCount === 0) {
+                    this._events = new EventHandlers();
+                    return this;
+                  } else {
+                    delete events[type];
+                  }
+                } else {
+                  spliceOne(list, position);
+                }
+
+                if (events.removeListener)
+                  this.emit('removeListener', type, originalListener || listener);
+              }
+
+              return this;
+            };
+
+        EventEmitter.prototype.removeAllListeners =
+            function removeAllListeners(type) {
+              var listeners, events;
+
+              events = this._events;
+              if (!events)
+                return this;
+
+              // not listening for removeListener, no need to emit
+              if (!events.removeListener) {
+                if (arguments.length === 0) {
+                  this._events = new EventHandlers();
+                  this._eventsCount = 0;
+                } else if (events[type]) {
+                  if (--this._eventsCount === 0)
+                    this._events = new EventHandlers();
+                  else
+                    delete events[type];
+                }
+                return this;
+              }
+
+              // emit removeListener for all listeners on all events
+              if (arguments.length === 0) {
+                var keys = Object.keys(events);
+                for (var i = 0, key; i < keys.length; ++i) {
+                  key = keys[i];
+                  if (key === 'removeListener') continue;
+                  this.removeAllListeners(key);
+                }
+                this.removeAllListeners('removeListener');
+                this._events = new EventHandlers();
+                this._eventsCount = 0;
+                return this;
+              }
+
+              listeners = events[type];
+
+              if (typeof listeners === 'function') {
+                this.removeListener(type, listeners);
+              } else if (listeners) {
+                // LIFO order
+                do {
+                  this.removeListener(type, listeners[listeners.length - 1]);
+                } while (listeners[0]);
+              }
+
+              return this;
+            };
+
+        EventEmitter.prototype.listeners = function listeners(type) {
+          var evlistener;
+          var ret;
+          var events = this._events;
+
+          if (!events)
+            ret = [];
+          else {
+            evlistener = events[type];
+            if (!evlistener)
+              ret = [];
+            else if (typeof evlistener === 'function')
+              ret = [evlistener.listener || evlistener];
+            else
+              ret = unwrapListeners(evlistener);
+          }
+
+          return ret;
+        };
+
+        EventEmitter.listenerCount = function(emitter, type) {
+          if (typeof emitter.listenerCount === 'function') {
+            return emitter.listenerCount(type);
+          } else {
+            return listenerCount$1.call(emitter, type);
+          }
+        };
+
+        EventEmitter.prototype.listenerCount = listenerCount$1;
+        function listenerCount$1(type) {
+          var events = this._events;
+
+          if (events) {
+            var evlistener = events[type];
+
+            if (typeof evlistener === 'function') {
+              return 1;
+            } else if (evlistener) {
+              return evlistener.length;
+            }
+          }
+
+          return 0;
+        }
+
+        EventEmitter.prototype.eventNames = function eventNames() {
+          return this._eventsCount > 0 ? Reflect.ownKeys(this._events) : [];
+        };
+
+        // About 1.5x faster than the two-arg version of Array#splice().
+        function spliceOne(list, index) {
+          for (var i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1)
+            list[i] = list[k];
+          list.pop();
+        }
+
+        function arrayClone(arr, i) {
+          var copy = new Array(i);
+          while (i--)
+            copy[i] = arr[i];
+          return copy;
+        }
+
+        function unwrapListeners(arr) {
+          var ret = new Array(arr.length);
+          for (var i = 0; i < ret.length; ++i) {
+            ret[i] = arr[i].listener || arr[i];
+          }
+          return ret;
+        }
+
+        // shim for using process in browser
+        // based off https://github.com/defunctzombie/node-process/blob/master/browser.js
+
+        function defaultSetTimout$1() {
+            throw new Error('setTimeout has not been defined');
+        }
+        function defaultClearTimeout$1 () {
+            throw new Error('clearTimeout has not been defined');
+        }
+        var cachedSetTimeout$1 = defaultSetTimout$1;
+        var cachedClearTimeout$1 = defaultClearTimeout$1;
+        if (typeof global$1$1.setTimeout === 'function') {
+            cachedSetTimeout$1 = setTimeout;
+        }
+        if (typeof global$1$1.clearTimeout === 'function') {
+            cachedClearTimeout$1 = clearTimeout;
+        }
+
+        function runTimeout$1(fun) {
+            if (cachedSetTimeout$1 === setTimeout) {
+                //normal enviroments in sane situations
+                return setTimeout(fun, 0);
+            }
+            // if setTimeout wasn't available but was latter defined
+            if ((cachedSetTimeout$1 === defaultSetTimout$1 || !cachedSetTimeout$1) && setTimeout) {
+                cachedSetTimeout$1 = setTimeout;
+                return setTimeout(fun, 0);
+            }
+            try {
+                // when when somebody has screwed with setTimeout but no I.E. maddness
+                return cachedSetTimeout$1(fun, 0);
+            } catch(e){
+                try {
+                    // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+                    return cachedSetTimeout$1.call(null, fun, 0);
+                } catch(e){
+                    // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+                    return cachedSetTimeout$1.call(this, fun, 0);
+                }
+            }
+
+
+        }
+        function runClearTimeout$1(marker) {
+            if (cachedClearTimeout$1 === clearTimeout) {
+                //normal enviroments in sane situations
+                return clearTimeout(marker);
+            }
+            // if clearTimeout wasn't available but was latter defined
+            if ((cachedClearTimeout$1 === defaultClearTimeout$1 || !cachedClearTimeout$1) && clearTimeout) {
+                cachedClearTimeout$1 = clearTimeout;
+                return clearTimeout(marker);
+            }
+            try {
+                // when when somebody has screwed with setTimeout but no I.E. maddness
+                return cachedClearTimeout$1(marker);
+            } catch (e){
+                try {
+                    // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+                    return cachedClearTimeout$1.call(null, marker);
+                } catch (e){
+                    // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+                    // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+                    return cachedClearTimeout$1.call(this, marker);
+                }
+            }
+
+
+
+        }
+        var queue$1 = [];
+        var draining$1 = false;
+        var currentQueue$1;
+        var queueIndex$1 = -1;
+
+        function cleanUpNextTick$1() {
+            if (!draining$1 || !currentQueue$1) {
+                return;
+            }
+            draining$1 = false;
+            if (currentQueue$1.length) {
+                queue$1 = currentQueue$1.concat(queue$1);
+            } else {
+                queueIndex$1 = -1;
+            }
+            if (queue$1.length) {
+                drainQueue$1();
+            }
+        }
+
+        function drainQueue$1() {
+            if (draining$1) {
+                return;
+            }
+            var timeout = runTimeout$1(cleanUpNextTick$1);
+            draining$1 = true;
+
+            var len = queue$1.length;
+            while(len) {
+                currentQueue$1 = queue$1;
+                queue$1 = [];
+                while (++queueIndex$1 < len) {
+                    if (currentQueue$1) {
+                        currentQueue$1[queueIndex$1].run();
+                    }
+                }
+                queueIndex$1 = -1;
+                len = queue$1.length;
+            }
+            currentQueue$1 = null;
+            draining$1 = false;
+            runClearTimeout$1(timeout);
+        }
+        function nextTick$1(fun) {
+            var args = new Array(arguments.length - 1);
+            if (arguments.length > 1) {
+                for (var i = 1; i < arguments.length; i++) {
+                    args[i - 1] = arguments[i];
+                }
+            }
+            queue$1.push(new Item$1(fun, args));
+            if (queue$1.length === 1 && !draining$1) {
+                runTimeout$1(drainQueue$1);
+            }
+        }
+        // v8 likes predictible objects
+        function Item$1(fun, array) {
+            this.fun = fun;
+            this.array = array;
+        }
+        Item$1.prototype.run = function () {
+            this.fun.apply(null, this.array);
+        };
+        var title = 'browser';
+        var platform = 'browser';
+        var browser = true;
+        var env = {};
+        var argv = [];
+        var version = ''; // empty string to avoid regexp issues
+        var versions = {};
+        var release = {};
+        var config = {};
+
+        function noop() {}
+
+        var on = noop;
+        var addListener = noop;
+        var once = noop;
+        var off = noop;
+        var removeListener = noop;
+        var removeAllListeners = noop;
+        var emit = noop;
+
+        function binding$2(name) {
+            throw new Error('process.binding is not supported');
+        }
+
+        function cwd () { return '/' }
+        function chdir (dir) {
+            throw new Error('process.chdir is not supported');
+        }function umask() { return 0; }
+
+        // from https://github.com/kumavis/browser-process-hrtime/blob/master/index.js
+        var performance$1 = global$1$1.performance || {};
+        var performanceNow =
+          performance$1.now        ||
+          performance$1.mozNow     ||
+          performance$1.msNow      ||
+          performance$1.oNow       ||
+          performance$1.webkitNow  ||
+          function(){ return (new Date()).getTime() };
+
+        // generate timestamp or delta
+        // see http://nodejs.org/api/process.html#process_process_hrtime
+        function hrtime(previousTimestamp){
+          var clocktime = performanceNow.call(performance$1)*1e-3;
+          var seconds = Math.floor(clocktime);
+          var nanoseconds = Math.floor((clocktime%1)*1e9);
+          if (previousTimestamp) {
+            seconds = seconds - previousTimestamp[0];
+            nanoseconds = nanoseconds - previousTimestamp[1];
+            if (nanoseconds<0) {
+              seconds--;
+              nanoseconds += 1e9;
+            }
+          }
+          return [seconds,nanoseconds]
+        }
+
+        var startTime = new Date();
+        function uptime() {
+          var currentTime = new Date();
+          var dif = currentTime - startTime;
+          return dif / 1000;
+        }
+
+        var process = {
+          nextTick: nextTick$1,
+          title: title,
+          browser: browser,
+          env: env,
+          argv: argv,
+          version: version,
+          versions: versions,
+          on: on,
+          addListener: addListener,
+          once: once,
+          off: off,
+          removeListener: removeListener,
+          removeAllListeners: removeAllListeners,
+          emit: emit,
+          binding: binding$2,
+          cwd: cwd,
+          chdir: chdir,
+          umask: umask,
+          hrtime: hrtime,
+          platform: platform,
+          release: release,
+          config: config,
+          uptime: uptime
+        };
+
+        var inherits;
+        if (typeof Object.create === 'function'){
+          inherits = function inherits(ctor, superCtor) {
+            // implementation from standard node.js 'util' module
+            ctor.super_ = superCtor;
+            ctor.prototype = Object.create(superCtor.prototype, {
+              constructor: {
+                value: ctor,
+                enumerable: false,
+                writable: true,
+                configurable: true
+              }
+            });
+          };
+        } else {
+          inherits = function inherits(ctor, superCtor) {
+            ctor.super_ = superCtor;
+            var TempCtor = function () {};
+            TempCtor.prototype = superCtor.prototype;
+            ctor.prototype = new TempCtor();
+            ctor.prototype.constructor = ctor;
+          };
+        }
+        var inherits$1 = inherits;
+
+        var formatRegExp = /%[sdj%]/g;
+        function format(f) {
+          if (!isString(f)) {
+            var objects = [];
+            for (var i = 0; i < arguments.length; i++) {
+              objects.push(inspect(arguments[i]));
+            }
+            return objects.join(' ');
+          }
+
+          var i = 1;
+          var args = arguments;
+          var len = args.length;
+          var str = String(f).replace(formatRegExp, function(x) {
+            if (x === '%%') return '%';
+            if (i >= len) return x;
+            switch (x) {
+              case '%s': return String(args[i++]);
+              case '%d': return Number(args[i++]);
+              case '%j':
+                try {
+                  return JSON.stringify(args[i++]);
+                } catch (_) {
+                  return '[Circular]';
+                }
+              default:
+                return x;
+            }
+          });
+          for (var x = args[i]; i < len; x = args[++i]) {
+            if (isNull(x) || !isObject(x)) {
+              str += ' ' + x;
+            } else {
+              str += ' ' + inspect(x);
+            }
+          }
+          return str;
+        }
+
+        // Mark that a method should not be used.
+        // Returns a modified function which warns once by default.
+        // If --no-deprecation is set, then it is a no-op.
+        function deprecate(fn, msg) {
+          // Allow for deprecating things in the process of starting up.
+          if (isUndefined(global$1$1.process)) {
+            return function() {
+              return deprecate(fn, msg).apply(this, arguments);
+            };
+          }
+
+          if (process.noDeprecation === true) {
+            return fn;
+          }
+
+          var warned = false;
+          function deprecated() {
+            if (!warned) {
+              if (process.throwDeprecation) {
+                throw new Error(msg);
+              } else if (process.traceDeprecation) {
+                console.trace(msg);
+              } else {
+                console.error(msg);
+              }
+              warned = true;
+            }
+            return fn.apply(this, arguments);
+          }
+
+          return deprecated;
+        }
+
+        var debugs = {};
+        var debugEnviron;
+        function debuglog(set) {
+          if (isUndefined(debugEnviron))
+            debugEnviron = process.env.NODE_DEBUG || '';
+          set = set.toUpperCase();
+          if (!debugs[set]) {
+            if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
+              var pid = 0;
+              debugs[set] = function() {
+                var msg = format.apply(null, arguments);
+                console.error('%s %d: %s', set, pid, msg);
+              };
+            } else {
+              debugs[set] = function() {};
+            }
+          }
+          return debugs[set];
+        }
+
+        /**
+         * Echos the value of a value. Trys to print the value out
+         * in the best way possible given the different types.
+         *
+         * @param {Object} obj The object to print out.
+         * @param {Object} opts Optional options object that alters the output.
+         */
+        /* legacy: obj, showHidden, depth, colors*/
+        function inspect(obj, opts) {
+          // default options
+          var ctx = {
+            seen: [],
+            stylize: stylizeNoColor
+          };
+          // legacy...
+          if (arguments.length >= 3) ctx.depth = arguments[2];
+          if (arguments.length >= 4) ctx.colors = arguments[3];
+          if (isBoolean(opts)) {
+            // legacy...
+            ctx.showHidden = opts;
+          } else if (opts) {
+            // got an "options" object
+            _extend(ctx, opts);
+          }
+          // set default options
+          if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
+          if (isUndefined(ctx.depth)) ctx.depth = 2;
+          if (isUndefined(ctx.colors)) ctx.colors = false;
+          if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
+          if (ctx.colors) ctx.stylize = stylizeWithColor;
+          return formatValue(ctx, obj, ctx.depth);
+        }
+
+        // http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
+        inspect.colors = {
+          'bold' : [1, 22],
+          'italic' : [3, 23],
+          'underline' : [4, 24],
+          'inverse' : [7, 27],
+          'white' : [37, 39],
+          'grey' : [90, 39],
+          'black' : [30, 39],
+          'blue' : [34, 39],
+          'cyan' : [36, 39],
+          'green' : [32, 39],
+          'magenta' : [35, 39],
+          'red' : [31, 39],
+          'yellow' : [33, 39]
+        };
+
+        // Don't use 'blue' not visible on cmd.exe
+        inspect.styles = {
+          'special': 'cyan',
+          'number': 'yellow',
+          'boolean': 'yellow',
+          'undefined': 'grey',
+          'null': 'bold',
+          'string': 'green',
+          'date': 'magenta',
+          // "name": intentionally not styling
+          'regexp': 'red'
+        };
+
+
+        function stylizeWithColor(str, styleType) {
+          var style = inspect.styles[styleType];
+
+          if (style) {
+            return '\u001b[' + inspect.colors[style][0] + 'm' + str +
+                   '\u001b[' + inspect.colors[style][1] + 'm';
+          } else {
+            return str;
+          }
+        }
+
+
+        function stylizeNoColor(str, styleType) {
+          return str;
+        }
+
+
+        function arrayToHash(array) {
+          var hash = {};
+
+          array.forEach(function(val, idx) {
+            hash[val] = true;
+          });
+
+          return hash;
+        }
+
+
+        function formatValue(ctx, value, recurseTimes) {
+          // Provide a hook for user-specified inspect functions.
+          // Check that value is an object with an inspect function on it
+          if (ctx.customInspect &&
+              value &&
+              isFunction(value.inspect) &&
+              // Filter out the util module, it's inspect function is special
+              value.inspect !== inspect &&
+              // Also filter out any prototype objects using the circular check.
+              !(value.constructor && value.constructor.prototype === value)) {
+            var ret = value.inspect(recurseTimes, ctx);
+            if (!isString(ret)) {
+              ret = formatValue(ctx, ret, recurseTimes);
+            }
+            return ret;
+          }
+
+          // Primitive types cannot have properties
+          var primitive = formatPrimitive(ctx, value);
+          if (primitive) {
+            return primitive;
+          }
+
+          // Look up the keys of the object.
+          var keys = Object.keys(value);
+          var visibleKeys = arrayToHash(keys);
+
+          if (ctx.showHidden) {
+            keys = Object.getOwnPropertyNames(value);
+          }
+
+          // IE doesn't make error fields non-enumerable
+          // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
+          if (isError(value)
+              && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
+            return formatError(value);
+          }
+
+          // Some type of object without properties can be shortcutted.
+          if (keys.length === 0) {
+            if (isFunction(value)) {
+              var name = value.name ? ': ' + value.name : '';
+              return ctx.stylize('[Function' + name + ']', 'special');
+            }
+            if (isRegExp(value)) {
+              return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+            }
+            if (isDate(value)) {
+              return ctx.stylize(Date.prototype.toString.call(value), 'date');
+            }
+            if (isError(value)) {
+              return formatError(value);
+            }
+          }
+
+          var base = '', array = false, braces = ['{', '}'];
+
+          // Make Array say that they are Array
+          if (isArray(value)) {
+            array = true;
+            braces = ['[', ']'];
+          }
+
+          // Make functions say that they are functions
+          if (isFunction(value)) {
+            var n = value.name ? ': ' + value.name : '';
+            base = ' [Function' + n + ']';
+          }
+
+          // Make RegExps say that they are RegExps
+          if (isRegExp(value)) {
+            base = ' ' + RegExp.prototype.toString.call(value);
+          }
+
+          // Make dates with properties first say the date
+          if (isDate(value)) {
+            base = ' ' + Date.prototype.toUTCString.call(value);
+          }
+
+          // Make error with message first say the error
+          if (isError(value)) {
+            base = ' ' + formatError(value);
+          }
+
+          if (keys.length === 0 && (!array || value.length == 0)) {
+            return braces[0] + base + braces[1];
+          }
+
+          if (recurseTimes < 0) {
+            if (isRegExp(value)) {
+              return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+            } else {
+              return ctx.stylize('[Object]', 'special');
+            }
+          }
+
+          ctx.seen.push(value);
+
+          var output;
+          if (array) {
+            output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
+          } else {
+            output = keys.map(function(key) {
+              return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
+            });
+          }
+
+          ctx.seen.pop();
+
+          return reduceToSingleString(output, base, braces);
+        }
+
+
+        function formatPrimitive(ctx, value) {
+          if (isUndefined(value))
+            return ctx.stylize('undefined', 'undefined');
+          if (isString(value)) {
+            var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
+                                                     .replace(/'/g, "\\'")
+                                                     .replace(/\\"/g, '"') + '\'';
+            return ctx.stylize(simple, 'string');
+          }
+          if (isNumber(value))
+            return ctx.stylize('' + value, 'number');
+          if (isBoolean(value))
+            return ctx.stylize('' + value, 'boolean');
+          // For some reason typeof null is "object", so special case here.
+          if (isNull(value))
+            return ctx.stylize('null', 'null');
+        }
+
+
+        function formatError(value) {
+          return '[' + Error.prototype.toString.call(value) + ']';
+        }
+
+
+        function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
+          var output = [];
+          for (var i = 0, l = value.length; i < l; ++i) {
+            if (hasOwnProperty(value, String(i))) {
+              output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+                  String(i), true));
+            } else {
+              output.push('');
+            }
+          }
+          keys.forEach(function(key) {
+            if (!key.match(/^\d+$/)) {
+              output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+                  key, true));
+            }
+          });
+          return output;
+        }
+
+
+        function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
+          var name, str, desc;
+          desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
+          if (desc.get) {
+            if (desc.set) {
+              str = ctx.stylize('[Getter/Setter]', 'special');
+            } else {
+              str = ctx.stylize('[Getter]', 'special');
+            }
+          } else {
+            if (desc.set) {
+              str = ctx.stylize('[Setter]', 'special');
+            }
+          }
+          if (!hasOwnProperty(visibleKeys, key)) {
+            name = '[' + key + ']';
+          }
+          if (!str) {
+            if (ctx.seen.indexOf(desc.value) < 0) {
+              if (isNull(recurseTimes)) {
+                str = formatValue(ctx, desc.value, null);
+              } else {
+                str = formatValue(ctx, desc.value, recurseTimes - 1);
+              }
+              if (str.indexOf('\n') > -1) {
+                if (array) {
+                  str = str.split('\n').map(function(line) {
+                    return '  ' + line;
+                  }).join('\n').substr(2);
+                } else {
+                  str = '\n' + str.split('\n').map(function(line) {
+                    return '   ' + line;
+                  }).join('\n');
+                }
+              }
+            } else {
+              str = ctx.stylize('[Circular]', 'special');
+            }
+          }
+          if (isUndefined(name)) {
+            if (array && key.match(/^\d+$/)) {
+              return str;
+            }
+            name = JSON.stringify('' + key);
+            if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
+              name = name.substr(1, name.length - 2);
+              name = ctx.stylize(name, 'name');
+            } else {
+              name = name.replace(/'/g, "\\'")
+                         .replace(/\\"/g, '"')
+                         .replace(/(^"|"$)/g, "'");
+              name = ctx.stylize(name, 'string');
+            }
+          }
+
+          return name + ': ' + str;
+        }
+
+
+        function reduceToSingleString(output, base, braces) {
+          var length = output.reduce(function(prev, cur) {
+            if (cur.indexOf('\n') >= 0) ;
+            return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
+          }, 0);
+
+          if (length > 60) {
+            return braces[0] +
+                   (base === '' ? '' : base + '\n ') +
+                   ' ' +
+                   output.join(',\n  ') +
+                   ' ' +
+                   braces[1];
+          }
+
+          return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
+        }
+
+
+        // NOTE: These type checking functions intentionally don't use `instanceof`
+        // because it is fragile and can be easily faked with `Object.create()`.
+        function isArray(ar) {
+          return Array.isArray(ar);
+        }
+
+        function isBoolean(arg) {
+          return typeof arg === 'boolean';
+        }
+
+        function isNull(arg) {
+          return arg === null;
+        }
+
+        function isNumber(arg) {
+          return typeof arg === 'number';
+        }
+
+        function isString(arg) {
+          return typeof arg === 'string';
+        }
+
+        function isUndefined(arg) {
+          return arg === void 0;
+        }
+
+        function isRegExp(re) {
+          return isObject(re) && objectToString(re) === '[object RegExp]';
+        }
+
+        function isObject(arg) {
+          return typeof arg === 'object' && arg !== null;
+        }
+
+        function isDate(d) {
+          return isObject(d) && objectToString(d) === '[object Date]';
+        }
+
+        function isError(e) {
+          return isObject(e) &&
+              (objectToString(e) === '[object Error]' || e instanceof Error);
+        }
+
+        function isFunction(arg) {
+          return typeof arg === 'function';
+        }
+
+        function objectToString(o) {
+          return Object.prototype.toString.call(o);
+        }
+
+        function _extend(origin, add) {
+          // Don't do anything if add isn't an object
+          if (!add || !isObject(add)) return origin;
+
+          var keys = Object.keys(add);
+          var i = keys.length;
+          while (i--) {
+            origin[keys[i]] = add[keys[i]];
+          }
+          return origin;
+        }
+        function hasOwnProperty(obj, prop) {
+          return Object.prototype.hasOwnProperty.call(obj, prop);
+        }
+
+        var INSPECT_MAX_BYTES = 50;
+
+        /**
+         * If `Buffer.TYPED_ARRAY_SUPPORT`:
+         *   === true    Use Uint8Array implementation (fastest)
+         *   === false   Use Object implementation (most compatible, even IE6)
+         *
+         * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+         * Opera 11.6+, iOS 4.2+.
+         *
+         * Due to various browser bugs, sometimes the Object implementation will be used even
+         * when the browser supports typed arrays.
+         *
+         * Note:
+         *
+         *   - Firefox 4-29 lacks support for adding new properties to `Uint8Array` instances,
+         *     See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
+         *
+         *   - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
+         *
+         *   - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
+         *     incorrect length in some situations.
+
+         * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they
+         * get the Object implementation, which is slower but behaves correctly.
+         */
+        Buffer.TYPED_ARRAY_SUPPORT = global$1$1.TYPED_ARRAY_SUPPORT !== undefined
+          ? global$1$1.TYPED_ARRAY_SUPPORT
+          : true;
+
+        function kMaxLength () {
+          return Buffer.TYPED_ARRAY_SUPPORT
+            ? 0x7fffffff
+            : 0x3fffffff
+        }
+
+        function createBuffer (that, length) {
+          if (kMaxLength() < length) {
+            throw new RangeError('Invalid typed array length')
+          }
+          if (Buffer.TYPED_ARRAY_SUPPORT) {
+            // Return an augmented `Uint8Array` instance, for best performance
+            that = new Uint8Array(length);
+            that.__proto__ = Buffer.prototype;
+          } else {
+            // Fallback: Return an object instance of the Buffer class
+            if (that === null) {
+              that = new Buffer(length);
+            }
+            that.length = length;
+          }
+
+          return that
+        }
+
+        /**
+         * The Buffer constructor returns instances of `Uint8Array` that have their
+         * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
+         * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+         * and the `Uint8Array` methods. Square bracket notation works as expected -- it
+         * returns a single octet.
+         *
+         * The `Uint8Array` prototype remains unmodified.
+         */
+
+        function Buffer (arg, encodingOrOffset, length) {
+          if (!Buffer.TYPED_ARRAY_SUPPORT && !(this instanceof Buffer)) {
+            return new Buffer(arg, encodingOrOffset, length)
+          }
+
+          // Common case.
+          if (typeof arg === 'number') {
+            if (typeof encodingOrOffset === 'string') {
+              throw new Error(
+                'If encoding is specified then the first argument must be a string'
+              )
+            }
+            return allocUnsafe(this, arg)
+          }
+          return from(this, arg, encodingOrOffset, length)
+        }
+
+        Buffer.poolSize = 8192; // not used by this implementation
+
+        // TODO: Legacy, not needed anymore. Remove in next major version.
+        Buffer._augment = function (arr) {
+          arr.__proto__ = Buffer.prototype;
+          return arr
+        };
+
+        function from (that, value, encodingOrOffset, length) {
+          if (typeof value === 'number') {
+            throw new TypeError('"value" argument must not be a number')
+          }
+
+          if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+            return fromArrayBuffer(that, value, encodingOrOffset, length)
+          }
+
+          if (typeof value === 'string') {
+            return fromString(that, value, encodingOrOffset)
+          }
+
+          return fromObject(that, value)
+        }
+
+        /**
+         * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
+         * if value is a number.
+         * Buffer.from(str[, encoding])
+         * Buffer.from(array)
+         * Buffer.from(buffer)
+         * Buffer.from(arrayBuffer[, byteOffset[, length]])
+         **/
+        Buffer.from = function (value, encodingOrOffset, length) {
+          return from(null, value, encodingOrOffset, length)
+        };
+
+        if (Buffer.TYPED_ARRAY_SUPPORT) {
+          Buffer.prototype.__proto__ = Uint8Array.prototype;
+          Buffer.__proto__ = Uint8Array;
+        }
+
+        function assertSize (size) {
+          if (typeof size !== 'number') {
+            throw new TypeError('"size" argument must be a number')
+          } else if (size < 0) {
+            throw new RangeError('"size" argument must not be negative')
+          }
+        }
+
+        function alloc (that, size, fill, encoding) {
+          assertSize(size);
+          if (size <= 0) {
+            return createBuffer(that, size)
+          }
+          if (fill !== undefined) {
+            // Only pay attention to encoding if it's a string. This
+            // prevents accidentally sending in a number that would
+            // be interpretted as a start offset.
+            return typeof encoding === 'string'
+              ? createBuffer(that, size).fill(fill, encoding)
+              : createBuffer(that, size).fill(fill)
+          }
+          return createBuffer(that, size)
+        }
+
+        /**
+         * Creates a new filled Buffer instance.
+         * alloc(size[, fill[, encoding]])
+         **/
+        Buffer.alloc = function (size, fill, encoding) {
+          return alloc(null, size, fill, encoding)
+        };
+
+        function allocUnsafe (that, size) {
+          assertSize(size);
+          that = createBuffer(that, size < 0 ? 0 : checked(size) | 0);
+          if (!Buffer.TYPED_ARRAY_SUPPORT) {
+            for (var i = 0; i < size; ++i) {
+              that[i] = 0;
+            }
+          }
+          return that
+        }
+
+        /**
+         * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
+         * */
+        Buffer.allocUnsafe = function (size) {
+          return allocUnsafe(null, size)
+        };
+        /**
+         * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
+         */
+        Buffer.allocUnsafeSlow = function (size) {
+          return allocUnsafe(null, size)
+        };
+
+        function fromString (that, string, encoding) {
+          if (typeof encoding !== 'string' || encoding === '') {
+            encoding = 'utf8';
+          }
+
+          if (!Buffer.isEncoding(encoding)) {
+            throw new TypeError('"encoding" must be a valid string encoding')
+          }
+
+          var length = byteLength(string, encoding) | 0;
+          that = createBuffer(that, length);
+
+          var actual = that.write(string, encoding);
+
+          if (actual !== length) {
+            // Writing a hex string, for example, that contains invalid characters will
+            // cause everything after the first invalid character to be ignored. (e.g.
+            // 'abxxcd' will be treated as 'ab')
+            that = that.slice(0, actual);
+          }
+
+          return that
+        }
+
+        function fromArrayLike (that, array) {
+          var length = array.length < 0 ? 0 : checked(array.length) | 0;
+          that = createBuffer(that, length);
+          for (var i = 0; i < length; i += 1) {
+            that[i] = array[i] & 255;
+          }
+          return that
+        }
+
+        function fromArrayBuffer (that, array, byteOffset, length) {
+          array.byteLength; // this throws if `array` is not a valid ArrayBuffer
+
+          if (byteOffset < 0 || array.byteLength < byteOffset) {
+            throw new RangeError('\'offset\' is out of bounds')
+          }
+
+          if (array.byteLength < byteOffset + (length || 0)) {
+            throw new RangeError('\'length\' is out of bounds')
+          }
+
+          if (byteOffset === undefined && length === undefined) {
+            array = new Uint8Array(array);
+          } else if (length === undefined) {
+            array = new Uint8Array(array, byteOffset);
+          } else {
+            array = new Uint8Array(array, byteOffset, length);
+          }
+
+          if (Buffer.TYPED_ARRAY_SUPPORT) {
+            // Return an augmented `Uint8Array` instance, for best performance
+            that = array;
+            that.__proto__ = Buffer.prototype;
+          } else {
+            // Fallback: Return an object instance of the Buffer class
+            that = fromArrayLike(that, array);
+          }
+          return that
+        }
+
+        function fromObject (that, obj) {
+          if (internalIsBuffer(obj)) {
+            var len = checked(obj.length) | 0;
+            that = createBuffer(that, len);
+
+            if (that.length === 0) {
+              return that
+            }
+
+            obj.copy(that, 0, 0, len);
+            return that
+          }
+
+          if (obj) {
+            if ((typeof ArrayBuffer !== 'undefined' &&
+                obj.buffer instanceof ArrayBuffer) || 'length' in obj) {
+              if (typeof obj.length !== 'number' || isnan(obj.length)) {
+                return createBuffer(that, 0)
+              }
+              return fromArrayLike(that, obj)
+            }
+
+            if (obj.type === 'Buffer' && isArray$1(obj.data)) {
+              return fromArrayLike(that, obj.data)
+            }
+          }
+
+          throw new TypeError('First argument must be a string, Buffer, ArrayBuffer, Array, or array-like object.')
+        }
+
+        function checked (length) {
+          // Note: cannot use `length < kMaxLength()` here because that fails when
+          // length is NaN (which is otherwise coerced to zero.)
+          if (length >= kMaxLength()) {
+            throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+                                 'size: 0x' + kMaxLength().toString(16) + ' bytes')
+          }
+          return length | 0
+        }
+        Buffer.isBuffer = isBuffer;
+        function internalIsBuffer (b) {
+          return !!(b != null && b._isBuffer)
+        }
+
+        Buffer.compare = function compare (a, b) {
+          if (!internalIsBuffer(a) || !internalIsBuffer(b)) {
+            throw new TypeError('Arguments must be Buffers')
+          }
+
+          if (a === b) return 0
+
+          var x = a.length;
+          var y = b.length;
+
+          for (var i = 0, len = Math.min(x, y); i < len; ++i) {
+            if (a[i] !== b[i]) {
+              x = a[i];
+              y = b[i];
+              break
+            }
+          }
+
+          if (x < y) return -1
+          if (y < x) return 1
+          return 0
+        };
+
+        Buffer.isEncoding = function isEncoding (encoding) {
+          switch (String(encoding).toLowerCase()) {
+            case 'hex':
+            case 'utf8':
+            case 'utf-8':
+            case 'ascii':
+            case 'latin1':
+            case 'binary':
+            case 'base64':
+            case 'ucs2':
+            case 'ucs-2':
+            case 'utf16le':
+            case 'utf-16le':
+              return true
+            default:
+              return false
+          }
+        };
+
+        Buffer.concat = function concat (list, length) {
+          if (!isArray$1(list)) {
+            throw new TypeError('"list" argument must be an Array of Buffers')
+          }
+
+          if (list.length === 0) {
+            return Buffer.alloc(0)
+          }
+
+          var i;
+          if (length === undefined) {
+            length = 0;
+            for (i = 0; i < list.length; ++i) {
+              length += list[i].length;
+            }
+          }
+
+          var buffer = Buffer.allocUnsafe(length);
+          var pos = 0;
+          for (i = 0; i < list.length; ++i) {
+            var buf = list[i];
+            if (!internalIsBuffer(buf)) {
+              throw new TypeError('"list" argument must be an Array of Buffers')
+            }
+            buf.copy(buffer, pos);
+            pos += buf.length;
+          }
+          return buffer
+        };
+
+        function byteLength (string, encoding) {
+          if (internalIsBuffer(string)) {
+            return string.length
+          }
+          if (typeof ArrayBuffer !== 'undefined' && typeof ArrayBuffer.isView === 'function' &&
+              (ArrayBuffer.isView(string) || string instanceof ArrayBuffer)) {
+            return string.byteLength
+          }
+          if (typeof string !== 'string') {
+            string = '' + string;
+          }
+
+          var len = string.length;
+          if (len === 0) return 0
+
+          // Use a for loop to avoid recursion
+          var loweredCase = false;
+          for (;;) {
+            switch (encoding) {
+              case 'ascii':
+              case 'latin1':
+              case 'binary':
+                return len
+              case 'utf8':
+              case 'utf-8':
+              case undefined:
+                return utf8ToBytes(string).length
+              case 'ucs2':
+              case 'ucs-2':
+              case 'utf16le':
+              case 'utf-16le':
+                return len * 2
+              case 'hex':
+                return len >>> 1
+              case 'base64':
+                return base64ToBytes(string).length
+              default:
+                if (loweredCase) return utf8ToBytes(string).length // assume utf8
+                encoding = ('' + encoding).toLowerCase();
+                loweredCase = true;
+            }
+          }
+        }
+        Buffer.byteLength = byteLength;
+
+        function slowToString (encoding, start, end) {
+          var loweredCase = false;
+
+          // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
+          // property of a typed array.
+
+          // This behaves neither like String nor Uint8Array in that we set start/end
+          // to their upper/lower bounds if the value passed is out of range.
+          // undefined is handled specially as per ECMA-262 6th Edition,
+          // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
+          if (start === undefined || start < 0) {
+            start = 0;
+          }
+          // Return early if start > this.length. Done here to prevent potential uint32
+          // coercion fail below.
+          if (start > this.length) {
+            return ''
+          }
+
+          if (end === undefined || end > this.length) {
+            end = this.length;
+          }
+
+          if (end <= 0) {
+            return ''
+          }
+
+          // Force coersion to uint32. This will also coerce falsey/NaN values to 0.
+          end >>>= 0;
+          start >>>= 0;
+
+          if (end <= start) {
+            return ''
+          }
+
+          if (!encoding) encoding = 'utf8';
+
+          while (true) {
+            switch (encoding) {
+              case 'hex':
+                return hexSlice(this, start, end)
+
+              case 'utf8':
+              case 'utf-8':
+                return utf8Slice(this, start, end)
+
+              case 'ascii':
+                return asciiSlice(this, start, end)
+
+              case 'latin1':
+              case 'binary':
+                return latin1Slice(this, start, end)
+
+              case 'base64':
+                return base64Slice(this, start, end)
+
+              case 'ucs2':
+              case 'ucs-2':
+              case 'utf16le':
+              case 'utf-16le':
+                return utf16leSlice(this, start, end)
+
+              default:
+                if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+                encoding = (encoding + '').toLowerCase();
+                loweredCase = true;
+            }
+          }
+        }
+
+        // The property is used by `Buffer.isBuffer` and `is-buffer` (in Safari 5-7) to detect
+        // Buffer instances.
+        Buffer.prototype._isBuffer = true;
+
+        function swap (b, n, m) {
+          var i = b[n];
+          b[n] = b[m];
+          b[m] = i;
+        }
+
+        Buffer.prototype.swap16 = function swap16 () {
+          var len = this.length;
+          if (len % 2 !== 0) {
+            throw new RangeError('Buffer size must be a multiple of 16-bits')
+          }
+          for (var i = 0; i < len; i += 2) {
+            swap(this, i, i + 1);
+          }
+          return this
+        };
+
+        Buffer.prototype.swap32 = function swap32 () {
+          var len = this.length;
+          if (len % 4 !== 0) {
+            throw new RangeError('Buffer size must be a multiple of 32-bits')
+          }
+          for (var i = 0; i < len; i += 4) {
+            swap(this, i, i + 3);
+            swap(this, i + 1, i + 2);
+          }
+          return this
+        };
+
+        Buffer.prototype.swap64 = function swap64 () {
+          var len = this.length;
+          if (len % 8 !== 0) {
+            throw new RangeError('Buffer size must be a multiple of 64-bits')
+          }
+          for (var i = 0; i < len; i += 8) {
+            swap(this, i, i + 7);
+            swap(this, i + 1, i + 6);
+            swap(this, i + 2, i + 5);
+            swap(this, i + 3, i + 4);
+          }
+          return this
+        };
+
+        Buffer.prototype.toString = function toString () {
+          var length = this.length | 0;
+          if (length === 0) return ''
+          if (arguments.length === 0) return utf8Slice(this, 0, length)
+          return slowToString.apply(this, arguments)
+        };
+
+        Buffer.prototype.equals = function equals (b) {
+          if (!internalIsBuffer(b)) throw new TypeError('Argument must be a Buffer')
+          if (this === b) return true
+          return Buffer.compare(this, b) === 0
+        };
+
+        Buffer.prototype.inspect = function inspect () {
+          var str = '';
+          var max = INSPECT_MAX_BYTES;
+          if (this.length > 0) {
+            str = this.toString('hex', 0, max).match(/.{2}/g).join(' ');
+            if (this.length > max) str += ' ... ';
+          }
+          return '<Buffer ' + str + '>'
+        };
+
+        Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
+          if (!internalIsBuffer(target)) {
+            throw new TypeError('Argument must be a Buffer')
+          }
+
+          if (start === undefined) {
+            start = 0;
+          }
+          if (end === undefined) {
+            end = target ? target.length : 0;
+          }
+          if (thisStart === undefined) {
+            thisStart = 0;
+          }
+          if (thisEnd === undefined) {
+            thisEnd = this.length;
+          }
+
+          if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
+            throw new RangeError('out of range index')
+          }
+
+          if (thisStart >= thisEnd && start >= end) {
+            return 0
+          }
+          if (thisStart >= thisEnd) {
+            return -1
+          }
+          if (start >= end) {
+            return 1
+          }
+
+          start >>>= 0;
+          end >>>= 0;
+          thisStart >>>= 0;
+          thisEnd >>>= 0;
+
+          if (this === target) return 0
+
+          var x = thisEnd - thisStart;
+          var y = end - start;
+          var len = Math.min(x, y);
+
+          var thisCopy = this.slice(thisStart, thisEnd);
+          var targetCopy = target.slice(start, end);
+
+          for (var i = 0; i < len; ++i) {
+            if (thisCopy[i] !== targetCopy[i]) {
+              x = thisCopy[i];
+              y = targetCopy[i];
+              break
+            }
+          }
+
+          if (x < y) return -1
+          if (y < x) return 1
+          return 0
+        };
+
+        // Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
+        // OR the last index of `val` in `buffer` at offset <= `byteOffset`.
+        //
+        // Arguments:
+        // - buffer - a Buffer to search
+        // - val - a string, Buffer, or number
+        // - byteOffset - an index into `buffer`; will be clamped to an int32
+        // - encoding - an optional encoding, relevant is val is a string
+        // - dir - true for indexOf, false for lastIndexOf
+        function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
+          // Empty buffer means no match
+          if (buffer.length === 0) return -1
+
+          // Normalize byteOffset
+          if (typeof byteOffset === 'string') {
+            encoding = byteOffset;
+            byteOffset = 0;
+          } else if (byteOffset > 0x7fffffff) {
+            byteOffset = 0x7fffffff;
+          } else if (byteOffset < -0x80000000) {
+            byteOffset = -0x80000000;
+          }
+          byteOffset = +byteOffset;  // Coerce to Number.
+          if (isNaN(byteOffset)) {
+            // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
+            byteOffset = dir ? 0 : (buffer.length - 1);
+          }
+
+          // Normalize byteOffset: negative offsets start from the end of the buffer
+          if (byteOffset < 0) byteOffset = buffer.length + byteOffset;
+          if (byteOffset >= buffer.length) {
+            if (dir) return -1
+            else byteOffset = buffer.length - 1;
+          } else if (byteOffset < 0) {
+            if (dir) byteOffset = 0;
+            else return -1
+          }
+
+          // Normalize val
+          if (typeof val === 'string') {
+            val = Buffer.from(val, encoding);
+          }
+
+          // Finally, search either indexOf (if dir is true) or lastIndexOf
+          if (internalIsBuffer(val)) {
+            // Special case: looking for empty string/buffer always fails
+            if (val.length === 0) {
+              return -1
+            }
+            return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
+          } else if (typeof val === 'number') {
+            val = val & 0xFF; // Search for a byte value [0-255]
+            if (Buffer.TYPED_ARRAY_SUPPORT &&
+                typeof Uint8Array.prototype.indexOf === 'function') {
+              if (dir) {
+                return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
+              } else {
+                return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
+              }
+            }
+            return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
+          }
+
+          throw new TypeError('val must be string, number or Buffer')
+        }
+
+        function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
+          var indexSize = 1;
+          var arrLength = arr.length;
+          var valLength = val.length;
+
+          if (encoding !== undefined) {
+            encoding = String(encoding).toLowerCase();
+            if (encoding === 'ucs2' || encoding === 'ucs-2' ||
+                encoding === 'utf16le' || encoding === 'utf-16le') {
+              if (arr.length < 2 || val.length < 2) {
+                return -1
+              }
+              indexSize = 2;
+              arrLength /= 2;
+              valLength /= 2;
+              byteOffset /= 2;
+            }
+          }
+
+          function read (buf, i) {
+            if (indexSize === 1) {
+              return buf[i]
+            } else {
+              return buf.readUInt16BE(i * indexSize)
+            }
+          }
+
+          var i;
+          if (dir) {
+            var foundIndex = -1;
+            for (i = byteOffset; i < arrLength; i++) {
+              if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+                if (foundIndex === -1) foundIndex = i;
+                if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
+              } else {
+                if (foundIndex !== -1) i -= i - foundIndex;
+                foundIndex = -1;
+              }
+            }
+          } else {
+            if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength;
+            for (i = byteOffset; i >= 0; i--) {
+              var found = true;
+              for (var j = 0; j < valLength; j++) {
+                if (read(arr, i + j) !== read(val, j)) {
+                  found = false;
+                  break
+                }
+              }
+              if (found) return i
+            }
+          }
+
+          return -1
+        }
+
+        Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
+          return this.indexOf(val, byteOffset, encoding) !== -1
+        };
+
+        Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
+          return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
+        };
+
+        Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
+          return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
+        };
+
+        function hexWrite (buf, string, offset, length) {
+          offset = Number(offset) || 0;
+          var remaining = buf.length - offset;
+          if (!length) {
+            length = remaining;
+          } else {
+            length = Number(length);
+            if (length > remaining) {
+              length = remaining;
+            }
+          }
+
+          // must be an even number of digits
+          var strLen = string.length;
+          if (strLen % 2 !== 0) throw new TypeError('Invalid hex string')
+
+          if (length > strLen / 2) {
+            length = strLen / 2;
+          }
+          for (var i = 0; i < length; ++i) {
+            var parsed = parseInt(string.substr(i * 2, 2), 16);
+            if (isNaN(parsed)) return i
+            buf[offset + i] = parsed;
+          }
+          return i
+        }
+
+        function utf8Write (buf, string, offset, length) {
+          return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
+        }
+
+        function asciiWrite (buf, string, offset, length) {
+          return blitBuffer(asciiToBytes(string), buf, offset, length)
+        }
+
+        function latin1Write (buf, string, offset, length) {
+          return asciiWrite(buf, string, offset, length)
+        }
+
+        function base64Write (buf, string, offset, length) {
+          return blitBuffer(base64ToBytes(string), buf, offset, length)
+        }
+
+        function ucs2Write (buf, string, offset, length) {
+          return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
+        }
+
+        Buffer.prototype.write = function write (string, offset, length, encoding) {
+          // Buffer#write(string)
+          if (offset === undefined) {
+            encoding = 'utf8';
+            length = this.length;
+            offset = 0;
+          // Buffer#write(string, encoding)
+          } else if (length === undefined && typeof offset === 'string') {
+            encoding = offset;
+            length = this.length;
+            offset = 0;
+          // Buffer#write(string, offset[, length][, encoding])
+          } else if (isFinite(offset)) {
+            offset = offset | 0;
+            if (isFinite(length)) {
+              length = length | 0;
+              if (encoding === undefined) encoding = 'utf8';
+            } else {
+              encoding = length;
+              length = undefined;
+            }
+          // legacy write(string, encoding, offset, length) - remove in v0.13
+          } else {
+            throw new Error(
+              'Buffer.write(string, encoding, offset[, length]) is no longer supported'
+            )
+          }
+
+          var remaining = this.length - offset;
+          if (length === undefined || length > remaining) length = remaining;
+
+          if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
+            throw new RangeError('Attempt to write outside buffer bounds')
+          }
+
+          if (!encoding) encoding = 'utf8';
+
+          var loweredCase = false;
+          for (;;) {
+            switch (encoding) {
+              case 'hex':
+                return hexWrite(this, string, offset, length)
+
+              case 'utf8':
+              case 'utf-8':
+                return utf8Write(this, string, offset, length)
+
+              case 'ascii':
+                return asciiWrite(this, string, offset, length)
+
+              case 'latin1':
+              case 'binary':
+                return latin1Write(this, string, offset, length)
+
+              case 'base64':
+                // Warning: maxLength not taken into account in base64Write
+                return base64Write(this, string, offset, length)
+
+              case 'ucs2':
+              case 'ucs-2':
+              case 'utf16le':
+              case 'utf-16le':
+                return ucs2Write(this, string, offset, length)
+
+              default:
+                if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+                encoding = ('' + encoding).toLowerCase();
+                loweredCase = true;
+            }
+          }
+        };
+
+        Buffer.prototype.toJSON = function toJSON () {
+          return {
+            type: 'Buffer',
+            data: Array.prototype.slice.call(this._arr || this, 0)
+          }
+        };
+
+        function base64Slice (buf, start, end) {
+          if (start === 0 && end === buf.length) {
+            return fromByteArray(buf)
+          } else {
+            return fromByteArray(buf.slice(start, end))
+          }
+        }
+
+        function utf8Slice (buf, start, end) {
+          end = Math.min(buf.length, end);
+          var res = [];
+
+          var i = start;
+          while (i < end) {
+            var firstByte = buf[i];
+            var codePoint = null;
+            var bytesPerSequence = (firstByte > 0xEF) ? 4
+              : (firstByte > 0xDF) ? 3
+              : (firstByte > 0xBF) ? 2
+              : 1;
+
+            if (i + bytesPerSequence <= end) {
+              var secondByte, thirdByte, fourthByte, tempCodePoint;
+
+              switch (bytesPerSequence) {
+                case 1:
+                  if (firstByte < 0x80) {
+                    codePoint = firstByte;
+                  }
+                  break
+                case 2:
+                  secondByte = buf[i + 1];
+                  if ((secondByte & 0xC0) === 0x80) {
+                    tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F);
+                    if (tempCodePoint > 0x7F) {
+                      codePoint = tempCodePoint;
+                    }
+                  }
+                  break
+                case 3:
+                  secondByte = buf[i + 1];
+                  thirdByte = buf[i + 2];
+                  if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+                    tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F);
+                    if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+                      codePoint = tempCodePoint;
+                    }
+                  }
+                  break
+                case 4:
+                  secondByte = buf[i + 1];
+                  thirdByte = buf[i + 2];
+                  fourthByte = buf[i + 3];
+                  if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+                    tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F);
+                    if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+                      codePoint = tempCodePoint;
+                    }
+                  }
+              }
+            }
+
+            if (codePoint === null) {
+              // we did not generate a valid codePoint so insert a
+              // replacement char (U+FFFD) and advance only 1 byte
+              codePoint = 0xFFFD;
+              bytesPerSequence = 1;
+            } else if (codePoint > 0xFFFF) {
+              // encode to utf16 (surrogate pair dance)
+              codePoint -= 0x10000;
+              res.push(codePoint >>> 10 & 0x3FF | 0xD800);
+              codePoint = 0xDC00 | codePoint & 0x3FF;
+            }
+
+            res.push(codePoint);
+            i += bytesPerSequence;
+          }
+
+          return decodeCodePointsArray(res)
+        }
+
+        // Based on http://stackoverflow.com/a/22747272/680742, the browser with
+        // the lowest limit is Chrome, with 0x10000 args.
+        // We go 1 magnitude less, for safety
+        var MAX_ARGUMENTS_LENGTH = 0x1000;
+
+        function decodeCodePointsArray (codePoints) {
+          var len = codePoints.length;
+          if (len <= MAX_ARGUMENTS_LENGTH) {
+            return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
+          }
+
+          // Decode in chunks to avoid "call stack size exceeded".
+          var res = '';
+          var i = 0;
+          while (i < len) {
+            res += String.fromCharCode.apply(
+              String,
+              codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
+            );
+          }
+          return res
+        }
+
+        function asciiSlice (buf, start, end) {
+          var ret = '';
+          end = Math.min(buf.length, end);
+
+          for (var i = start; i < end; ++i) {
+            ret += String.fromCharCode(buf[i] & 0x7F);
+          }
+          return ret
+        }
+
+        function latin1Slice (buf, start, end) {
+          var ret = '';
+          end = Math.min(buf.length, end);
+
+          for (var i = start; i < end; ++i) {
+            ret += String.fromCharCode(buf[i]);
+          }
+          return ret
+        }
+
+        function hexSlice (buf, start, end) {
+          var len = buf.length;
+
+          if (!start || start < 0) start = 0;
+          if (!end || end < 0 || end > len) end = len;
+
+          var out = '';
+          for (var i = start; i < end; ++i) {
+            out += toHex(buf[i]);
+          }
+          return out
+        }
+
+        function utf16leSlice (buf, start, end) {
+          var bytes = buf.slice(start, end);
+          var res = '';
+          for (var i = 0; i < bytes.length; i += 2) {
+            res += String.fromCharCode(bytes[i] + bytes[i + 1] * 256);
+          }
+          return res
+        }
+
+        Buffer.prototype.slice = function slice (start, end) {
+          var len = this.length;
+          start = ~~start;
+          end = end === undefined ? len : ~~end;
+
+          if (start < 0) {
+            start += len;
+            if (start < 0) start = 0;
+          } else if (start > len) {
+            start = len;
+          }
+
+          if (end < 0) {
+            end += len;
+            if (end < 0) end = 0;
+          } else if (end > len) {
+            end = len;
+          }
+
+          if (end < start) end = start;
+
+          var newBuf;
+          if (Buffer.TYPED_ARRAY_SUPPORT) {
+            newBuf = this.subarray(start, end);
+            newBuf.__proto__ = Buffer.prototype;
+          } else {
+            var sliceLen = end - start;
+            newBuf = new Buffer(sliceLen, undefined);
+            for (var i = 0; i < sliceLen; ++i) {
+              newBuf[i] = this[i + start];
+            }
+          }
+
+          return newBuf
+        };
+
+        /*
+         * Need to make sure that buffer isn't trying to write out of bounds.
+         */
+        function checkOffset (offset, ext, length) {
+          if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+          if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
+        }
+
+        Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+          offset = offset | 0;
+          byteLength = byteLength | 0;
+          if (!noAssert) checkOffset(offset, byteLength, this.length);
+
+          var val = this[offset];
+          var mul = 1;
+          var i = 0;
+          while (++i < byteLength && (mul *= 0x100)) {
+            val += this[offset + i] * mul;
+          }
+
+          return val
+        };
+
+        Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+          offset = offset | 0;
+          byteLength = byteLength | 0;
+          if (!noAssert) {
+            checkOffset(offset, byteLength, this.length);
+          }
+
+          var val = this[offset + --byteLength];
+          var mul = 1;
+          while (byteLength > 0 && (mul *= 0x100)) {
+            val += this[offset + --byteLength] * mul;
+          }
+
+          return val
+        };
+
+        Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 1, this.length);
+          return this[offset]
+        };
+
+        Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 2, this.length);
+          return this[offset] | (this[offset + 1] << 8)
+        };
+
+        Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 2, this.length);
+          return (this[offset] << 8) | this[offset + 1]
+        };
+
+        Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 4, this.length);
+
+          return ((this[offset]) |
+              (this[offset + 1] << 8) |
+              (this[offset + 2] << 16)) +
+              (this[offset + 3] * 0x1000000)
+        };
+
+        Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 4, this.length);
+
+          return (this[offset] * 0x1000000) +
+            ((this[offset + 1] << 16) |
+            (this[offset + 2] << 8) |
+            this[offset + 3])
+        };
+
+        Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+          offset = offset | 0;
+          byteLength = byteLength | 0;
+          if (!noAssert) checkOffset(offset, byteLength, this.length);
+
+          var val = this[offset];
+          var mul = 1;
+          var i = 0;
+          while (++i < byteLength && (mul *= 0x100)) {
+            val += this[offset + i] * mul;
+          }
+          mul *= 0x80;
+
+          if (val >= mul) val -= Math.pow(2, 8 * byteLength);
+
+          return val
+        };
+
+        Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+          offset = offset | 0;
+          byteLength = byteLength | 0;
+          if (!noAssert) checkOffset(offset, byteLength, this.length);
+
+          var i = byteLength;
+          var mul = 1;
+          var val = this[offset + --i];
+          while (i > 0 && (mul *= 0x100)) {
+            val += this[offset + --i] * mul;
+          }
+          mul *= 0x80;
+
+          if (val >= mul) val -= Math.pow(2, 8 * byteLength);
+
+          return val
+        };
+
+        Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 1, this.length);
+          if (!(this[offset] & 0x80)) return (this[offset])
+          return ((0xff - this[offset] + 1) * -1)
+        };
+
+        Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 2, this.length);
+          var val = this[offset] | (this[offset + 1] << 8);
+          return (val & 0x8000) ? val | 0xFFFF0000 : val
+        };
+
+        Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 2, this.length);
+          var val = this[offset + 1] | (this[offset] << 8);
+          return (val & 0x8000) ? val | 0xFFFF0000 : val
+        };
+
+        Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 4, this.length);
+
+          return (this[offset]) |
+            (this[offset + 1] << 8) |
+            (this[offset + 2] << 16) |
+            (this[offset + 3] << 24)
+        };
+
+        Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 4, this.length);
+
+          return (this[offset] << 24) |
+            (this[offset + 1] << 16) |
+            (this[offset + 2] << 8) |
+            (this[offset + 3])
+        };
+
+        Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 4, this.length);
+          return read(this, offset, true, 23, 4)
+        };
+
+        Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 4, this.length);
+          return read(this, offset, false, 23, 4)
+        };
+
+        Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 8, this.length);
+          return read(this, offset, true, 52, 8)
+        };
+
+        Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+          if (!noAssert) checkOffset(offset, 8, this.length);
+          return read(this, offset, false, 52, 8)
+        };
+
+        function checkInt (buf, value, offset, ext, max, min) {
+          if (!internalIsBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
+          if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
+          if (offset + ext > buf.length) throw new RangeError('Index out of range')
+        }
+
+        Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          byteLength = byteLength | 0;
+          if (!noAssert) {
+            var maxBytes = Math.pow(2, 8 * byteLength) - 1;
+            checkInt(this, value, offset, byteLength, maxBytes, 0);
+          }
+
+          var mul = 1;
+          var i = 0;
+          this[offset] = value & 0xFF;
+          while (++i < byteLength && (mul *= 0x100)) {
+            this[offset + i] = (value / mul) & 0xFF;
+          }
+
+          return offset + byteLength
+        };
+
+        Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          byteLength = byteLength | 0;
+          if (!noAssert) {
+            var maxBytes = Math.pow(2, 8 * byteLength) - 1;
+            checkInt(this, value, offset, byteLength, maxBytes, 0);
+          }
+
+          var i = byteLength - 1;
+          var mul = 1;
+          this[offset + i] = value & 0xFF;
+          while (--i >= 0 && (mul *= 0x100)) {
+            this[offset + i] = (value / mul) & 0xFF;
+          }
+
+          return offset + byteLength
+        };
+
+        Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0);
+          if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value);
+          this[offset] = (value & 0xff);
+          return offset + 1
+        };
+
+        function objectWriteUInt16 (buf, value, offset, littleEndian) {
+          if (value < 0) value = 0xffff + value + 1;
+          for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; ++i) {
+            buf[offset + i] = (value & (0xff << (8 * (littleEndian ? i : 1 - i)))) >>>
+              (littleEndian ? i : 1 - i) * 8;
+          }
+        }
+
+        Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0);
+          if (Buffer.TYPED_ARRAY_SUPPORT) {
+            this[offset] = (value & 0xff);
+            this[offset + 1] = (value >>> 8);
+          } else {
+            objectWriteUInt16(this, value, offset, true);
+          }
+          return offset + 2
+        };
+
+        Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0);
+          if (Buffer.TYPED_ARRAY_SUPPORT) {
+            this[offset] = (value >>> 8);
+            this[offset + 1] = (value & 0xff);
+          } else {
+            objectWriteUInt16(this, value, offset, false);
+          }
+          return offset + 2
+        };
+
+        function objectWriteUInt32 (buf, value, offset, littleEndian) {
+          if (value < 0) value = 0xffffffff + value + 1;
+          for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; ++i) {
+            buf[offset + i] = (value >>> (littleEndian ? i : 3 - i) * 8) & 0xff;
+          }
+        }
+
+        Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0);
+          if (Buffer.TYPED_ARRAY_SUPPORT) {
+            this[offset + 3] = (value >>> 24);
+            this[offset + 2] = (value >>> 16);
+            this[offset + 1] = (value >>> 8);
+            this[offset] = (value & 0xff);
+          } else {
+            objectWriteUInt32(this, value, offset, true);
+          }
+          return offset + 4
+        };
+
+        Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0);
+          if (Buffer.TYPED_ARRAY_SUPPORT) {
+            this[offset] = (value >>> 24);
+            this[offset + 1] = (value >>> 16);
+            this[offset + 2] = (value >>> 8);
+            this[offset + 3] = (value & 0xff);
+          } else {
+            objectWriteUInt32(this, value, offset, false);
+          }
+          return offset + 4
+        };
+
+        Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          if (!noAssert) {
+            var limit = Math.pow(2, 8 * byteLength - 1);
+
+            checkInt(this, value, offset, byteLength, limit - 1, -limit);
+          }
+
+          var i = 0;
+          var mul = 1;
+          var sub = 0;
+          this[offset] = value & 0xFF;
+          while (++i < byteLength && (mul *= 0x100)) {
+            if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
+              sub = 1;
+            }
+            this[offset + i] = ((value / mul) >> 0) - sub & 0xFF;
+          }
+
+          return offset + byteLength
+        };
+
+        Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          if (!noAssert) {
+            var limit = Math.pow(2, 8 * byteLength - 1);
+
+            checkInt(this, value, offset, byteLength, limit - 1, -limit);
+          }
+
+          var i = byteLength - 1;
+          var mul = 1;
+          var sub = 0;
+          this[offset + i] = value & 0xFF;
+          while (--i >= 0 && (mul *= 0x100)) {
+            if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
+              sub = 1;
+            }
+            this[offset + i] = ((value / mul) >> 0) - sub & 0xFF;
+          }
+
+          return offset + byteLength
+        };
+
+        Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80);
+          if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value);
+          if (value < 0) value = 0xff + value + 1;
+          this[offset] = (value & 0xff);
+          return offset + 1
+        };
+
+        Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000);
+          if (Buffer.TYPED_ARRAY_SUPPORT) {
+            this[offset] = (value & 0xff);
+            this[offset + 1] = (value >>> 8);
+          } else {
+            objectWriteUInt16(this, value, offset, true);
+          }
+          return offset + 2
+        };
+
+        Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000);
+          if (Buffer.TYPED_ARRAY_SUPPORT) {
+            this[offset] = (value >>> 8);
+            this[offset + 1] = (value & 0xff);
+          } else {
+            objectWriteUInt16(this, value, offset, false);
+          }
+          return offset + 2
+        };
+
+        Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000);
+          if (Buffer.TYPED_ARRAY_SUPPORT) {
+            this[offset] = (value & 0xff);
+            this[offset + 1] = (value >>> 8);
+            this[offset + 2] = (value >>> 16);
+            this[offset + 3] = (value >>> 24);
+          } else {
+            objectWriteUInt32(this, value, offset, true);
+          }
+          return offset + 4
+        };
+
+        Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+          value = +value;
+          offset = offset | 0;
+          if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000);
+          if (value < 0) value = 0xffffffff + value + 1;
+          if (Buffer.TYPED_ARRAY_SUPPORT) {
+            this[offset] = (value >>> 24);
+            this[offset + 1] = (value >>> 16);
+            this[offset + 2] = (value >>> 8);
+            this[offset + 3] = (value & 0xff);
+          } else {
+            objectWriteUInt32(this, value, offset, false);
+          }
+          return offset + 4
+        };
+
+        function checkIEEE754 (buf, value, offset, ext, max, min) {
+          if (offset + ext > buf.length) throw new RangeError('Index out of range')
+          if (offset < 0) throw new RangeError('Index out of range')
+        }
+
+        function writeFloat (buf, value, offset, littleEndian, noAssert) {
+          if (!noAssert) {
+            checkIEEE754(buf, value, offset, 4);
+          }
+          write(buf, value, offset, littleEndian, 23, 4);
+          return offset + 4
+        }
+
+        Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+          return writeFloat(this, value, offset, true, noAssert)
+        };
+
+        Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+          return writeFloat(this, value, offset, false, noAssert)
+        };
+
+        function writeDouble (buf, value, offset, littleEndian, noAssert) {
+          if (!noAssert) {
+            checkIEEE754(buf, value, offset, 8);
+          }
+          write(buf, value, offset, littleEndian, 52, 8);
+          return offset + 8
+        }
+
+        Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+          return writeDouble(this, value, offset, true, noAssert)
+        };
+
+        Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+          return writeDouble(this, value, offset, false, noAssert)
+        };
+
+        // copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+        Buffer.prototype.copy = function copy (target, targetStart, start, end) {
+          if (!start) start = 0;
+          if (!end && end !== 0) end = this.length;
+          if (targetStart >= target.length) targetStart = target.length;
+          if (!targetStart) targetStart = 0;
+          if (end > 0 && end < start) end = start;
+
+          // Copy 0 bytes; we're done
+          if (end === start) return 0
+          if (target.length === 0 || this.length === 0) return 0
+
+          // Fatal error conditions
+          if (targetStart < 0) {
+            throw new RangeError('targetStart out of bounds')
+          }
+          if (start < 0 || start >= this.length) throw new RangeError('sourceStart out of bounds')
+          if (end < 0) throw new RangeError('sourceEnd out of bounds')
+
+          // Are we oob?
+          if (end > this.length) end = this.length;
+          if (target.length - targetStart < end - start) {
+            end = target.length - targetStart + start;
+          }
+
+          var len = end - start;
+          var i;
+
+          if (this === target && start < targetStart && targetStart < end) {
+            // descending copy from end
+            for (i = len - 1; i >= 0; --i) {
+              target[i + targetStart] = this[i + start];
+            }
+          } else if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
+            // ascending copy from start
+            for (i = 0; i < len; ++i) {
+              target[i + targetStart] = this[i + start];
+            }
+          } else {
+            Uint8Array.prototype.set.call(
+              target,
+              this.subarray(start, start + len),
+              targetStart
+            );
+          }
+
+          return len
+        };
+
+        // Usage:
+        //    buffer.fill(number[, offset[, end]])
+        //    buffer.fill(buffer[, offset[, end]])
+        //    buffer.fill(string[, offset[, end]][, encoding])
+        Buffer.prototype.fill = function fill (val, start, end, encoding) {
+          // Handle string cases:
+          if (typeof val === 'string') {
+            if (typeof start === 'string') {
+              encoding = start;
+              start = 0;
+              end = this.length;
+            } else if (typeof end === 'string') {
+              encoding = end;
+              end = this.length;
+            }
+            if (val.length === 1) {
+              var code = val.charCodeAt(0);
+              if (code < 256) {
+                val = code;
+              }
+            }
+            if (encoding !== undefined && typeof encoding !== 'string') {
+              throw new TypeError('encoding must be a string')
+            }
+            if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
+              throw new TypeError('Unknown encoding: ' + encoding)
+            }
+          } else if (typeof val === 'number') {
+            val = val & 255;
+          }
+
+          // Invalid ranges are not set to a default, so can range check early.
+          if (start < 0 || this.length < start || this.length < end) {
+            throw new RangeError('Out of range index')
+          }
+
+          if (end <= start) {
+            return this
+          }
+
+          start = start >>> 0;
+          end = end === undefined ? this.length : end >>> 0;
+
+          if (!val) val = 0;
+
+          var i;
+          if (typeof val === 'number') {
+            for (i = start; i < end; ++i) {
+              this[i] = val;
+            }
+          } else {
+            var bytes = internalIsBuffer(val)
+              ? val
+              : utf8ToBytes(new Buffer(val, encoding).toString());
+            var len = bytes.length;
+            for (i = 0; i < end - start; ++i) {
+              this[i + start] = bytes[i % len];
+            }
+          }
+
+          return this
+        };
+
+        // HELPER FUNCTIONS
+        // ================
+
+        var INVALID_BASE64_RE = /[^+\/0-9A-Za-z-_]/g;
+
+        function base64clean (str) {
+          // Node strips out invalid characters like \n and \t from the string, base64-js does not
+          str = stringtrim(str).replace(INVALID_BASE64_RE, '');
+          // Node converts strings with length < 2 to ''
+          if (str.length < 2) return ''
+          // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+          while (str.length % 4 !== 0) {
+            str = str + '=';
+          }
+          return str
+        }
+
+        function stringtrim (str) {
+          if (str.trim) return str.trim()
+          return str.replace(/^\s+|\s+$/g, '')
+        }
+
+        function toHex (n) {
+          if (n < 16) return '0' + n.toString(16)
+          return n.toString(16)
+        }
+
+        function utf8ToBytes (string, units) {
+          units = units || Infinity;
+          var codePoint;
+          var length = string.length;
+          var leadSurrogate = null;
+          var bytes = [];
+
+          for (var i = 0; i < length; ++i) {
+            codePoint = string.charCodeAt(i);
+
+            // is surrogate component
+            if (codePoint > 0xD7FF && codePoint < 0xE000) {
+              // last char was a lead
+              if (!leadSurrogate) {
+                // no lead yet
+                if (codePoint > 0xDBFF) {
+                  // unexpected trail
+                  if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD);
+                  continue
+                } else if (i + 1 === length) {
+                  // unpaired lead
+                  if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD);
+                  continue
+                }
+
+                // valid lead
+                leadSurrogate = codePoint;
+
+                continue
+              }
+
+              // 2 leads in a row
+              if (codePoint < 0xDC00) {
+                if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD);
+                leadSurrogate = codePoint;
+                continue
+              }
+
+              // valid surrogate pair
+              codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000;
+            } else if (leadSurrogate) {
+              // valid bmp char, but last char was a lead
+              if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD);
+            }
+
+            leadSurrogate = null;
+
+            // encode utf8
+            if (codePoint < 0x80) {
+              if ((units -= 1) < 0) break
+              bytes.push(codePoint);
+            } else if (codePoint < 0x800) {
+              if ((units -= 2) < 0) break
+              bytes.push(
+                codePoint >> 0x6 | 0xC0,
+                codePoint & 0x3F | 0x80
+              );
+            } else if (codePoint < 0x10000) {
+              if ((units -= 3) < 0) break
+              bytes.push(
+                codePoint >> 0xC | 0xE0,
+                codePoint >> 0x6 & 0x3F | 0x80,
+                codePoint & 0x3F | 0x80
+              );
+            } else if (codePoint < 0x110000) {
+              if ((units -= 4) < 0) break
+              bytes.push(
+                codePoint >> 0x12 | 0xF0,
+                codePoint >> 0xC & 0x3F | 0x80,
+                codePoint >> 0x6 & 0x3F | 0x80,
+                codePoint & 0x3F | 0x80
+              );
+            } else {
+              throw new Error('Invalid code point')
+            }
+          }
+
+          return bytes
+        }
+
+        function asciiToBytes (str) {
+          var byteArray = [];
+          for (var i = 0; i < str.length; ++i) {
+            // Node's code seems to be doing this and not & 0x7F..
+            byteArray.push(str.charCodeAt(i) & 0xFF);
+          }
+          return byteArray
+        }
+
+        function utf16leToBytes (str, units) {
+          var c, hi, lo;
+          var byteArray = [];
+          for (var i = 0; i < str.length; ++i) {
+            if ((units -= 2) < 0) break
+
+            c = str.charCodeAt(i);
+            hi = c >> 8;
+            lo = c % 256;
+            byteArray.push(lo);
+            byteArray.push(hi);
+          }
+
+          return byteArray
+        }
+
+
+        function base64ToBytes (str) {
+          return toByteArray(base64clean(str))
+        }
+
+        function blitBuffer (src, dst, offset, length) {
+          for (var i = 0; i < length; ++i) {
+            if ((i + offset >= dst.length) || (i >= src.length)) break
+            dst[i + offset] = src[i];
+          }
+          return i
+        }
+
+        function isnan (val) {
+          return val !== val // eslint-disable-line no-self-compare
+        }
+
+
+        // the following is from is-buffer, also by Feross Aboukhadijeh and with same lisence
+        // The _isBuffer check is for Safari 5-7 support, because it's missing
+        // Object.prototype.constructor. Remove this eventually
+        function isBuffer(obj) {
+          return obj != null && (!!obj._isBuffer || isFastBuffer(obj) || isSlowBuffer(obj))
+        }
+
+        function isFastBuffer (obj) {
+          return !!obj.constructor && typeof obj.constructor.isBuffer === 'function' && obj.constructor.isBuffer(obj)
+        }
+
+        // For Node v0.10 support. Remove this eventually.
+        function isSlowBuffer (obj) {
+          return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isFastBuffer(obj.slice(0, 0))
+        }
+
         function BufferList() {
           this.head = null;
           this.tail = null;
@@ -9015,9 +9238,9 @@
         };
 
         BufferList.prototype.concat = function (n) {
-          if (this.length === 0) return Buffer$1.alloc(0);
+          if (this.length === 0) return Buffer.alloc(0);
           if (this.length === 1) return this.head.data;
-          var ret = Buffer$1.allocUnsafe(n >>> 0);
+          var ret = Buffer.allocUnsafe(n >>> 0);
           var p = this.head;
           var i = 0;
           while (p) {
@@ -9029,7 +9252,7 @@
         };
 
         // Copyright Joyent, Inc. and other Node contributors.
-        var isBufferEncoding = Buffer$1.isEncoding
+        var isBufferEncoding = Buffer.isEncoding
           || function(encoding) {
                switch (encoding && encoding.toLowerCase()) {
                  case 'hex': case 'utf8': case 'utf-8': case 'ascii': case 'binary': case 'base64': case 'ucs2': case 'ucs-2': case 'utf16le': case 'utf-16le': case 'raw': return true;
@@ -9078,7 +9301,7 @@
 
           // Enough space to store all bytes of a single character. UTF-8 needs 4
           // bytes, but CESU-8 may require up to 6 (3 bytes per surrogate).
-          this.charBuffer = new Buffer$1(6);
+          this.charBuffer = new Buffer(6);
           // Number of bytes received for the current incomplete multi-byte character.
           this.charReceived = 0;
           // Number of bytes expected for the current incomplete multi-byte character.
@@ -9250,7 +9473,7 @@
               emitter._events[event] = [fn, emitter._events[event]];
           }
         }
-        function listenerCount$1 (emitter, type) {
+        function listenerCount (emitter, type) {
           return emitter.listeners(type).length;
         }
         function ReadableState(options, stream) {
@@ -9343,7 +9566,7 @@
           if (!state.objectMode && typeof chunk === 'string') {
             encoding = encoding || state.defaultEncoding;
             if (encoding !== state.encoding) {
-              chunk = Buffer.from(chunk, encoding);
+              chunk = Buffer$1.from(chunk, encoding);
               encoding = '';
             }
           }
@@ -9569,7 +9792,7 @@
 
         function chunkInvalid(state, chunk) {
           var er = null;
-          if (!isBuffer(chunk) && typeof chunk !== 'string' && chunk !== null && chunk !== undefined && !state.objectMode) {
+          if (!isBuffer$1(chunk) && typeof chunk !== 'string' && chunk !== null && chunk !== undefined && !state.objectMode) {
             er = new TypeError('Invalid non-string/buffer chunk');
           }
           return er;
@@ -9599,7 +9822,7 @@
           if (!state.emittedReadable) {
             debug('emitReadable', state.flowing);
             state.emittedReadable = true;
-            if (state.sync) nextTick(emitReadable_, stream);else emitReadable_(stream);
+            if (state.sync) nextTick$1(emitReadable_, stream);else emitReadable_(stream);
           }
         }
 
@@ -9618,7 +9841,7 @@
         function maybeReadMore(stream, state) {
           if (!state.readingMore) {
             state.readingMore = true;
-            nextTick(maybeReadMore_, stream, state);
+            nextTick$1(maybeReadMore_, stream, state);
           }
         }
 
@@ -9663,7 +9886,7 @@
           var doEnd = (!pipeOpts || pipeOpts.end !== false);
 
           var endFn = doEnd ? onend : cleanup;
-          if (state.endEmitted) nextTick(endFn);else src.once('end', endFn);
+          if (state.endEmitted) nextTick$1(endFn);else src.once('end', endFn);
 
           dest.on('unpipe', onunpipe);
           function onunpipe(readable) {
@@ -9738,7 +9961,7 @@
             debug('onerror', er);
             unpipe();
             dest.removeListener('error', onerror);
-            if (listenerCount$1(dest, 'error') === 0) dest.emit('error', er);
+            if (listenerCount(dest, 'error') === 0) dest.emit('error', er);
           }
 
           // Make sure our error handler is attached before userland ones.
@@ -9849,7 +10072,7 @@
               state.readableListening = state.needReadable = true;
               state.emittedReadable = false;
               if (!state.reading) {
-                nextTick(nReadingNextTick, this);
+                nextTick$1(nReadingNextTick, this);
               } else if (state.length) {
                 emitReadable(this);
               }
@@ -9880,7 +10103,7 @@
         function resume(stream, state) {
           if (!state.resumeScheduled) {
             state.resumeScheduled = true;
-            nextTick(resume_, stream, state);
+            nextTick$1(resume_, stream, state);
           }
         }
 
@@ -10053,7 +10276,7 @@
         // This function is designed to be inlinable, so please take care when making
         // changes to the function body.
         function copyFromBuffer(n, list) {
-          var ret = Buffer.allocUnsafe(n);
+          var ret = Buffer$1.allocUnsafe(n);
           var p = list.head;
           var c = 1;
           p.data.copy(ret);
@@ -10088,7 +10311,7 @@
 
           if (!state.endEmitted) {
             state.ended = true;
-            nextTick(endReadableNT, state, stream);
+            nextTick$1(endReadableNT, state, stream);
           }
         }
 
@@ -10263,7 +10486,7 @@
           var er = new Error('write after end');
           // TODO: defer error events consistently everywhere, not just the cb
           stream.emit('error', er);
-          nextTick(cb, er);
+          nextTick$1(cb, er);
         }
 
         // If we get something that is not a buffer, string, null, or undefined,
@@ -10279,12 +10502,12 @@
           // if it is not a buffer, string, or undefined.
           if (chunk === null) {
             er = new TypeError('May not write null values to stream');
-          } else if (!Buffer$1.isBuffer(chunk) && typeof chunk !== 'string' && chunk !== undefined && !state.objectMode) {
+          } else if (!Buffer.isBuffer(chunk) && typeof chunk !== 'string' && chunk !== undefined && !state.objectMode) {
             er = new TypeError('Invalid non-string/buffer chunk');
           }
           if (er) {
             stream.emit('error', er);
-            nextTick(cb, er);
+            nextTick$1(cb, er);
             valid = false;
           }
           return valid;
@@ -10299,7 +10522,7 @@
             encoding = null;
           }
 
-          if (Buffer$1.isBuffer(chunk)) encoding = 'buffer';else if (!encoding) encoding = state.defaultEncoding;
+          if (Buffer.isBuffer(chunk)) encoding = 'buffer';else if (!encoding) encoding = state.defaultEncoding;
 
           if (typeof cb !== 'function') cb = nop;
 
@@ -10337,7 +10560,7 @@
 
         function decodeChunk(state, chunk, encoding) {
           if (!state.objectMode && state.decodeStrings !== false && typeof chunk === 'string') {
-            chunk = Buffer$1.from(chunk, encoding);
+            chunk = Buffer.from(chunk, encoding);
           }
           return chunk;
         }
@@ -10348,7 +10571,7 @@
         function writeOrBuffer(stream, state, chunk, encoding, cb) {
           chunk = decodeChunk(state, chunk, encoding);
 
-          if (Buffer$1.isBuffer(chunk)) encoding = 'buffer';
+          if (Buffer.isBuffer(chunk)) encoding = 'buffer';
           var len = state.objectMode ? 1 : chunk.length;
 
           state.length += len;
@@ -10384,7 +10607,7 @@
 
         function onwriteError(stream, state, sync, er, cb) {
           --state.pendingcb;
-          if (sync) nextTick(cb, er);else cb(er);
+          if (sync) nextTick$1(cb, er);else cb(er);
 
           stream._writableState.errorEmitted = true;
           stream.emit('error', er);
@@ -10414,7 +10637,7 @@
 
             if (sync) {
               /*<replacement>*/
-                nextTick(afterWrite, stream, state, finished, cb);
+                nextTick$1(afterWrite, stream, state, finished, cb);
               /*</replacement>*/
             } else {
                 afterWrite(stream, state, finished, cb);
@@ -10556,7 +10779,7 @@
           state.ending = true;
           finishMaybe(stream, state);
           if (cb) {
-            if (state.finished) nextTick(cb);else stream.once('finish', cb);
+            if (state.finished) nextTick$1(cb);else stream.once('finish', cb);
           }
           state.ended = true;
           stream.writable = false;
@@ -10618,7 +10841,7 @@
 
           // no more data can be written.
           // But allow more writes to happen in this tick.
-          nextTick(onEndNT, this);
+          nextTick$1(onEndNT, this);
         }
 
         function onEndNT(self) {
@@ -10864,7 +11087,7 @@
           return dest;
         };
 
-        var fs = {};
+        var fs$1 = {};
 
         /*
         PDFAbstractReference - abstract class for PDF reference
@@ -10964,9 +11187,9 @@
               // If so, encode it as big endian UTF-16
               let stringBuffer;
               if (isUnicode) {
-                stringBuffer = swapBytes(Buffer.from(`\ufeff${string}`, 'utf16le'));
+                stringBuffer = swapBytes(Buffer$1.from(`\ufeff${string}`, 'utf16le'));
               } else {
-                stringBuffer = Buffer.from(string.valueOf(), 'ascii');
+                stringBuffer = Buffer$1.from(string.valueOf(), 'ascii');
               }
 
               // Encrypt the string when necessary
@@ -10982,7 +11205,7 @@
               return `(${string})`;
 
               // Buffers are converted to PDF hex strings
-            } else if (isBuffer(object)) {
+            } else if (isBuffer$1(object)) {
               return `<${object.toString('hex')}>`;
             } else if (object instanceof PDFAbstractReference || object instanceof PDFNameTree) {
               return object.toString();
@@ -10998,7 +11221,7 @@
 
               // Encrypt the string when necessary
               if (encryptFn) {
-                string = encryptFn(new Buffer(string, 'ascii')).toString('binary');
+                string = encryptFn(new Buffer$1(string, 'ascii')).toString('binary');
 
                 // Escape characters as required by the spec
                 string = string.replace(escapableRe, c => escapable[c]);
@@ -11036,145 +11259,144 @@
         // shim for using process in browser
         // based off https://github.com/defunctzombie/node-process/blob/master/browser.js
 
-        function defaultSetTimout$1() {
+        function defaultSetTimout() {
             throw new Error('setTimeout has not been defined');
         }
-        function defaultClearTimeout$1 () {
+        function defaultClearTimeout () {
             throw new Error('clearTimeout has not been defined');
         }
-        var cachedSetTimeout$1 = defaultSetTimout$1;
-        var cachedClearTimeout$1 = defaultClearTimeout$1;
+        var cachedSetTimeout = defaultSetTimout;
+        var cachedClearTimeout = defaultClearTimeout;
         if (typeof global$1$1.setTimeout === 'function') {
-            cachedSetTimeout$1 = setTimeout;
+            cachedSetTimeout = setTimeout;
         }
         if (typeof global$1$1.clearTimeout === 'function') {
-            cachedClearTimeout$1 = clearTimeout;
+            cachedClearTimeout = clearTimeout;
         }
 
-        function runTimeout$1(fun) {
-            if (cachedSetTimeout$1 === setTimeout) {
+        function runTimeout(fun) {
+            if (cachedSetTimeout === setTimeout) {
                 //normal enviroments in sane situations
                 return setTimeout(fun, 0);
             }
             // if setTimeout wasn't available but was latter defined
-            if ((cachedSetTimeout$1 === defaultSetTimout$1 || !cachedSetTimeout$1) && setTimeout) {
-                cachedSetTimeout$1 = setTimeout;
+            if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+                cachedSetTimeout = setTimeout;
                 return setTimeout(fun, 0);
             }
             try {
                 // when when somebody has screwed with setTimeout but no I.E. maddness
-                return cachedSetTimeout$1(fun, 0);
+                return cachedSetTimeout(fun, 0);
             } catch(e){
                 try {
                     // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-                    return cachedSetTimeout$1.call(null, fun, 0);
+                    return cachedSetTimeout.call(null, fun, 0);
                 } catch(e){
                     // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-                    return cachedSetTimeout$1.call(this, fun, 0);
+                    return cachedSetTimeout.call(this, fun, 0);
                 }
             }
 
 
         }
-        function runClearTimeout$1(marker) {
-            if (cachedClearTimeout$1 === clearTimeout) {
+        function runClearTimeout(marker) {
+            if (cachedClearTimeout === clearTimeout) {
                 //normal enviroments in sane situations
                 return clearTimeout(marker);
             }
             // if clearTimeout wasn't available but was latter defined
-            if ((cachedClearTimeout$1 === defaultClearTimeout$1 || !cachedClearTimeout$1) && clearTimeout) {
-                cachedClearTimeout$1 = clearTimeout;
+            if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+                cachedClearTimeout = clearTimeout;
                 return clearTimeout(marker);
             }
             try {
                 // when when somebody has screwed with setTimeout but no I.E. maddness
-                return cachedClearTimeout$1(marker);
+                return cachedClearTimeout(marker);
             } catch (e){
                 try {
                     // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-                    return cachedClearTimeout$1.call(null, marker);
+                    return cachedClearTimeout.call(null, marker);
                 } catch (e){
                     // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
                     // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-                    return cachedClearTimeout$1.call(this, marker);
+                    return cachedClearTimeout.call(this, marker);
                 }
             }
 
 
 
         }
-        var queue$1 = [];
-        var draining$1 = false;
-        var currentQueue$1;
-        var queueIndex$1 = -1;
+        var queue = [];
+        var draining = false;
+        var currentQueue;
+        var queueIndex = -1;
 
-        function cleanUpNextTick$1() {
-            if (!draining$1 || !currentQueue$1) {
+        function cleanUpNextTick() {
+            if (!draining || !currentQueue) {
                 return;
             }
-            draining$1 = false;
-            if (currentQueue$1.length) {
-                queue$1 = currentQueue$1.concat(queue$1);
+            draining = false;
+            if (currentQueue.length) {
+                queue = currentQueue.concat(queue);
             } else {
-                queueIndex$1 = -1;
+                queueIndex = -1;
             }
-            if (queue$1.length) {
-                drainQueue$1();
+            if (queue.length) {
+                drainQueue();
             }
         }
 
-        function drainQueue$1() {
-            if (draining$1) {
+        function drainQueue() {
+            if (draining) {
                 return;
             }
-            var timeout = runTimeout$1(cleanUpNextTick$1);
-            draining$1 = true;
+            var timeout = runTimeout(cleanUpNextTick);
+            draining = true;
 
-            var len = queue$1.length;
+            var len = queue.length;
             while(len) {
-                currentQueue$1 = queue$1;
-                queue$1 = [];
-                while (++queueIndex$1 < len) {
-                    if (currentQueue$1) {
-                        currentQueue$1[queueIndex$1].run();
+                currentQueue = queue;
+                queue = [];
+                while (++queueIndex < len) {
+                    if (currentQueue) {
+                        currentQueue[queueIndex].run();
                     }
                 }
-                queueIndex$1 = -1;
-                len = queue$1.length;
+                queueIndex = -1;
+                len = queue.length;
             }
-            currentQueue$1 = null;
-            draining$1 = false;
-            runClearTimeout$1(timeout);
+            currentQueue = null;
+            draining = false;
+            runClearTimeout(timeout);
         }
-        function nextTick$1(fun) {
+        function nextTick(fun) {
             var args = new Array(arguments.length - 1);
             if (arguments.length > 1) {
                 for (var i = 1; i < arguments.length; i++) {
                     args[i - 1] = arguments[i];
                 }
             }
-            queue$1.push(new Item$1(fun, args));
-            if (queue$1.length === 1 && !draining$1) {
-                runTimeout$1(drainQueue$1);
+            queue.push(new Item(fun, args));
+            if (queue.length === 1 && !draining) {
+                runTimeout(drainQueue);
             }
         }
         // v8 likes predictible objects
-        function Item$1(fun, array) {
+        function Item(fun, array) {
             this.fun = fun;
             this.array = array;
         }
-        Item$1.prototype.run = function () {
+        Item.prototype.run = function () {
             this.fun.apply(null, this.array);
         };
 
         // from https://github.com/kumavis/browser-process-hrtime/blob/master/index.js
-        var performance$1 = global$1$1.performance || {};
-        var performanceNow$1 =
-          performance$1.now        ||
-          performance$1.mozNow     ||
-          performance$1.msNow      ||
-          performance$1.oNow       ||
-          performance$1.webkitNow  ||
+        var performance = global$1$1.performance || {};
+        performance.now        ||
+          performance.mozNow     ||
+          performance.msNow      ||
+          performance.oNow       ||
+          performance.webkitNow  ||
           function(){ return (new Date()).getTime() };
 
         var msg = {
@@ -11239,19 +11461,19 @@
         //var Z_FILTERED          = 1;
         //var Z_HUFFMAN_ONLY      = 2;
         //var Z_RLE               = 3;
-        var Z_FIXED = 4;
+        var Z_FIXED$2 = 4;
         //var Z_DEFAULT_STRATEGY  = 0;
 
         /* Possible values of the data_type field (though see inflate()) */
-        var Z_BINARY = 0;
-        var Z_TEXT = 1;
+        var Z_BINARY$1 = 0;
+        var Z_TEXT$1 = 1;
         //var Z_ASCII             = 1; // = Z_TEXT
-        var Z_UNKNOWN = 2;
+        var Z_UNKNOWN$2 = 2;
 
         /*============================================================================*/
 
 
-        function zero(buf) {
+        function zero$1(buf) {
           var len = buf.length;
           while (--len >= 0) {
             buf[len] = 0;
@@ -11265,8 +11487,8 @@
         var DYN_TREES = 2;
         /* The three kinds of block type */
 
-        var MIN_MATCH = 3;
-        var MAX_MATCH = 258;
+        var MIN_MATCH$1 = 3;
+        var MAX_MATCH$1 = 258;
         /* The minimum and maximum match lengths */
 
         // From deflate.h
@@ -11274,25 +11496,25 @@
          * Internal compression state.
          */
 
-        var LENGTH_CODES = 29;
+        var LENGTH_CODES$1 = 29;
         /* number of length codes, not counting the special END_BLOCK code */
 
-        var LITERALS = 256;
+        var LITERALS$1 = 256;
         /* number of literal bytes 0..255 */
 
-        var L_CODES = LITERALS + 1 + LENGTH_CODES;
+        var L_CODES$1 = LITERALS$1 + 1 + LENGTH_CODES$1;
         /* number of Literal or Length codes, including the END_BLOCK code */
 
-        var D_CODES = 30;
+        var D_CODES$1 = 30;
         /* number of distance codes */
 
-        var BL_CODES = 19;
+        var BL_CODES$1 = 19;
         /* number of codes used to transfer the bit lengths */
 
-        var HEAP_SIZE = 2 * L_CODES + 1;
+        var HEAP_SIZE$1 = 2 * L_CODES$1 + 1;
         /* maximum heap size */
 
-        var MAX_BITS = 15;
+        var MAX_BITS$1 = 15;
         /* All codes must not exceed MAX_BITS bits */
 
         var Buf_size = 16;
@@ -11341,37 +11563,37 @@
         var DIST_CODE_LEN = 512; /* see definition of array dist_code below */
 
         // !!!! Use flat array insdead of structure, Freq = i*2, Len = i*2+1
-        var static_ltree = new Array((L_CODES + 2) * 2);
-        zero(static_ltree);
+        var static_ltree = new Array((L_CODES$1 + 2) * 2);
+        zero$1(static_ltree);
         /* The static literal tree. Since the bit lengths are imposed, there is no
          * need for the L_CODES extra codes used during heap construction. However
          * The codes 286 and 287 are needed to build a canonical tree (see _tr_init
          * below).
          */
 
-        var static_dtree = new Array(D_CODES * 2);
-        zero(static_dtree);
+        var static_dtree = new Array(D_CODES$1 * 2);
+        zero$1(static_dtree);
         /* The static distance tree. (Actually a trivial tree since all codes use
          * 5 bits.)
          */
 
         var _dist_code = new Array(DIST_CODE_LEN);
-        zero(_dist_code);
+        zero$1(_dist_code);
         /* Distance codes. The first 256 values correspond to the distances
          * 3 .. 258, the last 256 values correspond to the top 8 bits of
          * the 15 bit distances.
          */
 
-        var _length_code = new Array(MAX_MATCH - MIN_MATCH + 1);
-        zero(_length_code);
+        var _length_code = new Array(MAX_MATCH$1 - MIN_MATCH$1 + 1);
+        zero$1(_length_code);
         /* length code for each normalized match length (0 == MIN_MATCH) */
 
-        var base_length = new Array(LENGTH_CODES);
-        zero(base_length);
+        var base_length = new Array(LENGTH_CODES$1);
+        zero$1(base_length);
         /* First normalized length for each code (0 = MIN_MATCH) */
 
-        var base_dist = new Array(D_CODES);
-        zero(base_dist);
+        var base_dist = new Array(D_CODES$1);
+        zero$1(base_dist);
         /* First normalized distance for each code (0 = distance of 1) */
 
 
@@ -11500,7 +11722,7 @@
           var f; /* frequency */
           var overflow = 0; /* number of elements with bit length too large */
 
-          for (bits = 0; bits <= MAX_BITS; bits++) {
+          for (bits = 0; bits <= MAX_BITS$1; bits++) {
             s.bl_count[bits] = 0;
           }
 
@@ -11509,7 +11731,7 @@
            */
           tree[s.heap[s.heap_max] * 2 + 1] /*.Len*/ = 0; /* root of the heap */
 
-          for (h = s.heap_max + 1; h < HEAP_SIZE; h++) {
+          for (h = s.heap_max + 1; h < HEAP_SIZE$1; h++) {
             n = s.heap[h];
             bits = tree[tree[n * 2 + 1] /*.Dad*/ * 2 + 1] /*.Len*/ + 1;
             if (bits > max_length) {
@@ -11592,7 +11814,7 @@
         //    int max_code;              /* largest code with non zero frequency */
         //    ushf *bl_count;            /* number of codes at each bit length */
 
-          var next_code = new Array(MAX_BITS + 1); /* next code value for each bit length */
+          var next_code = new Array(MAX_BITS$1 + 1); /* next code value for each bit length */
           var code = 0; /* running code value */
           var bits; /* bit index */
           var n; /* code index */
@@ -11600,7 +11822,7 @@
           /* The distribution counts are first used to generate the code values
            * without bit reversal.
            */
-          for (bits = 1; bits <= MAX_BITS; bits++) {
+          for (bits = 1; bits <= MAX_BITS$1; bits++) {
             next_code[bits] = code = (code + bl_count[bits - 1]) << 1;
           }
           /* Check that the bit counts in bl_count are consistent. The last code
@@ -11633,7 +11855,7 @@
           var length; /* length value */
           var code; /* code value */
           var dist; /* distance index */
-          var bl_count = new Array(MAX_BITS + 1);
+          var bl_count = new Array(MAX_BITS$1 + 1);
           /* number of codes at each bit length for an optimal tree */
 
           // do check in _tr_init()
@@ -11650,7 +11872,7 @@
 
           /* Initialize the mapping length (0..255) -> length code (0..28) */
           length = 0;
-          for (code = 0; code < LENGTH_CODES - 1; code++) {
+          for (code = 0; code < LENGTH_CODES$1 - 1; code++) {
             base_length[code] = length;
             for (n = 0; n < (1 << extra_lbits[code]); n++) {
               _length_code[length++] = code;
@@ -11673,7 +11895,7 @@
           }
           //Assert (dist == 256, "tr_static_init: dist != 256");
           dist >>= 7; /* from now on, all distances are divided by 128 */
-          for (; code < D_CODES; code++) {
+          for (; code < D_CODES$1; code++) {
             base_dist[code] = dist << 7;
             for (n = 0; n < (1 << (extra_dbits[code] - 7)); n++) {
               _dist_code[256 + dist++] = code;
@@ -11682,7 +11904,7 @@
           //Assert (dist == 256, "tr_static_init: 256+dist != 512");
 
           /* Construct the codes of the static literal tree */
-          for (bits = 0; bits <= MAX_BITS; bits++) {
+          for (bits = 0; bits <= MAX_BITS$1; bits++) {
             bl_count[bits] = 0;
           }
 
@@ -11711,18 +11933,18 @@
            * tree construction to get a canonical Huffman tree (longest code
            * all ones)
            */
-          gen_codes(static_ltree, L_CODES + 1, bl_count);
+          gen_codes(static_ltree, L_CODES$1 + 1, bl_count);
 
           /* The static distance tree is trivial: */
-          for (n = 0; n < D_CODES; n++) {
+          for (n = 0; n < D_CODES$1; n++) {
             static_dtree[n * 2 + 1] /*.Len*/ = 5;
             static_dtree[n * 2] /*.Code*/ = bi_reverse(n, 5);
           }
 
           // Now data ready and we can init static trees
-          static_l_desc = new StaticTreeDesc(static_ltree, extra_lbits, LITERALS + 1, L_CODES, MAX_BITS);
-          static_d_desc = new StaticTreeDesc(static_dtree, extra_dbits, 0, D_CODES, MAX_BITS);
-          static_bl_desc = new StaticTreeDesc(new Array(0), extra_blbits, 0, BL_CODES, MAX_BL_BITS);
+          static_l_desc = new StaticTreeDesc(static_ltree, extra_lbits, LITERALS$1 + 1, L_CODES$1, MAX_BITS$1);
+          static_d_desc = new StaticTreeDesc(static_dtree, extra_dbits, 0, D_CODES$1, MAX_BITS$1);
+          static_bl_desc = new StaticTreeDesc(new Array(0), extra_blbits, 0, BL_CODES$1, MAX_BL_BITS);
 
           //static_init_done = true;
         }
@@ -11735,13 +11957,13 @@
           var n; /* iterates over tree elements */
 
           /* Initialize the trees. */
-          for (n = 0; n < L_CODES; n++) {
+          for (n = 0; n < L_CODES$1; n++) {
             s.dyn_ltree[n * 2] /*.Freq*/ = 0;
           }
-          for (n = 0; n < D_CODES; n++) {
+          for (n = 0; n < D_CODES$1; n++) {
             s.dyn_dtree[n * 2] /*.Freq*/ = 0;
           }
-          for (n = 0; n < BL_CODES; n++) {
+          for (n = 0; n < BL_CODES$1; n++) {
             s.bl_tree[n * 2] /*.Freq*/ = 0;
           }
 
@@ -11863,7 +12085,7 @@
               } else {
                 /* Here, lc is the match length - MIN_MATCH */
                 code = _length_code[lc];
-                send_code(s, code + LITERALS + 1, ltree); /* send the length code */
+                send_code(s, code + LITERALS$1 + 1, ltree); /* send the length code */
                 extra = extra_lbits[code];
                 if (extra !== 0) {
                   lc -= base_length[code];
@@ -11917,7 +12139,7 @@
            * heap[0] is not used.
            */
           s.heap_len = 0;
-          s.heap_max = HEAP_SIZE;
+          s.heap_max = HEAP_SIZE$1;
 
           for (n = 0; n < elems; n++) {
             if (tree[n * 2] /*.Freq*/ !== 0) {
@@ -12157,7 +12379,7 @@
            * requires that at least 4 bit length codes be sent. (appnote.txt says
            * 3 but the actual value used is 4.)
            */
-          for (max_blindex = BL_CODES - 1; max_blindex >= 3; max_blindex--) {
+          for (max_blindex = BL_CODES$1 - 1; max_blindex >= 3; max_blindex--) {
             if (s.bl_tree[bl_order[max_blindex] * 2 + 1] /*.Len*/ !== 0) {
               break;
             }
@@ -12227,25 +12449,25 @@
           /* Check for non-textual ("black-listed") bytes. */
           for (n = 0; n <= 31; n++, black_mask >>>= 1) {
             if ((black_mask & 1) && (s.dyn_ltree[n * 2] /*.Freq*/ !== 0)) {
-              return Z_BINARY;
+              return Z_BINARY$1;
             }
           }
 
           /* Check for textual ("white-listed") bytes. */
           if (s.dyn_ltree[9 * 2] /*.Freq*/ !== 0 || s.dyn_ltree[10 * 2] /*.Freq*/ !== 0 ||
             s.dyn_ltree[13 * 2] /*.Freq*/ !== 0) {
-            return Z_TEXT;
+            return Z_TEXT$1;
           }
-          for (n = 32; n < LITERALS; n++) {
+          for (n = 32; n < LITERALS$1; n++) {
             if (s.dyn_ltree[n * 2] /*.Freq*/ !== 0) {
-              return Z_TEXT;
+              return Z_TEXT$1;
             }
           }
 
           /* There are no "black-listed" or "white-listed" bytes:
            * this stream either is empty or has tolerated ("gray-listed") bytes only.
            */
-          return Z_BINARY;
+          return Z_BINARY$1;
         }
 
 
@@ -12315,7 +12537,7 @@
           if (s.level > 0) {
 
             /* Check if the file is binary or text */
-            if (s.strm.data_type === Z_UNKNOWN) {
+            if (s.strm.data_type === Z_UNKNOWN$2) {
               s.strm.data_type = detect_data_type(s);
             }
 
@@ -12364,7 +12586,7 @@
              */
             _tr_stored_block(s, buf, stored_len, last);
 
-          } else if (s.strategy === Z_FIXED || static_lenb === opt_lenb) {
+          } else if (s.strategy === Z_FIXED$2 || static_lenb === opt_lenb) {
 
             send_bits(s, (STATIC_TREES << 1) + (last ? 1 : 0), 3);
             compress_block(s, static_ltree, static_dtree);
@@ -12415,7 +12637,7 @@
             //       (ush)lc <= (ush)(MAX_MATCH-MIN_MATCH) &&
             //       (ush)d_code(dist) < (ush)D_CODES,  "_tr_tally: bad match");
 
-            s.dyn_ltree[(_length_code[lc] + LITERALS + 1) * 2] /*.Freq*/ ++;
+            s.dyn_ltree[(_length_code[lc] + LITERALS$1 + 1) * 2] /*.Freq*/ ++;
             s.dyn_dtree[d_code(dist) * 2] /*.Freq*/ ++;
           }
 
@@ -12519,26 +12741,26 @@
 
 
         /* Allowed flush values; see deflate() and inflate() below for details */
-        var Z_NO_FLUSH = 0;
-        var Z_PARTIAL_FLUSH = 1;
+        var Z_NO_FLUSH$1 = 0;
+        var Z_PARTIAL_FLUSH$1 = 1;
         //var Z_SYNC_FLUSH    = 2;
-        var Z_FULL_FLUSH = 3;
-        var Z_FINISH = 4;
-        var Z_BLOCK = 5;
+        var Z_FULL_FLUSH$1 = 3;
+        var Z_FINISH$2 = 4;
+        var Z_BLOCK$2 = 5;
         //var Z_TREES         = 6;
 
 
         /* Return codes for the compression/decompression functions. Negative values
          * are errors, positive values are used for special but normal events.
          */
-        var Z_OK = 0;
-        var Z_STREAM_END = 1;
+        var Z_OK$2 = 0;
+        var Z_STREAM_END$2 = 1;
         //var Z_NEED_DICT     = 2;
         //var Z_ERRNO         = -1;
-        var Z_STREAM_ERROR = -2;
-        var Z_DATA_ERROR = -3;
+        var Z_STREAM_ERROR$2 = -2;
+        var Z_DATA_ERROR$2 = -3;
         //var Z_MEM_ERROR     = -4;
-        var Z_BUF_ERROR = -5;
+        var Z_BUF_ERROR$2 = -5;
         //var Z_VERSION_ERROR = -6;
 
 
@@ -12546,12 +12768,12 @@
         //var Z_NO_COMPRESSION      = 0;
         //var Z_BEST_SPEED          = 1;
         //var Z_BEST_COMPRESSION    = 9;
-        var Z_DEFAULT_COMPRESSION = -1;
+        var Z_DEFAULT_COMPRESSION$1 = -1;
 
 
-        var Z_FILTERED = 1;
-        var Z_HUFFMAN_ONLY = 2;
-        var Z_RLE = 3;
+        var Z_FILTERED$1 = 1;
+        var Z_HUFFMAN_ONLY$1 = 2;
+        var Z_RLE$1 = 3;
         var Z_FIXED$1 = 4;
 
         /* Possible values of the data_type field (though see inflate()) */
@@ -12562,7 +12784,7 @@
 
 
         /* The deflate compression method */
-        var Z_DEFLATED = 8;
+        var Z_DEFLATED$2 = 8;
 
         /*============================================================================*/
 
@@ -12570,24 +12792,24 @@
         var MAX_MEM_LEVEL = 9;
 
 
-        var LENGTH_CODES$1 = 29;
+        var LENGTH_CODES = 29;
         /* number of length codes, not counting the special END_BLOCK code */
-        var LITERALS$1 = 256;
+        var LITERALS = 256;
         /* number of literal bytes 0..255 */
-        var L_CODES$1 = LITERALS$1 + 1 + LENGTH_CODES$1;
+        var L_CODES = LITERALS + 1 + LENGTH_CODES;
         /* number of Literal or Length codes, including the END_BLOCK code */
-        var D_CODES$1 = 30;
+        var D_CODES = 30;
         /* number of distance codes */
-        var BL_CODES$1 = 19;
+        var BL_CODES = 19;
         /* number of codes used to transfer the bit lengths */
-        var HEAP_SIZE$1 = 2 * L_CODES$1 + 1;
+        var HEAP_SIZE = 2 * L_CODES + 1;
         /* maximum heap size */
-        var MAX_BITS$1 = 15;
+        var MAX_BITS = 15;
         /* All codes must not exceed MAX_BITS bits */
 
-        var MIN_MATCH$1 = 3;
-        var MAX_MATCH$1 = 258;
-        var MIN_LOOKAHEAD = (MAX_MATCH$1 + MIN_MATCH$1 + 1);
+        var MIN_MATCH = 3;
+        var MAX_MATCH = 258;
+        var MIN_LOOKAHEAD = (MAX_MATCH + MIN_MATCH + 1);
 
         var PRESET_DICT = 0x20;
 
@@ -12615,7 +12837,7 @@
           return ((f) << 1) - ((f) > 4 ? 9 : 0);
         }
 
-        function zero$1(buf) {
+        function zero(buf) {
           var len = buf.length;
           while (--len >= 0) {
             buf[len] = 0;
@@ -12740,7 +12962,7 @@
            * we prevent matches with the string of window index 0.
            */
 
-          var strend = s.strstart + MAX_MATCH$1;
+          var strend = s.strstart + MAX_MATCH;
           var scan_end1 = _win[scan + best_len - 1];
           var scan_end = _win[scan + best_len];
 
@@ -12805,8 +13027,8 @@
 
             // Assert(scan <= s->window+(unsigned)(s->window_size-1), "wild scan");
 
-            len = MAX_MATCH$1 - (strend - scan);
-            scan = strend - MAX_MATCH$1;
+            len = MAX_MATCH - (strend - scan);
+            scan = strend - MAX_MATCH;
 
             if (len > best_len) {
               s.match_start = cur_match;
@@ -12917,7 +13139,7 @@
             s.lookahead += n;
 
             /* Initialize the hash value now that we have some input: */
-            if (s.lookahead + s.insert >= MIN_MATCH$1) {
+            if (s.lookahead + s.insert >= MIN_MATCH) {
               str = s.strstart - s.insert;
               s.ins_h = s.window[str];
 
@@ -12928,13 +13150,13 @@
               //#endif
               while (s.insert) {
                 /* UPDATE_HASH(s, s->ins_h, s->window[str + MIN_MATCH-1]); */
-                s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[str + MIN_MATCH$1 - 1]) & s.hash_mask;
+                s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[str + MIN_MATCH - 1]) & s.hash_mask;
 
                 s.prev[str & s.w_mask] = s.head[s.ins_h];
                 s.head[s.ins_h] = str;
                 str++;
                 s.insert--;
-                if (s.lookahead + s.insert < MIN_MATCH$1) {
+                if (s.lookahead + s.insert < MIN_MATCH) {
                   break;
                 }
               }
@@ -13015,7 +13237,7 @@
               //      }
 
               fill_window(s);
-              if (s.lookahead === 0 && flush === Z_NO_FLUSH) {
+              if (s.lookahead === 0 && flush === Z_NO_FLUSH$1) {
                 return BS_NEED_MORE;
               }
 
@@ -13061,7 +13283,7 @@
 
           s.insert = 0;
 
-          if (flush === Z_FINISH) {
+          if (flush === Z_FINISH$2) {
             /*** FLUSH_BLOCK(s, 1); ***/
             flush_block_only(s, true);
             if (s.strm.avail_out === 0) {
@@ -13102,7 +13324,7 @@
              */
             if (s.lookahead < MIN_LOOKAHEAD) {
               fill_window(s);
-              if (s.lookahead < MIN_LOOKAHEAD && flush === Z_NO_FLUSH) {
+              if (s.lookahead < MIN_LOOKAHEAD && flush === Z_NO_FLUSH$1) {
                 return BS_NEED_MORE;
               }
               if (s.lookahead === 0) {
@@ -13114,9 +13336,9 @@
              * dictionary, and set hash_head to the head of the hash chain:
              */
             hash_head = 0 /*NIL*/ ;
-            if (s.lookahead >= MIN_MATCH$1) {
+            if (s.lookahead >= MIN_MATCH) {
               /*** INSERT_STRING(s, s.strstart, hash_head); ***/
-              s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + MIN_MATCH$1 - 1]) & s.hash_mask;
+              s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + MIN_MATCH - 1]) & s.hash_mask;
               hash_head = s.prev[s.strstart & s.w_mask] = s.head[s.ins_h];
               s.head[s.ins_h] = s.strstart;
               /***/
@@ -13133,24 +13355,24 @@
               s.match_length = longest_match(s, hash_head);
               /* longest_match() sets match_start */
             }
-            if (s.match_length >= MIN_MATCH$1) {
+            if (s.match_length >= MIN_MATCH) {
               // check_match(s, s.strstart, s.match_start, s.match_length); // for debug only
 
               /*** _tr_tally_dist(s, s.strstart - s.match_start,
                              s.match_length - MIN_MATCH, bflush); ***/
-              bflush = _tr_tally(s, s.strstart - s.match_start, s.match_length - MIN_MATCH$1);
+              bflush = _tr_tally(s, s.strstart - s.match_start, s.match_length - MIN_MATCH);
 
               s.lookahead -= s.match_length;
 
               /* Insert new strings in the hash table only if the match length
                * is not too large. This saves time but degrades compression.
                */
-              if (s.match_length <= s.max_lazy_match /*max_insert_length*/ && s.lookahead >= MIN_MATCH$1) {
+              if (s.match_length <= s.max_lazy_match /*max_insert_length*/ && s.lookahead >= MIN_MATCH) {
                 s.match_length--; /* string at strstart already in table */
                 do {
                   s.strstart++;
                   /*** INSERT_STRING(s, s.strstart, hash_head); ***/
-                  s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + MIN_MATCH$1 - 1]) & s.hash_mask;
+                  s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + MIN_MATCH - 1]) & s.hash_mask;
                   hash_head = s.prev[s.strstart & s.w_mask] = s.head[s.ins_h];
                   s.head[s.ins_h] = s.strstart;
                   /***/
@@ -13191,8 +13413,8 @@
               /***/
             }
           }
-          s.insert = ((s.strstart < (MIN_MATCH$1 - 1)) ? s.strstart : MIN_MATCH$1 - 1);
-          if (flush === Z_FINISH) {
+          s.insert = ((s.strstart < (MIN_MATCH - 1)) ? s.strstart : MIN_MATCH - 1);
+          if (flush === Z_FINISH$2) {
             /*** FLUSH_BLOCK(s, 1); ***/
             flush_block_only(s, true);
             if (s.strm.avail_out === 0) {
@@ -13232,7 +13454,7 @@
              */
             if (s.lookahead < MIN_LOOKAHEAD) {
               fill_window(s);
-              if (s.lookahead < MIN_LOOKAHEAD && flush === Z_NO_FLUSH) {
+              if (s.lookahead < MIN_LOOKAHEAD && flush === Z_NO_FLUSH$1) {
                 return BS_NEED_MORE;
               }
               if (s.lookahead === 0) {
@@ -13244,9 +13466,9 @@
              * dictionary, and set hash_head to the head of the hash chain:
              */
             hash_head = 0 /*NIL*/ ;
-            if (s.lookahead >= MIN_MATCH$1) {
+            if (s.lookahead >= MIN_MATCH) {
               /*** INSERT_STRING(s, s.strstart, hash_head); ***/
-              s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + MIN_MATCH$1 - 1]) & s.hash_mask;
+              s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + MIN_MATCH - 1]) & s.hash_mask;
               hash_head = s.prev[s.strstart & s.w_mask] = s.head[s.ins_h];
               s.head[s.ins_h] = s.strstart;
               /***/
@@ -13256,7 +13478,7 @@
              */
             s.prev_length = s.match_length;
             s.prev_match = s.match_start;
-            s.match_length = MIN_MATCH$1 - 1;
+            s.match_length = MIN_MATCH - 1;
 
             if (hash_head !== 0 /*NIL*/ && s.prev_length < s.max_lazy_match &&
               s.strstart - hash_head <= (s.w_size - MIN_LOOKAHEAD) /*MAX_DIST(s)*/ ) {
@@ -13268,26 +13490,26 @@
               /* longest_match() sets match_start */
 
               if (s.match_length <= 5 &&
-                (s.strategy === Z_FILTERED || (s.match_length === MIN_MATCH$1 && s.strstart - s.match_start > 4096 /*TOO_FAR*/ ))) {
+                (s.strategy === Z_FILTERED$1 || (s.match_length === MIN_MATCH && s.strstart - s.match_start > 4096 /*TOO_FAR*/ ))) {
 
                 /* If prev_match is also MIN_MATCH, match_start is garbage
                  * but we will ignore the current match anyway.
                  */
-                s.match_length = MIN_MATCH$1 - 1;
+                s.match_length = MIN_MATCH - 1;
               }
             }
             /* If there was a match at the previous step and the current
              * match is not better, output the previous match:
              */
-            if (s.prev_length >= MIN_MATCH$1 && s.match_length <= s.prev_length) {
-              max_insert = s.strstart + s.lookahead - MIN_MATCH$1;
+            if (s.prev_length >= MIN_MATCH && s.match_length <= s.prev_length) {
+              max_insert = s.strstart + s.lookahead - MIN_MATCH;
               /* Do not insert strings in hash table beyond this. */
 
               //check_match(s, s.strstart-1, s.prev_match, s.prev_length);
 
               /***_tr_tally_dist(s, s.strstart - 1 - s.prev_match,
                              s.prev_length - MIN_MATCH, bflush);***/
-              bflush = _tr_tally(s, s.strstart - 1 - s.prev_match, s.prev_length - MIN_MATCH$1);
+              bflush = _tr_tally(s, s.strstart - 1 - s.prev_match, s.prev_length - MIN_MATCH);
               /* Insert in hash table all strings up to the end of the match.
                * strstart-1 and strstart are already inserted. If there is not
                * enough lookahead, the last two strings are not inserted in
@@ -13298,14 +13520,14 @@
               do {
                 if (++s.strstart <= max_insert) {
                   /*** INSERT_STRING(s, s.strstart, hash_head); ***/
-                  s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + MIN_MATCH$1 - 1]) & s.hash_mask;
+                  s.ins_h = ((s.ins_h << s.hash_shift) ^ s.window[s.strstart + MIN_MATCH - 1]) & s.hash_mask;
                   hash_head = s.prev[s.strstart & s.w_mask] = s.head[s.ins_h];
                   s.head[s.ins_h] = s.strstart;
                   /***/
                 }
               } while (--s.prev_length !== 0);
               s.match_available = 0;
-              s.match_length = MIN_MATCH$1 - 1;
+              s.match_length = MIN_MATCH - 1;
               s.strstart++;
 
               if (bflush) {
@@ -13353,8 +13575,8 @@
 
             s.match_available = 0;
           }
-          s.insert = s.strstart < MIN_MATCH$1 - 1 ? s.strstart : MIN_MATCH$1 - 1;
-          if (flush === Z_FINISH) {
+          s.insert = s.strstart < MIN_MATCH - 1 ? s.strstart : MIN_MATCH - 1;
+          if (flush === Z_FINISH$2) {
             /*** FLUSH_BLOCK(s, 1); ***/
             flush_block_only(s, true);
             if (s.strm.avail_out === 0) {
@@ -13393,9 +13615,9 @@
              * at the end of the input file. We need MAX_MATCH bytes
              * for the longest run, plus one for the unrolled loop.
              */
-            if (s.lookahead <= MAX_MATCH$1) {
+            if (s.lookahead <= MAX_MATCH) {
               fill_window(s);
-              if (s.lookahead <= MAX_MATCH$1 && flush === Z_NO_FLUSH) {
+              if (s.lookahead <= MAX_MATCH && flush === Z_NO_FLUSH$1) {
                 return BS_NEED_MORE;
               }
               if (s.lookahead === 0) {
@@ -13405,11 +13627,11 @@
 
             /* See how many times the previous byte repeats */
             s.match_length = 0;
-            if (s.lookahead >= MIN_MATCH$1 && s.strstart > 0) {
+            if (s.lookahead >= MIN_MATCH && s.strstart > 0) {
               scan = s.strstart - 1;
               prev = _win[scan];
               if (prev === _win[++scan] && prev === _win[++scan] && prev === _win[++scan]) {
-                strend = s.strstart + MAX_MATCH$1;
+                strend = s.strstart + MAX_MATCH;
                 do {
                   /*jshint noempty:false*/
                 } while (prev === _win[++scan] && prev === _win[++scan] &&
@@ -13417,7 +13639,7 @@
                   prev === _win[++scan] && prev === _win[++scan] &&
                   prev === _win[++scan] && prev === _win[++scan] &&
                   scan < strend);
-                s.match_length = MAX_MATCH$1 - (strend - scan);
+                s.match_length = MAX_MATCH - (strend - scan);
                 if (s.match_length > s.lookahead) {
                   s.match_length = s.lookahead;
                 }
@@ -13426,11 +13648,11 @@
             }
 
             /* Emit match if have run of MIN_MATCH or longer, else emit literal */
-            if (s.match_length >= MIN_MATCH$1) {
+            if (s.match_length >= MIN_MATCH) {
               //check_match(s, s.strstart, s.strstart - 1, s.match_length);
 
               /*** _tr_tally_dist(s, 1, s.match_length - MIN_MATCH, bflush); ***/
-              bflush = _tr_tally(s, 1, s.match_length - MIN_MATCH$1);
+              bflush = _tr_tally(s, 1, s.match_length - MIN_MATCH);
 
               s.lookahead -= s.match_length;
               s.strstart += s.match_length;
@@ -13454,7 +13676,7 @@
             }
           }
           s.insert = 0;
-          if (flush === Z_FINISH) {
+          if (flush === Z_FINISH$2) {
             /*** FLUSH_BLOCK(s, 1); ***/
             flush_block_only(s, true);
             if (s.strm.avail_out === 0) {
@@ -13486,7 +13708,7 @@
             if (s.lookahead === 0) {
               fill_window(s);
               if (s.lookahead === 0) {
-                if (flush === Z_NO_FLUSH) {
+                if (flush === Z_NO_FLUSH$1) {
                   return BS_NEED_MORE;
                 }
                 break; /* flush the current block */
@@ -13510,7 +13732,7 @@
             }
           }
           s.insert = 0;
-          if (flush === Z_FINISH) {
+          if (flush === Z_FINISH$2) {
             /*** FLUSH_BLOCK(s, 1); ***/
             flush_block_only(s, true);
             if (s.strm.avail_out === 0) {
@@ -13568,7 +13790,7 @@
           s.window_size = 2 * s.w_size;
 
           /*** CLEAR_HASH(s); ***/
-          zero$1(s.head); // Fill with NIL (= 0);
+          zero(s.head); // Fill with NIL (= 0);
 
           /* Set the default configuration parameters:
            */
@@ -13581,7 +13803,7 @@
           s.block_start = 0;
           s.lookahead = 0;
           s.insert = 0;
-          s.match_length = s.prev_length = MIN_MATCH$1 - 1;
+          s.match_length = s.prev_length = MIN_MATCH - 1;
           s.match_available = 0;
           s.ins_h = 0;
         }
@@ -13597,7 +13819,7 @@
           this.wrap = 0; /* bit 0 true for zlib, bit 1 true for gzip */
           this.gzhead = null; /* gzip header information to write */
           this.gzindex = 0; /* where in extra, name, or comment */
-          this.method = Z_DEFLATED; /* can only be DEFLATED */
+          this.method = Z_DEFLATED$2; /* can only be DEFLATED */
           this.last_flush = -1; /* value of flush param for previous deflate call */
 
           this.w_size = 0; /* LZ77 window size (32K by default) */
@@ -13690,24 +13912,24 @@
 
           // Use flat array of DOUBLE size, with interleaved fata,
           // because JS does not support effective
-          this.dyn_ltree = new Buf16(HEAP_SIZE$1 * 2);
-          this.dyn_dtree = new Buf16((2 * D_CODES$1 + 1) * 2);
-          this.bl_tree = new Buf16((2 * BL_CODES$1 + 1) * 2);
-          zero$1(this.dyn_ltree);
-          zero$1(this.dyn_dtree);
-          zero$1(this.bl_tree);
+          this.dyn_ltree = new Buf16(HEAP_SIZE * 2);
+          this.dyn_dtree = new Buf16((2 * D_CODES + 1) * 2);
+          this.bl_tree = new Buf16((2 * BL_CODES + 1) * 2);
+          zero(this.dyn_ltree);
+          zero(this.dyn_dtree);
+          zero(this.bl_tree);
 
           this.l_desc = null; /* desc. for literal tree */
           this.d_desc = null; /* desc. for distance tree */
           this.bl_desc = null; /* desc. for bit length tree */
 
           //ush bl_count[MAX_BITS+1];
-          this.bl_count = new Buf16(MAX_BITS$1 + 1);
+          this.bl_count = new Buf16(MAX_BITS + 1);
           /* number of codes at each bit length for an optimal tree */
 
           //int heap[2*L_CODES+1];      /* heap used to build the Huffman trees */
-          this.heap = new Buf16(2 * L_CODES$1 + 1); /* heap used to build the Huffman trees */
-          zero$1(this.heap);
+          this.heap = new Buf16(2 * L_CODES + 1); /* heap used to build the Huffman trees */
+          zero(this.heap);
 
           this.heap_len = 0; /* number of elements in the heap */
           this.heap_max = 0; /* element of largest frequency */
@@ -13715,8 +13937,8 @@
            * The same heap array is used to build all
            */
 
-          this.depth = new Buf16(2 * L_CODES$1 + 1); //uch depth[2*L_CODES+1];
-          zero$1(this.depth);
+          this.depth = new Buf16(2 * L_CODES + 1); //uch depth[2*L_CODES+1];
+          zero(this.depth);
           /* Depth of each subtree used as tie breaker for trees of equal frequency
            */
 
@@ -13780,7 +14002,7 @@
           var s;
 
           if (!strm || !strm.state) {
-            return err(strm, Z_STREAM_ERROR);
+            return err(strm, Z_STREAM_ERROR$2);
           }
 
           strm.total_in = strm.total_out = 0;
@@ -13799,15 +14021,15 @@
             0 // crc32(0, Z_NULL, 0)
             :
             1; // adler32(0, Z_NULL, 0)
-          s.last_flush = Z_NO_FLUSH;
+          s.last_flush = Z_NO_FLUSH$1;
           _tr_init(s);
-          return Z_OK;
+          return Z_OK$2;
         }
 
 
         function deflateReset(strm) {
           var ret = deflateResetKeep(strm);
-          if (ret === Z_OK) {
+          if (ret === Z_OK$2) {
             lm_init(strm.state);
           }
           return ret;
@@ -13816,11 +14038,11 @@
 
         function deflateInit2(strm, level, method, windowBits, memLevel, strategy) {
           if (!strm) { // === Z_NULL
-            return Z_STREAM_ERROR;
+            return Z_STREAM_ERROR$2;
           }
           var wrap = 1;
 
-          if (level === Z_DEFAULT_COMPRESSION) {
+          if (level === Z_DEFAULT_COMPRESSION$1) {
             level = 6;
           }
 
@@ -13833,10 +14055,10 @@
           }
 
 
-          if (memLevel < 1 || memLevel > MAX_MEM_LEVEL || method !== Z_DEFLATED ||
+          if (memLevel < 1 || memLevel > MAX_MEM_LEVEL || method !== Z_DEFLATED$2 ||
             windowBits < 8 || windowBits > 15 || level < 0 || level > 9 ||
             strategy < 0 || strategy > Z_FIXED$1) {
-            return err(strm, Z_STREAM_ERROR);
+            return err(strm, Z_STREAM_ERROR$2);
           }
 
 
@@ -13859,7 +14081,7 @@
           s.hash_bits = memLevel + 7;
           s.hash_size = 1 << s.hash_bits;
           s.hash_mask = s.hash_size - 1;
-          s.hash_shift = ~~((s.hash_bits + MIN_MATCH$1 - 1) / MIN_MATCH$1);
+          s.hash_shift = ~~((s.hash_bits + MIN_MATCH - 1) / MIN_MATCH);
 
           s.window = new Buf8(s.w_size * 2);
           s.head = new Buf16(s.hash_size);
@@ -13891,21 +14113,21 @@
         }
 
 
-        function deflate(strm, flush) {
+        function deflate$2(strm, flush) {
           var old_flush, s;
           var beg, val; // for gzip header write only
 
           if (!strm || !strm.state ||
-            flush > Z_BLOCK || flush < 0) {
-            return strm ? err(strm, Z_STREAM_ERROR) : Z_STREAM_ERROR;
+            flush > Z_BLOCK$2 || flush < 0) {
+            return strm ? err(strm, Z_STREAM_ERROR$2) : Z_STREAM_ERROR$2;
           }
 
           s = strm.state;
 
           if (!strm.output ||
             (!strm.input && strm.avail_in !== 0) ||
-            (s.status === FINISH_STATE && flush !== Z_FINISH)) {
-            return err(strm, (strm.avail_out === 0) ? Z_BUF_ERROR : Z_STREAM_ERROR);
+            (s.status === FINISH_STATE && flush !== Z_FINISH$2)) {
+            return err(strm, (strm.avail_out === 0) ? Z_BUF_ERROR$2 : Z_STREAM_ERROR$2);
           }
 
           s.strm = strm; /* just in case */
@@ -13927,7 +14149,7 @@
                 put_byte(s, 0);
                 put_byte(s, 0);
                 put_byte(s, s.level === 9 ? 2 :
-                  (s.strategy >= Z_HUFFMAN_ONLY || s.level < 2 ?
+                  (s.strategy >= Z_HUFFMAN_ONLY$1 || s.level < 2 ?
                     4 : 0));
                 put_byte(s, OS_CODE);
                 s.status = BUSY_STATE;
@@ -13943,7 +14165,7 @@
                 put_byte(s, (s.gzhead.time >> 16) & 0xff);
                 put_byte(s, (s.gzhead.time >> 24) & 0xff);
                 put_byte(s, s.level === 9 ? 2 :
-                  (s.strategy >= Z_HUFFMAN_ONLY || s.level < 2 ?
+                  (s.strategy >= Z_HUFFMAN_ONLY$1 || s.level < 2 ?
                     4 : 0));
                 put_byte(s, s.gzhead.os & 0xff);
                 if (s.gzhead.extra && s.gzhead.extra.length) {
@@ -13958,10 +14180,10 @@
               }
             } else // DEFLATE header
             {
-              var header = (Z_DEFLATED + ((s.w_bits - 8) << 4)) << 8;
+              var header = (Z_DEFLATED$2 + ((s.w_bits - 8) << 4)) << 8;
               var level_flags = -1;
 
-              if (s.strategy >= Z_HUFFMAN_ONLY || s.level < 2) {
+              if (s.strategy >= Z_HUFFMAN_ONLY$1 || s.level < 2) {
                 level_flags = 0;
               } else if (s.level < 6) {
                 level_flags = 1;
@@ -14119,7 +14341,7 @@
                * return OK instead of BUF_ERROR at next call of deflate:
                */
               s.last_flush = -1;
-              return Z_OK;
+              return Z_OK$2;
             }
 
             /* Make sure there is something to do and avoid duplicate consecutive
@@ -14127,21 +14349,21 @@
              * returning Z_STREAM_END instead of Z_BUF_ERROR.
              */
           } else if (strm.avail_in === 0 && rank(flush) <= rank(old_flush) &&
-            flush !== Z_FINISH) {
-            return err(strm, Z_BUF_ERROR);
+            flush !== Z_FINISH$2) {
+            return err(strm, Z_BUF_ERROR$2);
           }
 
           /* User must not provide more input after the first FINISH: */
           if (s.status === FINISH_STATE && strm.avail_in !== 0) {
-            return err(strm, Z_BUF_ERROR);
+            return err(strm, Z_BUF_ERROR$2);
           }
 
           /* Start a new block or continue the current one.
            */
           if (strm.avail_in !== 0 || s.lookahead !== 0 ||
-            (flush !== Z_NO_FLUSH && s.status !== FINISH_STATE)) {
-            var bstate = (s.strategy === Z_HUFFMAN_ONLY) ? deflate_huff(s, flush) :
-              (s.strategy === Z_RLE ? deflate_rle(s, flush) :
+            (flush !== Z_NO_FLUSH$1 && s.status !== FINISH_STATE)) {
+            var bstate = (s.strategy === Z_HUFFMAN_ONLY$1) ? deflate_huff(s, flush) :
+              (s.strategy === Z_RLE$1 ? deflate_rle(s, flush) :
                 configuration_table[s.level].func(s, flush));
 
             if (bstate === BS_FINISH_STARTED || bstate === BS_FINISH_DONE) {
@@ -14152,7 +14374,7 @@
                 s.last_flush = -1;
                 /* avoid BUF_ERROR next call, see above */
               }
-              return Z_OK;
+              return Z_OK$2;
               /* If flush != Z_NO_FLUSH && avail_out == 0, the next call
                * of deflate should use the same flush parameter to make sure
                * that the flush is complete. So we don't have to output an
@@ -14162,18 +14384,18 @@
                */
             }
             if (bstate === BS_BLOCK_DONE) {
-              if (flush === Z_PARTIAL_FLUSH) {
+              if (flush === Z_PARTIAL_FLUSH$1) {
                 _tr_align(s);
-              } else if (flush !== Z_BLOCK) { /* FULL_FLUSH or SYNC_FLUSH */
+              } else if (flush !== Z_BLOCK$2) { /* FULL_FLUSH or SYNC_FLUSH */
 
                 _tr_stored_block(s, 0, 0, false);
                 /* For a full flush, this empty block will be recognized
                  * as a special marker by inflate_sync().
                  */
-                if (flush === Z_FULL_FLUSH) {
+                if (flush === Z_FULL_FLUSH$1) {
                   /*** CLEAR_HASH(s); ***/
                   /* forget history */
-                  zero$1(s.head); // Fill with NIL (= 0);
+                  zero(s.head); // Fill with NIL (= 0);
 
                   if (s.lookahead === 0) {
                     s.strstart = 0;
@@ -14185,18 +14407,18 @@
               flush_pending(strm);
               if (strm.avail_out === 0) {
                 s.last_flush = -1; /* avoid BUF_ERROR at next call, see above */
-                return Z_OK;
+                return Z_OK$2;
               }
             }
           }
           //Assert(strm->avail_out > 0, "bug2");
           //if (strm.avail_out <= 0) { throw new Error("bug2");}
 
-          if (flush !== Z_FINISH) {
-            return Z_OK;
+          if (flush !== Z_FINISH$2) {
+            return Z_OK$2;
           }
           if (s.wrap <= 0) {
-            return Z_STREAM_END;
+            return Z_STREAM_END$2;
           }
 
           /* Write the trailer */
@@ -14222,14 +14444,14 @@
             s.wrap = -s.wrap;
           }
           /* write the trailer only once! */
-          return s.pending !== 0 ? Z_OK : Z_STREAM_END;
+          return s.pending !== 0 ? Z_OK$2 : Z_STREAM_END$2;
         }
 
         function deflateEnd(strm) {
           var status;
 
           if (!strm /*== Z_NULL*/ || !strm.state /*== Z_NULL*/ ) {
-            return Z_STREAM_ERROR;
+            return Z_STREAM_ERROR$2;
           }
 
           status = strm.state.status;
@@ -14241,12 +14463,12 @@
             status !== BUSY_STATE &&
             status !== FINISH_STATE
           ) {
-            return err(strm, Z_STREAM_ERROR);
+            return err(strm, Z_STREAM_ERROR$2);
           }
 
           strm.state = null;
 
-          return status === BUSY_STATE ? err(strm, Z_DATA_ERROR) : Z_OK;
+          return status === BUSY_STATE ? err(strm, Z_DATA_ERROR$2) : Z_OK$2;
         }
 
         /* Not implemented
@@ -14259,8 +14481,8 @@
         */
 
         // See state defs from inflate.js
-        var BAD = 30;       /* got a data error -- remain here until reset */
-        var TYPE = 12;      /* i: waiting for type bits, including last-flag bit */
+        var BAD$1 = 30;       /* got a data error -- remain here until reset */
+        var TYPE$1 = 12;      /* i: waiting for type bits, including last-flag bit */
 
         /*
            Decode literal, length, and distance codes and write out the resulting
@@ -14423,7 +14645,7 @@
         //#ifdef INFLATE_STRICT
                     if (dist > dmax) {
                       strm.msg = 'invalid distance too far back';
-                      state.mode = BAD;
+                      state.mode = BAD$1;
                       break top;
                     }
         //#endif
@@ -14436,7 +14658,7 @@
                       if (op > whave) {
                         if (state.sane) {
                           strm.msg = 'invalid distance too far back';
-                          state.mode = BAD;
+                          state.mode = BAD$1;
                           break top;
                         }
 
@@ -14541,7 +14763,7 @@
                   }
                   else {
                     strm.msg = 'invalid distance code';
-                    state.mode = BAD;
+                    state.mode = BAD$1;
                     break top;
                   }
 
@@ -14554,12 +14776,12 @@
               }
               else if (op & 32) {                     /* end-of-block */
                 //Tracevv((stderr, "inflate:         end of block\n"));
-                state.mode = TYPE;
+                state.mode = TYPE$1;
                 break top;
               }
               else {
                 strm.msg = 'invalid literal/length code';
-                state.mode = BAD;
+                state.mode = BAD$1;
                 break top;
               }
 
@@ -14584,13 +14806,13 @@
         }
 
         var MAXBITS = 15;
-        var ENOUGH_LENS = 852;
-        var ENOUGH_DISTS = 592;
+        var ENOUGH_LENS$1 = 852;
+        var ENOUGH_DISTS$1 = 592;
         //var ENOUGH = (ENOUGH_LENS+ENOUGH_DISTS);
 
-        var CODES = 0;
-        var LENS = 1;
-        var DISTS = 2;
+        var CODES$1 = 0;
+        var LENS$1 = 1;
+        var DISTS$1 = 2;
 
         var lbase = [ /* Length codes 257..285 base */
           3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31,
@@ -14726,7 +14948,7 @@
               return -1;
             } /* over-subscribed */
           }
-          if (left > 0 && (type === CODES || max !== 1)) {
+          if (left > 0 && (type === CODES$1 || max !== 1)) {
             return -1; /* incomplete set */
           }
 
@@ -14777,11 +14999,11 @@
           /* set up for code type */
           // poor man optimization - use if-else instead of switch,
           // to avoid deopts in old v8
-          if (type === CODES) {
+          if (type === CODES$1) {
             base = extra = work; /* dummy value--not used */
             end = 19;
 
-          } else if (type === LENS) {
+          } else if (type === LENS$1) {
             base = lbase;
             base_index -= 257;
             extra = lext;
@@ -14806,8 +15028,8 @@
           mask = used - 1; /* mask for comparing low */
 
           /* check available table space */
-          if ((type === LENS && used > ENOUGH_LENS) ||
-            (type === DISTS && used > ENOUGH_DISTS)) {
+          if ((type === LENS$1 && used > ENOUGH_LENS$1) ||
+            (type === DISTS$1 && used > ENOUGH_DISTS$1)) {
             return 1;
           }
           /* process all codes and make table entries */
@@ -14879,8 +15101,8 @@
 
               /* check for enough space */
               used += 1 << curr;
-              if ((type === LENS && used > ENOUGH_LENS) ||
-                (type === DISTS && used > ENOUGH_DISTS)) {
+              if ((type === LENS$1 && used > ENOUGH_LENS$1) ||
+                (type === DISTS$1 && used > ENOUGH_DISTS$1)) {
                 return 1;
               }
 
@@ -14909,9 +15131,9 @@
           return 0;
         }
 
-        var CODES$1 = 0;
-        var LENS$1 = 1;
-        var DISTS$1 = 2;
+        var CODES = 0;
+        var LENS = 1;
+        var DISTS = 2;
 
         /* Public constants ==========================================================*/
         /* ===========================================================================*/
@@ -14924,7 +15146,7 @@
         //var Z_FULL_FLUSH    = 3;
         var Z_FINISH$1 = 4;
         var Z_BLOCK$1 = 5;
-        var Z_TREES = 6;
+        var Z_TREES$1 = 6;
 
 
         /* Return codes for the compression/decompression functions. Negative values
@@ -14932,7 +15154,7 @@
          */
         var Z_OK$1 = 0;
         var Z_STREAM_END$1 = 1;
-        var Z_NEED_DICT = 2;
+        var Z_NEED_DICT$1 = 2;
         //var Z_ERRNO         = -1;
         var Z_STREAM_ERROR$1 = -2;
         var Z_DATA_ERROR$1 = -3;
@@ -14959,7 +15181,7 @@
         var HCRC = 9; /* i: waiting for header crc (gzip) */
         var DICTID = 10; /* i: waiting for dictionary check value */
         var DICT = 11; /* waiting for inflateSetDictionary() call */
-        var TYPE$1 = 12; /* i: waiting for type bits, including last-flag bit */
+        var TYPE = 12; /* i: waiting for type bits, including last-flag bit */
         var TYPEDO = 13; /* i: same, but skip check to exit inflate on new block */
         var STORED = 14; /* i: waiting for stored size (length and complement) */
         var COPY_ = 15; /* i/o: same as COPY below, but only first time in */
@@ -14977,7 +15199,7 @@
         var CHECK = 27; /* i: waiting for 32-bit check value */
         var LENGTH = 28; /* i: waiting for 32-bit length (gzip) */
         var DONE = 29; /* finished check, done -- remain here until reset */
-        var BAD$1 = 30; /* got a data error -- remain here until reset */
+        var BAD = 30; /* got a data error -- remain here until reset */
         var MEM = 31; /* got an inflate() memory error -- remain here until reset */
         var SYNC = 32; /* looking for synchronization bytes to restart inflate() */
 
@@ -14985,8 +15207,8 @@
 
 
 
-        var ENOUGH_LENS$1 = 852;
-        var ENOUGH_DISTS$1 = 592;
+        var ENOUGH_LENS = 852;
+        var ENOUGH_DISTS = 592;
 
 
         function zswap32(q) {
@@ -15075,8 +15297,8 @@
           state.hold = 0;
           state.bits = 0;
           //state.lencode = state.distcode = state.next = state.codes;
-          state.lencode = state.lendyn = new Buf32(ENOUGH_LENS$1);
-          state.distcode = state.distdyn = new Buf32(ENOUGH_DISTS$1);
+          state.lencode = state.lendyn = new Buf32(ENOUGH_LENS);
+          state.distcode = state.distdyn = new Buf32(ENOUGH_DISTS);
 
           state.sane = 1;
           state.back = -1;
@@ -15193,7 +15415,7 @@
               state.lens[sym++] = 8;
             }
 
-            inflate_table(LENS$1, state.lens, 0, 288, lenfix, 0, state.work, {
+            inflate_table(LENS, state.lens, 0, 288, lenfix, 0, state.work, {
               bits: 9
             });
 
@@ -15203,7 +15425,7 @@
               state.lens[sym++] = 5;
             }
 
-            inflate_table(DISTS$1, state.lens, 0, 32, distfix, 0, state.work, {
+            inflate_table(DISTS, state.lens, 0, 32, distfix, 0, state.work, {
               bits: 5
             });
 
@@ -15276,7 +15498,7 @@
           return 0;
         }
 
-        function inflate(strm, flush) {
+        function inflate$2(strm, flush) {
           var state;
           var input, output; // input/output buffers
           var next; /* next input INDEX */
@@ -15308,7 +15530,7 @@
           }
 
           state = strm.state;
-          if (state.mode === TYPE$1) {
+          if (state.mode === TYPE) {
             state.mode = TYPEDO;
           } /* skip check */
 
@@ -15368,12 +15590,12 @@
                 if (!(state.wrap & 1) || /* check if zlib header allowed */
                   (((hold & 0xff) /*BITS(8)*/ << 8) + (hold >> 8)) % 31) {
                   strm.msg = 'incorrect header check';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
                 if ((hold & 0x0f) /*BITS(4)*/ !== Z_DEFLATED$1) {
                   strm.msg = 'unknown compression method';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
                 //--- DROPBITS(4) ---//
@@ -15385,13 +15607,13 @@
                   state.wbits = len;
                 } else if (len > state.wbits) {
                   strm.msg = 'invalid window size';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
                 state.dmax = 1 << len;
                 //Tracev((stderr, "inflate:   zlib header ok\n"));
                 strm.adler = state.check = 1 /*adler32(0L, Z_NULL, 0)*/ ;
-                state.mode = hold & 0x200 ? DICTID : TYPE$1;
+                state.mode = hold & 0x200 ? DICTID : TYPE;
                 //=== INITBITS();
                 hold = 0;
                 bits = 0;
@@ -15411,12 +15633,12 @@
                 state.flags = hold;
                 if ((state.flags & 0xff) !== Z_DEFLATED$1) {
                   strm.msg = 'unknown compression method';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
                 if (state.flags & 0xe000) {
                   strm.msg = 'unknown header flags set';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
                 if (state.head) {
@@ -15636,7 +15858,7 @@
                   //===//
                   if (hold !== (state.check & 0xffff)) {
                     strm.msg = 'header crc mismatch';
-                    state.mode = BAD$1;
+                    state.mode = BAD;
                     break;
                   }
                   //=== INITBITS();
@@ -15649,7 +15871,7 @@
                   state.head.done = true;
                 }
                 strm.adler = state.check = 0;
-                state.mode = TYPE$1;
+                state.mode = TYPE;
                 break;
               case DICTID:
                 //=== NEEDBITS(32); */
@@ -15679,13 +15901,13 @@
                   state.hold = hold;
                   state.bits = bits;
                   //---
-                  return Z_NEED_DICT;
+                  return Z_NEED_DICT$1;
                 }
                 strm.adler = state.check = 1 /*adler32(0L, Z_NULL, 0)*/ ;
-                state.mode = TYPE$1;
+                state.mode = TYPE;
                 /* falls through */
-              case TYPE$1:
-                if (flush === Z_BLOCK$1 || flush === Z_TREES) {
+              case TYPE:
+                if (flush === Z_BLOCK$1 || flush === Z_TREES$1) {
                   break inf_leave;
                 }
                 /* falls through */
@@ -15727,7 +15949,7 @@
                   //Tracev((stderr, "inflate:     fixed codes block%s\n",
                   //        state.last ? " (last)" : ""));
                   state.mode = LEN_; /* decode codes */
-                  if (flush === Z_TREES) {
+                  if (flush === Z_TREES$1) {
                     //--- DROPBITS(2) ---//
                     hold >>>= 2;
                     bits -= 2;
@@ -15743,7 +15965,7 @@
                   break;
                 case 3:
                   strm.msg = 'invalid block type';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                 }
                 //--- DROPBITS(2) ---//
                 hold >>>= 2;
@@ -15767,7 +15989,7 @@
                 //===//
                 if ((hold & 0xffff) !== ((hold >>> 16) ^ 0xffff)) {
                   strm.msg = 'invalid stored block lengths';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
                 state.length = hold & 0xffff;
@@ -15778,7 +16000,7 @@
                 bits = 0;
                 //===//
                 state.mode = COPY_;
-                if (flush === Z_TREES) {
+                if (flush === Z_TREES$1) {
                   break inf_leave;
                 }
                 /* falls through */
@@ -15808,7 +16030,7 @@
                   break;
                 }
                 //Tracev((stderr, "inflate:       stored end\n"));
-                state.mode = TYPE$1;
+                state.mode = TYPE;
                 break;
               case TABLE:
                 //=== NEEDBITS(14); */
@@ -15839,7 +16061,7 @@
                 //#ifndef PKZIP_BUG_WORKAROUND
                 if (state.nlen > 286 || state.ndist > 30) {
                   strm.msg = 'too many length or distance symbols';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
                 //#endif
@@ -15878,12 +16100,12 @@
                 opts = {
                   bits: state.lenbits
                 };
-                ret = inflate_table(CODES$1, state.lens, 0, 19, state.lencode, 0, state.work, opts);
+                ret = inflate_table(CODES, state.lens, 0, 19, state.lencode, 0, state.work, opts);
                 state.lenbits = opts.bits;
 
                 if (ret) {
                   strm.msg = 'invalid code lengths set';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
                 //Tracev((stderr, "inflate:       code lengths ok\n"));
@@ -15935,7 +16157,7 @@
                       //---//
                       if (state.have === 0) {
                         strm.msg = 'invalid bit length repeat';
-                        state.mode = BAD$1;
+                        state.mode = BAD;
                         break;
                       }
                       len = state.lens[state.have - 1];
@@ -15991,7 +16213,7 @@
                     }
                     if (state.have + copy > state.nlen + state.ndist) {
                       strm.msg = 'invalid bit length repeat';
-                      state.mode = BAD$1;
+                      state.mode = BAD;
                       break;
                     }
                     while (copy--) {
@@ -16001,14 +16223,14 @@
                 }
 
                 /* handle error breaks in while */
-                if (state.mode === BAD$1) {
+                if (state.mode === BAD) {
                   break;
                 }
 
                 /* check for end-of-block code (better have one) */
                 if (state.lens[256] === 0) {
                   strm.msg = 'invalid code -- missing end-of-block';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
 
@@ -16020,7 +16242,7 @@
                 opts = {
                   bits: state.lenbits
                 };
-                ret = inflate_table(LENS$1, state.lens, 0, state.nlen, state.lencode, 0, state.work, opts);
+                ret = inflate_table(LENS, state.lens, 0, state.nlen, state.lencode, 0, state.work, opts);
                 // We have separate tables & no pointers. 2 commented lines below not needed.
                 // state.next_index = opts.table_index;
                 state.lenbits = opts.bits;
@@ -16028,7 +16250,7 @@
 
                 if (ret) {
                   strm.msg = 'invalid literal/lengths set';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
 
@@ -16039,7 +16261,7 @@
                 opts = {
                   bits: state.distbits
                 };
-                ret = inflate_table(DISTS$1, state.lens, state.nlen, state.ndist, state.distcode, 0, state.work, opts);
+                ret = inflate_table(DISTS, state.lens, state.nlen, state.ndist, state.distcode, 0, state.work, opts);
                 // We have separate tables & no pointers. 2 commented lines below not needed.
                 // state.next_index = opts.table_index;
                 state.distbits = opts.bits;
@@ -16047,12 +16269,12 @@
 
                 if (ret) {
                   strm.msg = 'invalid distances set';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
                 //Tracev((stderr, 'inflate:       codes ok\n'));
                 state.mode = LEN_;
-                if (flush === Z_TREES) {
+                if (flush === Z_TREES$1) {
                   break inf_leave;
                 }
                 /* falls through */
@@ -16081,7 +16303,7 @@
                   bits = state.bits;
                   //---
 
-                  if (state.mode === TYPE$1) {
+                  if (state.mode === TYPE) {
                     state.back = -1;
                   }
                   break;
@@ -16150,12 +16372,12 @@
                 if (here_op & 32) {
                   //Tracevv((stderr, "inflate:         end of block\n"));
                   state.back = -1;
-                  state.mode = TYPE$1;
+                  state.mode = TYPE;
                   break;
                 }
                 if (here_op & 64) {
                   strm.msg = 'invalid literal/length code';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
                 state.extra = here_op & 15;
@@ -16240,7 +16462,7 @@
                 state.back += here_bits;
                 if (here_op & 64) {
                   strm.msg = 'invalid distance code';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
                 state.offset = here_val;
@@ -16270,7 +16492,7 @@
                 //#ifdef INFLATE_STRICT
                 if (state.offset > state.dmax) {
                   strm.msg = 'invalid distance too far back';
-                  state.mode = BAD$1;
+                  state.mode = BAD;
                   break;
                 }
                 //#endif
@@ -16287,7 +16509,7 @@
                   if (copy > state.whave) {
                     if (state.sane) {
                       strm.msg = 'invalid distance too far back';
-                      state.mode = BAD$1;
+                      state.mode = BAD;
                       break;
                     }
                     // (!) This block is disabled in zlib defailts,
@@ -16367,7 +16589,7 @@
                   // NB: crc32 stored as signed 32-bit int, zswap32 returns signed too
                   if ((state.flags ? hold : zswap32(hold)) !== state.check) {
                     strm.msg = 'incorrect data check';
-                    state.mode = BAD$1;
+                    state.mode = BAD;
                     break;
                   }
                   //=== INITBITS();
@@ -16392,7 +16614,7 @@
                   //===//
                   if (hold !== (state.total & 0xffffffff)) {
                     strm.msg = 'incorrect length check';
-                    state.mode = BAD$1;
+                    state.mode = BAD;
                     break;
                   }
                   //=== INITBITS();
@@ -16406,7 +16628,7 @@
               case DONE:
                 ret = Z_STREAM_END$1;
                 break inf_leave;
-              case BAD$1:
+              case BAD:
                 ret = Z_DATA_ERROR$1;
                 break inf_leave;
               case MEM:
@@ -16436,7 +16658,7 @@
           state.bits = bits;
           //---
 
-          if (state.wsize || (_out !== strm.avail_out && state.mode < BAD$1 &&
+          if (state.wsize || (_out !== strm.avail_out && state.mode < BAD &&
               (state.mode < CHECK || flush !== Z_FINISH$1))) {
             if (updatewindow(strm, strm.output, strm.next_out, _out - strm.avail_out)) ;
           }
@@ -16450,7 +16672,7 @@
               (state.flags ? crc32(state.check, output, _out, strm.next_out - _out) : adler32(state.check, output, _out, strm.next_out - _out));
           }
           strm.data_type = state.bits + (state.last ? 64 : 0) +
-            (state.mode === TYPE$1 ? 128 : 0) +
+            (state.mode === TYPE ? 128 : 0) +
             (state.mode === LEN_ || state.mode === COPY_ ? 256 : 0);
           if (((_in === 0 && _out === 0) || flush === Z_FINISH$1) && ret === Z_OK$1) {
             ret = Z_BUF_ERROR$1;
@@ -16494,49 +16716,49 @@
         var DEFLATERAW = 5;
         var INFLATERAW = 6;
         var UNZIP = 7;
-        var Z_NO_FLUSH$1=         0,
-          Z_PARTIAL_FLUSH$1=    1,
+        var Z_NO_FLUSH=         0,
+          Z_PARTIAL_FLUSH=    1,
           Z_SYNC_FLUSH=    2,
-          Z_FULL_FLUSH$1=       3,
-          Z_FINISH$2=       4,
-          Z_BLOCK$2=           5,
-          Z_TREES$1=            6,
+          Z_FULL_FLUSH=       3,
+          Z_FINISH=       4,
+          Z_BLOCK=           5,
+          Z_TREES=            6,
 
           /* Return codes for the compression/decompression functions. Negative values
           * are errors, positive values are used for special but normal events.
           */
-          Z_OK$2=               0,
-          Z_STREAM_END$2=       1,
-          Z_NEED_DICT$1=      2,
+          Z_OK=               0,
+          Z_STREAM_END=       1,
+          Z_NEED_DICT=      2,
           Z_ERRNO=       -1,
-          Z_STREAM_ERROR$2=   -2,
-          Z_DATA_ERROR$2=    -3,
+          Z_STREAM_ERROR=   -2,
+          Z_DATA_ERROR=    -3,
           //Z_MEM_ERROR:     -4,
-          Z_BUF_ERROR$2=    -5,
+          Z_BUF_ERROR=    -5,
           //Z_VERSION_ERROR: -6,
 
           /* compression levels */
           Z_NO_COMPRESSION=         0,
           Z_BEST_SPEED=             1,
           Z_BEST_COMPRESSION=       9,
-          Z_DEFAULT_COMPRESSION$1=   -1,
+          Z_DEFAULT_COMPRESSION=   -1,
 
 
-          Z_FILTERED$1=               1,
-          Z_HUFFMAN_ONLY$1=           2,
-          Z_RLE$1=                    3,
-          Z_FIXED$2=                  4,
+          Z_FILTERED=               1,
+          Z_HUFFMAN_ONLY=           2,
+          Z_RLE=                    3,
+          Z_FIXED=                  4,
           Z_DEFAULT_STRATEGY=       0,
 
           /* Possible values of the data_type field (though see inflate()) */
-          Z_BINARY$1=                 0,
-          Z_TEXT$1=                   1,
+          Z_BINARY=                 0,
+          Z_TEXT=                   1,
           //Z_ASCII:                1, // = Z_TEXT (deprecated)
-          Z_UNKNOWN$2=                2,
+          Z_UNKNOWN=                2,
 
           /* The deflate compression method */
-          Z_DEFLATED$2=               8;
-        function Zlib(mode) {
+          Z_DEFLATED=               8;
+        function Zlib$2(mode) {
           if (mode < DEFLATE || mode > UNZIP)
             throw new TypeError('Bad argument');
 
@@ -16551,7 +16773,7 @@
           this.dictionary = null;
         }
 
-        Zlib.prototype.init = function(windowBits, level, memLevel, strategy, dictionary) {
+        Zlib$2.prototype.init = function(windowBits, level, memLevel, strategy, dictionary) {
           this.windowBits = windowBits;
           this.level = level;
           this.memLevel = memLevel;
@@ -16576,7 +16798,7 @@
             status = deflateInit2(
               this.strm,
               this.level,
-              Z_DEFLATED$2,
+              Z_DEFLATED,
               this.windowBits,
               this.memLevel,
               this.strategy
@@ -16595,7 +16817,7 @@
             throw new Error('Unknown mode ' + this.mode);
           }
 
-          if (status !== Z_OK$2) {
+          if (status !== Z_OK) {
             this._error(status);
             return;
           }
@@ -16604,11 +16826,11 @@
           this.init_done = true;
         };
 
-        Zlib.prototype.params = function() {
+        Zlib$2.prototype.params = function() {
           throw new Error('deflateParams Not supported');
         };
 
-        Zlib.prototype._writeCheck = function() {
+        Zlib$2.prototype._writeCheck = function() {
           if (!this.init_done)
             throw new Error('write before init');
 
@@ -16622,12 +16844,12 @@
             throw new Error('close is pending');
         };
 
-        Zlib.prototype.write = function(flush, input, in_off, in_len, out, out_off, out_len) {
+        Zlib$2.prototype.write = function(flush, input, in_off, in_len, out, out_off, out_len) {
           this._writeCheck();
           this.write_in_progress = true;
 
           var self = this;
-          nextTick$1(function() {
+          nextTick(function() {
             self.write_in_progress = false;
             var res = self._write(flush, input, in_off, in_len, out, out_off, out_len);
             self.callback(res[0], res[1]);
@@ -16646,25 +16868,25 @@
           }
         }
 
-        Zlib.prototype.writeSync = function(flush, input, in_off, in_len, out, out_off, out_len) {
+        Zlib$2.prototype.writeSync = function(flush, input, in_off, in_len, out, out_off, out_len) {
           this._writeCheck();
           return this._write(flush, input, in_off, in_len, out, out_off, out_len);
         };
 
-        Zlib.prototype._write = function(flush, input, in_off, in_len, out, out_off, out_len) {
+        Zlib$2.prototype._write = function(flush, input, in_off, in_len, out, out_off, out_len) {
           this.write_in_progress = true;
 
-          if (flush !== Z_NO_FLUSH$1 &&
-              flush !== Z_PARTIAL_FLUSH$1 &&
+          if (flush !== Z_NO_FLUSH &&
+              flush !== Z_PARTIAL_FLUSH &&
               flush !== Z_SYNC_FLUSH &&
-              flush !== Z_FULL_FLUSH$1 &&
-              flush !== Z_FINISH$2 &&
-              flush !== Z_BLOCK$2) {
+              flush !== Z_FULL_FLUSH &&
+              flush !== Z_FINISH &&
+              flush !== Z_BLOCK) {
             throw new Error('Invalid flush value');
           }
 
           if (input == null) {
-            input = new Buffer(0);
+            input = new Buffer$1(0);
             in_len = 0;
             in_off = 0;
           }
@@ -16686,19 +16908,19 @@
           case DEFLATE:
           case GZIP:
           case DEFLATERAW:
-            status = deflate(strm, flush);
+            status = deflate$2(strm, flush);
             break;
           case UNZIP:
           case INFLATE:
           case GUNZIP:
           case INFLATERAW:
-            status = inflate(strm, flush);
+            status = inflate$2(strm, flush);
             break;
           default:
             throw new Error('Unknown mode ' + this.mode);
           }
 
-          if (status !== Z_STREAM_END$2 && status !== Z_OK$2) {
+          if (status !== Z_STREAM_END && status !== Z_OK) {
             this._error(status);
           }
 
@@ -16706,7 +16928,7 @@
           return [strm.avail_in, strm.avail_out];
         };
 
-        Zlib.prototype.close = function() {
+        Zlib$2.prototype.close = function() {
           if (this.write_in_progress) {
             this.pending_close = true;
             return;
@@ -16723,7 +16945,7 @@
           this.mode = NONE;
         };
         var status;
-        Zlib.prototype.reset = function() {
+        Zlib$2.prototype.reset = function() {
           switch (this.mode) {
           case DEFLATE:
           case DEFLATERAW:
@@ -16735,12 +16957,12 @@
             break;
           }
 
-          if (status !== Z_OK$2) {
+          if (status !== Z_OK) {
             this._error(status);
           }
         };
 
-        Zlib.prototype._error = function(status) {
+        Zlib$2.prototype._error = function(status) {
           this.onerror(msg[status] + ': ' + this.strm.msg, status);
 
           this.write_in_progress = false;
@@ -16758,110 +16980,110 @@
             DEFLATERAW: DEFLATERAW,
             INFLATERAW: INFLATERAW,
             UNZIP: UNZIP,
-            Z_NO_FLUSH: Z_NO_FLUSH$1,
-            Z_PARTIAL_FLUSH: Z_PARTIAL_FLUSH$1,
+            Z_NO_FLUSH: Z_NO_FLUSH,
+            Z_PARTIAL_FLUSH: Z_PARTIAL_FLUSH,
             Z_SYNC_FLUSH: Z_SYNC_FLUSH,
-            Z_FULL_FLUSH: Z_FULL_FLUSH$1,
-            Z_FINISH: Z_FINISH$2,
-            Z_BLOCK: Z_BLOCK$2,
-            Z_TREES: Z_TREES$1,
-            Z_OK: Z_OK$2,
-            Z_STREAM_END: Z_STREAM_END$2,
-            Z_NEED_DICT: Z_NEED_DICT$1,
+            Z_FULL_FLUSH: Z_FULL_FLUSH,
+            Z_FINISH: Z_FINISH,
+            Z_BLOCK: Z_BLOCK,
+            Z_TREES: Z_TREES,
+            Z_OK: Z_OK,
+            Z_STREAM_END: Z_STREAM_END,
+            Z_NEED_DICT: Z_NEED_DICT,
             Z_ERRNO: Z_ERRNO,
-            Z_STREAM_ERROR: Z_STREAM_ERROR$2,
-            Z_DATA_ERROR: Z_DATA_ERROR$2,
-            Z_BUF_ERROR: Z_BUF_ERROR$2,
+            Z_STREAM_ERROR: Z_STREAM_ERROR,
+            Z_DATA_ERROR: Z_DATA_ERROR,
+            Z_BUF_ERROR: Z_BUF_ERROR,
             Z_NO_COMPRESSION: Z_NO_COMPRESSION,
             Z_BEST_SPEED: Z_BEST_SPEED,
             Z_BEST_COMPRESSION: Z_BEST_COMPRESSION,
-            Z_DEFAULT_COMPRESSION: Z_DEFAULT_COMPRESSION$1,
-            Z_FILTERED: Z_FILTERED$1,
-            Z_HUFFMAN_ONLY: Z_HUFFMAN_ONLY$1,
-            Z_RLE: Z_RLE$1,
-            Z_FIXED: Z_FIXED$2,
+            Z_DEFAULT_COMPRESSION: Z_DEFAULT_COMPRESSION,
+            Z_FILTERED: Z_FILTERED,
+            Z_HUFFMAN_ONLY: Z_HUFFMAN_ONLY,
+            Z_RLE: Z_RLE,
+            Z_FIXED: Z_FIXED,
             Z_DEFAULT_STRATEGY: Z_DEFAULT_STRATEGY,
-            Z_BINARY: Z_BINARY$1,
-            Z_TEXT: Z_TEXT$1,
-            Z_UNKNOWN: Z_UNKNOWN$2,
-            Z_DEFLATED: Z_DEFLATED$2,
-            Zlib: Zlib
+            Z_BINARY: Z_BINARY,
+            Z_TEXT: Z_TEXT,
+            Z_UNKNOWN: Z_UNKNOWN,
+            Z_DEFLATED: Z_DEFLATED,
+            Zlib: Zlib$2
         });
 
-        function assert (a, msg) {
+        function assert$1 (a, msg) {
           if (!a) {
             throw new Error(msg);
           }
         }
-        var binding = {};
+        var binding$1 = {};
         Object.keys(_binding).forEach(function (key) {
-          binding[key] = _binding[key];
+          binding$1[key] = _binding[key];
         });
         // zlib doesn't provide these, so kludge them in following the same
         // const naming scheme zlib uses.
-        binding.Z_MIN_WINDOWBITS = 8;
-        binding.Z_MAX_WINDOWBITS = 15;
-        binding.Z_DEFAULT_WINDOWBITS = 15;
+        binding$1.Z_MIN_WINDOWBITS = 8;
+        binding$1.Z_MAX_WINDOWBITS = 15;
+        binding$1.Z_DEFAULT_WINDOWBITS = 15;
 
         // fewer than 64 bytes per chunk is stupid.
         // technically it could work with as few as 8, but even 64 bytes
         // is absurdly low.  Usually a MB or more is best.
-        binding.Z_MIN_CHUNK = 64;
-        binding.Z_MAX_CHUNK = Infinity;
-        binding.Z_DEFAULT_CHUNK = (16 * 1024);
+        binding$1.Z_MIN_CHUNK = 64;
+        binding$1.Z_MAX_CHUNK = Infinity;
+        binding$1.Z_DEFAULT_CHUNK = (16 * 1024);
 
-        binding.Z_MIN_MEMLEVEL = 1;
-        binding.Z_MAX_MEMLEVEL = 9;
-        binding.Z_DEFAULT_MEMLEVEL = 8;
+        binding$1.Z_MIN_MEMLEVEL = 1;
+        binding$1.Z_MAX_MEMLEVEL = 9;
+        binding$1.Z_DEFAULT_MEMLEVEL = 8;
 
-        binding.Z_MIN_LEVEL = -1;
-        binding.Z_MAX_LEVEL = 9;
-        binding.Z_DEFAULT_LEVEL = binding.Z_DEFAULT_COMPRESSION;
+        binding$1.Z_MIN_LEVEL = -1;
+        binding$1.Z_MAX_LEVEL = 9;
+        binding$1.Z_DEFAULT_LEVEL = binding$1.Z_DEFAULT_COMPRESSION;
 
 
         // translation table for return codes.
-        var codes = {
-          Z_OK: binding.Z_OK,
-          Z_STREAM_END: binding.Z_STREAM_END,
-          Z_NEED_DICT: binding.Z_NEED_DICT,
-          Z_ERRNO: binding.Z_ERRNO,
-          Z_STREAM_ERROR: binding.Z_STREAM_ERROR,
-          Z_DATA_ERROR: binding.Z_DATA_ERROR,
-          Z_MEM_ERROR: binding.Z_MEM_ERROR,
-          Z_BUF_ERROR: binding.Z_BUF_ERROR,
-          Z_VERSION_ERROR: binding.Z_VERSION_ERROR
+        var codes$1 = {
+          Z_OK: binding$1.Z_OK,
+          Z_STREAM_END: binding$1.Z_STREAM_END,
+          Z_NEED_DICT: binding$1.Z_NEED_DICT,
+          Z_ERRNO: binding$1.Z_ERRNO,
+          Z_STREAM_ERROR: binding$1.Z_STREAM_ERROR,
+          Z_DATA_ERROR: binding$1.Z_DATA_ERROR,
+          Z_MEM_ERROR: binding$1.Z_MEM_ERROR,
+          Z_BUF_ERROR: binding$1.Z_BUF_ERROR,
+          Z_VERSION_ERROR: binding$1.Z_VERSION_ERROR
         };
 
-        Object.keys(codes).forEach(function(k) {
-          codes[codes[k]] = k;
+        Object.keys(codes$1).forEach(function(k) {
+          codes$1[codes$1[k]] = k;
         });
 
-        function createDeflate(o) {
-          return new Deflate(o);
+        function createDeflate$1(o) {
+          return new Deflate$1(o);
         }
 
-        function createInflate(o) {
-          return new Inflate(o);
+        function createInflate$1(o) {
+          return new Inflate$1(o);
         }
 
-        function createDeflateRaw(o) {
-          return new DeflateRaw(o);
+        function createDeflateRaw$1(o) {
+          return new DeflateRaw$1(o);
         }
 
-        function createInflateRaw(o) {
-          return new InflateRaw(o);
+        function createInflateRaw$1(o) {
+          return new InflateRaw$1(o);
         }
 
-        function createGzip(o) {
-          return new Gzip(o);
+        function createGzip$1(o) {
+          return new Gzip$1(o);
         }
 
-        function createGunzip(o) {
-          return new Gunzip(o);
+        function createGunzip$1(o) {
+          return new Gunzip$1(o);
         }
 
-        function createUnzip(o) {
-          return new Unzip(o);
+        function createUnzip$1(o) {
+          return new Unzip$1(o);
         }
 
 
@@ -16872,47 +17094,47 @@
             callback = opts;
             opts = {};
           }
-          return zlibBuffer(new Deflate(opts), buffer, callback);
+          return zlibBuffer$1(new Deflate$1(opts), buffer, callback);
         }
 
-        function deflateSync(buffer, opts) {
-          return zlibBufferSync(new Deflate(opts), buffer);
+        function deflateSync$1(buffer, opts) {
+          return zlibBufferSync$1(new Deflate$1(opts), buffer);
         }
 
-        function gzip(buffer, opts, callback) {
+        function gzip$1(buffer, opts, callback) {
           if (typeof opts === 'function') {
             callback = opts;
             opts = {};
           }
-          return zlibBuffer(new Gzip(opts), buffer, callback);
+          return zlibBuffer$1(new Gzip$1(opts), buffer, callback);
         }
 
-        function gzipSync(buffer, opts) {
-          return zlibBufferSync(new Gzip(opts), buffer);
+        function gzipSync$1(buffer, opts) {
+          return zlibBufferSync$1(new Gzip$1(opts), buffer);
         }
 
-        function deflateRaw(buffer, opts, callback) {
+        function deflateRaw$1(buffer, opts, callback) {
           if (typeof opts === 'function') {
             callback = opts;
             opts = {};
           }
-          return zlibBuffer(new DeflateRaw(opts), buffer, callback);
+          return zlibBuffer$1(new DeflateRaw$1(opts), buffer, callback);
         }
 
-        function deflateRawSync(buffer, opts) {
-          return zlibBufferSync(new DeflateRaw(opts), buffer);
+        function deflateRawSync$1(buffer, opts) {
+          return zlibBufferSync$1(new DeflateRaw$1(opts), buffer);
         }
 
-        function unzip(buffer, opts, callback) {
+        function unzip$1(buffer, opts, callback) {
           if (typeof opts === 'function') {
             callback = opts;
             opts = {};
           }
-          return zlibBuffer(new Unzip(opts), buffer, callback);
+          return zlibBuffer$1(new Unzip$1(opts), buffer, callback);
         }
 
-        function unzipSync(buffer, opts) {
-          return zlibBufferSync(new Unzip(opts), buffer);
+        function unzipSync$1(buffer, opts) {
+          return zlibBufferSync$1(new Unzip$1(opts), buffer);
         }
 
         function inflate$1(buffer, opts, callback) {
@@ -16920,38 +17142,38 @@
             callback = opts;
             opts = {};
           }
-          return zlibBuffer(new Inflate(opts), buffer, callback);
+          return zlibBuffer$1(new Inflate$1(opts), buffer, callback);
         }
 
-        function inflateSync(buffer, opts) {
-          return zlibBufferSync(new Inflate(opts), buffer);
+        function inflateSync$1(buffer, opts) {
+          return zlibBufferSync$1(new Inflate$1(opts), buffer);
         }
 
-        function gunzip(buffer, opts, callback) {
+        function gunzip$1(buffer, opts, callback) {
           if (typeof opts === 'function') {
             callback = opts;
             opts = {};
           }
-          return zlibBuffer(new Gunzip(opts), buffer, callback);
+          return zlibBuffer$1(new Gunzip$1(opts), buffer, callback);
         }
 
-        function gunzipSync(buffer, opts) {
-          return zlibBufferSync(new Gunzip(opts), buffer);
+        function gunzipSync$1(buffer, opts) {
+          return zlibBufferSync$1(new Gunzip$1(opts), buffer);
         }
 
-        function inflateRaw(buffer, opts, callback) {
+        function inflateRaw$1(buffer, opts, callback) {
           if (typeof opts === 'function') {
             callback = opts;
             opts = {};
           }
-          return zlibBuffer(new InflateRaw(opts), buffer, callback);
+          return zlibBuffer$1(new InflateRaw$1(opts), buffer, callback);
         }
 
-        function inflateRawSync(buffer, opts) {
-          return zlibBufferSync(new InflateRaw(opts), buffer);
+        function inflateRawSync$1(buffer, opts) {
+          return zlibBufferSync$1(new InflateRaw$1(opts), buffer);
         }
 
-        function zlibBuffer(engine, buffer, callback) {
+        function zlibBuffer$1(engine, buffer, callback) {
           var buffers = [];
           var nread = 0;
 
@@ -16977,67 +17199,67 @@
           }
 
           function onEnd() {
-            var buf = Buffer.concat(buffers, nread);
+            var buf = Buffer$1.concat(buffers, nread);
             buffers = [];
             callback(null, buf);
             engine.close();
           }
         }
 
-        function zlibBufferSync(engine, buffer) {
+        function zlibBufferSync$1(engine, buffer) {
           if (typeof buffer === 'string')
-            buffer = new Buffer(buffer);
-          if (!isBuffer(buffer))
+            buffer = new Buffer$1(buffer);
+          if (!isBuffer$1(buffer))
             throw new TypeError('Not a string or buffer');
 
-          var flushFlag = binding.Z_FINISH;
+          var flushFlag = binding$1.Z_FINISH;
 
           return engine._processChunk(buffer, flushFlag);
         }
 
         // generic zlib
         // minimal 2-byte header
-        function Deflate(opts) {
-          if (!(this instanceof Deflate)) return new Deflate(opts);
-          Zlib$1.call(this, opts, binding.DEFLATE);
+        function Deflate$1(opts) {
+          if (!(this instanceof Deflate$1)) return new Deflate$1(opts);
+          Zlib$1.call(this, opts, binding$1.DEFLATE);
         }
 
-        function Inflate(opts) {
-          if (!(this instanceof Inflate)) return new Inflate(opts);
-          Zlib$1.call(this, opts, binding.INFLATE);
+        function Inflate$1(opts) {
+          if (!(this instanceof Inflate$1)) return new Inflate$1(opts);
+          Zlib$1.call(this, opts, binding$1.INFLATE);
         }
 
 
 
         // gzip - bigger header, same deflate compression
-        function Gzip(opts) {
-          if (!(this instanceof Gzip)) return new Gzip(opts);
-          Zlib$1.call(this, opts, binding.GZIP);
+        function Gzip$1(opts) {
+          if (!(this instanceof Gzip$1)) return new Gzip$1(opts);
+          Zlib$1.call(this, opts, binding$1.GZIP);
         }
 
-        function Gunzip(opts) {
-          if (!(this instanceof Gunzip)) return new Gunzip(opts);
-          Zlib$1.call(this, opts, binding.GUNZIP);
+        function Gunzip$1(opts) {
+          if (!(this instanceof Gunzip$1)) return new Gunzip$1(opts);
+          Zlib$1.call(this, opts, binding$1.GUNZIP);
         }
 
 
 
         // raw - no header
-        function DeflateRaw(opts) {
-          if (!(this instanceof DeflateRaw)) return new DeflateRaw(opts);
-          Zlib$1.call(this, opts, binding.DEFLATERAW);
+        function DeflateRaw$1(opts) {
+          if (!(this instanceof DeflateRaw$1)) return new DeflateRaw$1(opts);
+          Zlib$1.call(this, opts, binding$1.DEFLATERAW);
         }
 
-        function InflateRaw(opts) {
-          if (!(this instanceof InflateRaw)) return new InflateRaw(opts);
-          Zlib$1.call(this, opts, binding.INFLATERAW);
+        function InflateRaw$1(opts) {
+          if (!(this instanceof InflateRaw$1)) return new InflateRaw$1(opts);
+          Zlib$1.call(this, opts, binding$1.INFLATERAW);
         }
 
 
         // auto-detect header.
-        function Unzip(opts) {
-          if (!(this instanceof Unzip)) return new Unzip(opts);
-          Zlib$1.call(this, opts, binding.UNZIP);
+        function Unzip$1(opts) {
+          if (!(this instanceof Unzip$1)) return new Unzip$1(opts);
+          Zlib$1.call(this, opts, binding$1.UNZIP);
         }
 
 
@@ -17048,67 +17270,67 @@
 
         function Zlib$1(opts, mode) {
           this._opts = opts = opts || {};
-          this._chunkSize = opts.chunkSize || binding.Z_DEFAULT_CHUNK;
+          this._chunkSize = opts.chunkSize || binding$1.Z_DEFAULT_CHUNK;
 
           Transform.call(this, opts);
 
           if (opts.flush) {
-            if (opts.flush !== binding.Z_NO_FLUSH &&
-                opts.flush !== binding.Z_PARTIAL_FLUSH &&
-                opts.flush !== binding.Z_SYNC_FLUSH &&
-                opts.flush !== binding.Z_FULL_FLUSH &&
-                opts.flush !== binding.Z_FINISH &&
-                opts.flush !== binding.Z_BLOCK) {
+            if (opts.flush !== binding$1.Z_NO_FLUSH &&
+                opts.flush !== binding$1.Z_PARTIAL_FLUSH &&
+                opts.flush !== binding$1.Z_SYNC_FLUSH &&
+                opts.flush !== binding$1.Z_FULL_FLUSH &&
+                opts.flush !== binding$1.Z_FINISH &&
+                opts.flush !== binding$1.Z_BLOCK) {
               throw new Error('Invalid flush flag: ' + opts.flush);
             }
           }
-          this._flushFlag = opts.flush || binding.Z_NO_FLUSH;
+          this._flushFlag = opts.flush || binding$1.Z_NO_FLUSH;
 
           if (opts.chunkSize) {
-            if (opts.chunkSize < binding.Z_MIN_CHUNK ||
-                opts.chunkSize > binding.Z_MAX_CHUNK) {
+            if (opts.chunkSize < binding$1.Z_MIN_CHUNK ||
+                opts.chunkSize > binding$1.Z_MAX_CHUNK) {
               throw new Error('Invalid chunk size: ' + opts.chunkSize);
             }
           }
 
           if (opts.windowBits) {
-            if (opts.windowBits < binding.Z_MIN_WINDOWBITS ||
-                opts.windowBits > binding.Z_MAX_WINDOWBITS) {
+            if (opts.windowBits < binding$1.Z_MIN_WINDOWBITS ||
+                opts.windowBits > binding$1.Z_MAX_WINDOWBITS) {
               throw new Error('Invalid windowBits: ' + opts.windowBits);
             }
           }
 
           if (opts.level) {
-            if (opts.level < binding.Z_MIN_LEVEL ||
-                opts.level > binding.Z_MAX_LEVEL) {
+            if (opts.level < binding$1.Z_MIN_LEVEL ||
+                opts.level > binding$1.Z_MAX_LEVEL) {
               throw new Error('Invalid compression level: ' + opts.level);
             }
           }
 
           if (opts.memLevel) {
-            if (opts.memLevel < binding.Z_MIN_MEMLEVEL ||
-                opts.memLevel > binding.Z_MAX_MEMLEVEL) {
+            if (opts.memLevel < binding$1.Z_MIN_MEMLEVEL ||
+                opts.memLevel > binding$1.Z_MAX_MEMLEVEL) {
               throw new Error('Invalid memLevel: ' + opts.memLevel);
             }
           }
 
           if (opts.strategy) {
-            if (opts.strategy != binding.Z_FILTERED &&
-                opts.strategy != binding.Z_HUFFMAN_ONLY &&
-                opts.strategy != binding.Z_RLE &&
-                opts.strategy != binding.Z_FIXED &&
-                opts.strategy != binding.Z_DEFAULT_STRATEGY) {
+            if (opts.strategy != binding$1.Z_FILTERED &&
+                opts.strategy != binding$1.Z_HUFFMAN_ONLY &&
+                opts.strategy != binding$1.Z_RLE &&
+                opts.strategy != binding$1.Z_FIXED &&
+                opts.strategy != binding$1.Z_DEFAULT_STRATEGY) {
               throw new Error('Invalid strategy: ' + opts.strategy);
             }
           }
 
           if (opts.dictionary) {
-            if (!isBuffer(opts.dictionary)) {
+            if (!isBuffer$1(opts.dictionary)) {
               throw new Error('Invalid dictionary: it should be a Buffer instance');
             }
           }
 
-          this._binding = new binding.Zlib(mode);
+          this._binding = new binding$1.Zlib(mode);
 
           var self = this;
           this._hadError = false;
@@ -17120,23 +17342,23 @@
 
             var error = new Error(message);
             error.errno = errno;
-            error.code = binding.codes[errno];
+            error.code = binding$1.codes[errno];
             self.emit('error', error);
           };
 
-          var level = binding.Z_DEFAULT_COMPRESSION;
+          var level = binding$1.Z_DEFAULT_COMPRESSION;
           if (typeof opts.level === 'number') level = opts.level;
 
-          var strategy = binding.Z_DEFAULT_STRATEGY;
+          var strategy = binding$1.Z_DEFAULT_STRATEGY;
           if (typeof opts.strategy === 'number') strategy = opts.strategy;
 
-          this._binding.init(opts.windowBits || binding.Z_DEFAULT_WINDOWBITS,
+          this._binding.init(opts.windowBits || binding$1.Z_DEFAULT_WINDOWBITS,
                              level,
-                             opts.memLevel || binding.Z_DEFAULT_MEMLEVEL,
+                             opts.memLevel || binding$1.Z_DEFAULT_MEMLEVEL,
                              strategy,
                              opts.dictionary);
 
-          this._buffer = new Buffer(this._chunkSize);
+          this._buffer = new Buffer$1(this._chunkSize);
           this._offset = 0;
           this._closed = false;
           this._level = level;
@@ -17148,21 +17370,21 @@
         inherits$1(Zlib$1, Transform);
 
         Zlib$1.prototype.params = function(level, strategy, callback) {
-          if (level < binding.Z_MIN_LEVEL ||
-              level > binding.Z_MAX_LEVEL) {
+          if (level < binding$1.Z_MIN_LEVEL ||
+              level > binding$1.Z_MAX_LEVEL) {
             throw new RangeError('Invalid compression level: ' + level);
           }
-          if (strategy != binding.Z_FILTERED &&
-              strategy != binding.Z_HUFFMAN_ONLY &&
-              strategy != binding.Z_RLE &&
-              strategy != binding.Z_FIXED &&
-              strategy != binding.Z_DEFAULT_STRATEGY) {
+          if (strategy != binding$1.Z_FILTERED &&
+              strategy != binding$1.Z_HUFFMAN_ONLY &&
+              strategy != binding$1.Z_RLE &&
+              strategy != binding$1.Z_FIXED &&
+              strategy != binding$1.Z_DEFAULT_STRATEGY) {
             throw new TypeError('Invalid strategy: ' + strategy);
           }
 
           if (this._level !== level || this._strategy !== strategy) {
             var self = this;
-            this.flush(binding.Z_SYNC_FLUSH, function() {
+            this.flush(binding$1.Z_SYNC_FLUSH, function() {
               self._binding.params(level, strategy);
               if (!self._hadError) {
                 self._level = level;
@@ -17171,7 +17393,7 @@
               }
             });
           } else {
-            nextTick$1(callback);
+            nextTick(callback);
           }
         };
 
@@ -17182,7 +17404,7 @@
         // This is the _flush function called by the transform class,
         // internally, when the last chunk has been written.
         Zlib$1.prototype._flush = function(callback) {
-          this._transform(new Buffer(0), '', callback);
+          this._transform(new Buffer$1(0), '', callback);
         };
 
         Zlib$1.prototype.flush = function(kind, callback) {
@@ -17190,12 +17412,12 @@
 
           if (typeof kind === 'function' || (kind === void 0 && !callback)) {
             callback = kind;
-            kind = binding.Z_FULL_FLUSH;
+            kind = binding$1.Z_FULL_FLUSH;
           }
 
           if (ws.ended) {
             if (callback)
-              nextTick$1(callback);
+              nextTick(callback);
           } else if (ws.ending) {
             if (callback)
               this.once('end', callback);
@@ -17206,13 +17428,13 @@
             });
           } else {
             this._flushFlag = kind;
-            this.write(new Buffer(0), '', callback);
+            this.write(new Buffer$1(0), '', callback);
           }
         };
 
         Zlib$1.prototype.close = function(callback) {
           if (callback)
-            nextTick$1(callback);
+            nextTick(callback);
 
           if (this._closed)
             return;
@@ -17222,7 +17444,7 @@
           this._binding.close();
 
           var self = this;
-          nextTick$1(function() {
+          nextTick(function() {
             self.emit('close');
           });
         };
@@ -17233,7 +17455,7 @@
           var ending = ws.ending || ws.ended;
           var last = ending && (!chunk || ws.length === chunk.length);
 
-          if (!chunk === null && !isBuffer(chunk))
+          if (!chunk === null && !isBuffer$1(chunk))
             return cb(new Error('invalid input'));
 
           // If it's the last chunk, or a final flush, we use the Z_FINISH flush flag.
@@ -17241,13 +17463,13 @@
           // Z_FULL_FLUSH. Otherwise, use Z_NO_FLUSH for maximum compression
           // goodness.
           if (last)
-            flushFlag = binding.Z_FINISH;
+            flushFlag = binding$1.Z_FINISH;
           else {
             flushFlag = this._flushFlag;
             // once we've flushed the last of the queue, stop flushing and
             // go back to the normal behavior.
             if (chunk.length >= ws.length) {
-              this._flushFlag = this._opts.flush || binding.Z_NO_FLUSH;
+              this._flushFlag = this._opts.flush || binding$1.Z_NO_FLUSH;
             }
           }
 
@@ -17286,7 +17508,7 @@
               throw error;
             }
 
-            var buf = Buffer.concat(buffers, nread);
+            var buf = Buffer$1.concat(buffers, nread);
             this.close();
 
             return buf;
@@ -17308,7 +17530,7 @@
               return;
 
             var have = availOutBefore - availOutAfter;
-            assert(have >= 0, 'have should not go down');
+            assert$1(have >= 0, 'have should not go down');
 
             if (have > 0) {
               var out = self._buffer.slice(self._offset, self._offset + have);
@@ -17326,7 +17548,7 @@
             if (availOutAfter === 0 || self._offset >= self._chunkSize) {
               availOutBefore = self._chunkSize;
               self._offset = 0;
-              self._buffer = new Buffer(self._chunkSize);
+              self._buffer = new Buffer$1(self._chunkSize);
             }
 
             if (availOutAfter === 0) {
@@ -17360,43 +17582,43 @@
           }
         };
 
-        inherits$1(Deflate, Zlib$1);
-        inherits$1(Inflate, Zlib$1);
-        inherits$1(Gzip, Zlib$1);
-        inherits$1(Gunzip, Zlib$1);
-        inherits$1(DeflateRaw, Zlib$1);
-        inherits$1(InflateRaw, Zlib$1);
-        inherits$1(Unzip, Zlib$1);
-        var zlib = {
-          codes: codes,
-          createDeflate: createDeflate,
-          createInflate: createInflate,
-          createDeflateRaw: createDeflateRaw,
-          createInflateRaw: createInflateRaw,
-          createGzip: createGzip,
-          createGunzip: createGunzip,
-          createUnzip: createUnzip,
+        inherits$1(Deflate$1, Zlib$1);
+        inherits$1(Inflate$1, Zlib$1);
+        inherits$1(Gzip$1, Zlib$1);
+        inherits$1(Gunzip$1, Zlib$1);
+        inherits$1(DeflateRaw$1, Zlib$1);
+        inherits$1(InflateRaw$1, Zlib$1);
+        inherits$1(Unzip$1, Zlib$1);
+        var zlib$1 = {
+          codes: codes$1,
+          createDeflate: createDeflate$1,
+          createInflate: createInflate$1,
+          createDeflateRaw: createDeflateRaw$1,
+          createInflateRaw: createInflateRaw$1,
+          createGzip: createGzip$1,
+          createGunzip: createGunzip$1,
+          createUnzip: createUnzip$1,
           deflate: deflate$1,
-          deflateSync: deflateSync,
-          gzip: gzip,
-          gzipSync: gzipSync,
-          deflateRaw: deflateRaw,
-          deflateRawSync: deflateRawSync,
-          unzip: unzip,
-          unzipSync: unzipSync,
+          deflateSync: deflateSync$1,
+          gzip: gzip$1,
+          gzipSync: gzipSync$1,
+          deflateRaw: deflateRaw$1,
+          deflateRawSync: deflateRawSync$1,
+          unzip: unzip$1,
+          unzipSync: unzipSync$1,
           inflate: inflate$1,
-          inflateSync: inflateSync,
-          gunzip: gunzip,
-          gunzipSync: gunzipSync,
-          inflateRaw: inflateRaw,
-          inflateRawSync: inflateRawSync,
-          Deflate: Deflate,
-          Inflate: Inflate,
-          Gzip: Gzip,
-          Gunzip: Gunzip,
-          DeflateRaw: DeflateRaw,
-          InflateRaw: InflateRaw,
-          Unzip: Unzip,
+          inflateSync: inflateSync$1,
+          gunzip: gunzip$1,
+          gunzipSync: gunzipSync$1,
+          inflateRaw: inflateRaw$1,
+          inflateRawSync: inflateRawSync$1,
+          Deflate: Deflate$1,
+          Inflate: Inflate$1,
+          Gzip: Gzip$1,
+          Gunzip: Gunzip$1,
+          DeflateRaw: DeflateRaw$1,
+          InflateRaw: InflateRaw$1,
+          Unzip: Unzip$1,
           Zlib: Zlib$1
         };
 
@@ -17413,8 +17635,8 @@
           }
 
           write(chunk) {
-            if (!isBuffer(chunk)) {
-              chunk = new Buffer(chunk + '\n', 'binary');
+            if (!isBuffer$1(chunk)) {
+              chunk = new Buffer$1(chunk + '\n', 'binary');
             }
 
             this.uncompressedLength += chunk.length;
@@ -17443,9 +17665,9 @@
               : null;
 
             if (this.buffer.length) {
-              this.buffer = Buffer.concat(this.buffer);
+              this.buffer = Buffer$1.concat(this.buffer);
               if (this.compress) {
-                this.buffer = zlib.deflateSync(this.buffer);
+                this.buffer = zlib$1.deflateSync(this.buffer);
               }
 
               if (encryptFn) {
@@ -17634,7 +17856,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = exports = factory();
+        		module.exports = factory();
         	}
         }(commonjsGlobal, function () {
 
@@ -18242,7 +18464,7 @@
         	     *
         	     * @property {number} blockSize The number of 32-bit words this hasher operates on. Default: 16 (512 bits)
         	     */
-        	    var Hasher = C_lib.Hasher = BufferedBlockAlgorithm.extend({
+        	    C_lib.Hasher = BufferedBlockAlgorithm.extend({
         	        /**
         	         * Configuration options.
         	         */
@@ -18388,7 +18610,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core);
+        		module.exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -18407,7 +18629,7 @@
         	    /**
         	     * A 64-bit word.
         	     */
-        	    var X64Word = C_x64.Word = Base.extend({
+        	    C_x64.Word = Base.extend({
         	        /**
         	         * Initializes a newly created 64-bit word.
         	         *
@@ -18595,7 +18817,7 @@
         	     * @property {Array} words The array of CryptoJS.x64.Word objects.
         	     * @property {number} sigBytes The number of significant bytes in this word array.
         	     */
-        	    var X64WordArray = C_x64.WordArray = Base.extend({
+        	    C_x64.WordArray = Base.extend({
         	        /**
         	         * Initializes a newly created word array.
         	         *
@@ -18687,7 +18909,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core);
+        		module.exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -18758,7 +18980,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core);
+        		module.exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -18772,7 +18994,7 @@
         	    /**
         	     * UTF-16 BE encoding strategy.
         	     */
-        	    var Utf16BE = C_enc.Utf16 = C_enc.Utf16BE = {
+        	    C_enc.Utf16 = C_enc.Utf16BE = {
         	        /**
         	         * Converts a word array to a UTF-16 BE string.
         	         *
@@ -18902,7 +19124,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core);
+        		module.exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -18916,7 +19138,7 @@
         	    /**
         	     * Base64 encoding strategy.
         	     */
-        	    var Base64 = C_enc.Base64 = {
+        	    C_enc.Base64 = {
         	        /**
         	         * Converts a word array to a Base64 string.
         	         *
@@ -19032,7 +19254,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core);
+        		module.exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -19295,7 +19517,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core);
+        		module.exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -19440,7 +19662,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core);
+        		module.exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -19634,7 +19856,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, sha256);
+        		module.exports = factory(core, sha256);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -19709,7 +19931,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, x64Core);
+        		module.exports = factory(core, x64Core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -20027,7 +20249,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, x64Core, sha512);
+        		module.exports = factory(core, x64Core, sha512);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -20105,7 +20327,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, x64Core);
+        		module.exports = factory(core, x64Core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -20323,7 +20545,7 @@
         	            // Shortcuts
         	            var data = this._data;
         	            var dataWords = data.words;
-        	            var nBitsTotal = this._nDataBytes * 8;
+        	            this._nDataBytes * 8;
         	            var nBitsLeft = data.sigBytes * 8;
         	            var blockSizeBits = this.blockSize * 32;
 
@@ -20422,7 +20644,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core);
+        		module.exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -20684,7 +20906,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core);
+        		module.exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -20700,7 +20922,7 @@
         	    /**
         	     * HMAC algorithm.
         	     */
-        	    var HMAC = C_algo.HMAC = Base.extend({
+        	    C_algo.HMAC = Base.extend({
         	        /**
         	         * Initializes a newly created HMAC.
         	         *
@@ -20822,7 +21044,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, sha1, hmac);
+        		module.exports = factory(core, sha1, hmac);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -20962,7 +21184,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, sha1, hmac);
+        		module.exports = factory(core, sha1, hmac);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -21089,7 +21311,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, evpkdf);
+        		module.exports = factory(core, evpkdf);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -21104,7 +21326,7 @@
         	    var WordArray = C_lib.WordArray;
         	    var BufferedBlockAlgorithm = C_lib.BufferedBlockAlgorithm;
         	    var C_enc = C.enc;
-        	    var Utf8 = C_enc.Utf8;
+        	    C_enc.Utf8;
         	    var Base64 = C_enc.Base64;
         	    var C_algo = C.algo;
         	    var EvpKDF = C_algo.EvpKDF;
@@ -21294,7 +21516,7 @@
         	     *
         	     * @property {number} blockSize The number of 32-bit words this cipher operates on. Default: 1 (32 bits)
         	     */
-        	    var StreamCipher = C_lib.StreamCipher = Cipher.extend({
+        	    C_lib.StreamCipher = Cipher.extend({
         	        _doFinalize: function () {
         	            // Process partial blocks
         	            var finalProcessedBlocks = this._process(!!'flush');
@@ -21520,7 +21742,7 @@
         	     *
         	     * @property {number} blockSize The number of 32-bit words this cipher operates on. Default: 4 (128 bits)
         	     */
-        	    var BlockCipher = C_lib.BlockCipher = Cipher.extend({
+        	    C_lib.BlockCipher = Cipher.extend({
         	        /**
         	         * Configuration options.
         	         *
@@ -21964,7 +22186,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, cipherCore);
+        		module.exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22037,7 +22259,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, cipherCore);
+        		module.exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22090,7 +22312,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, cipherCore);
+        		module.exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22201,7 +22423,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, cipherCore);
+        		module.exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22250,7 +22472,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, cipherCore);
+        		module.exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22285,7 +22507,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, cipherCore);
+        		module.exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22329,7 +22551,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, cipherCore);
+        		module.exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22368,7 +22590,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, cipherCore);
+        		module.exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22403,7 +22625,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, cipherCore);
+        		module.exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22443,7 +22665,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, cipherCore);
+        		module.exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22468,7 +22690,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, cipherCore);
+        		module.exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22481,7 +22703,7 @@
         	    var Hex = C_enc.Hex;
         	    var C_format = C.format;
 
-        	    var HexFormatter = C_format.Hex = {
+        	    C_format.Hex = {
         	        /**
         	         * Converts the ciphertext of a cipher params object to a hexadecimally encoded string.
         	         *
@@ -22529,7 +22751,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, encBase64, md5, evpkdf, cipherCore);
+        		module.exports = factory(core, encBase64, md5, evpkdf, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22756,7 +22978,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, encBase64, md5, evpkdf, cipherCore);
+        		module.exports = factory(core, encBase64, md5, evpkdf, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -23521,7 +23743,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, encBase64, md5, evpkdf, cipherCore);
+        		module.exports = factory(core, encBase64, md5, evpkdf, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -23655,7 +23877,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, encBase64, md5, evpkdf, cipherCore);
+        		module.exports = factory(core, encBase64, md5, evpkdf, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -23842,7 +24064,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, encBase64, md5, evpkdf, cipherCore);
+        		module.exports = factory(core, encBase64, md5, evpkdf, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -24027,7 +24249,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = exports = factory(core, x64Core, libTypedarrays, encUtf16, encBase64, md5, sha1, sha256, sha224, sha512, sha384, sha3, ripemd160, hmac, pbkdf2, evpkdf, cipherCore, modeCfb, modeCtr, modeCtrGladman, modeOfb, modeEcb, padAnsix923, padIso10126, padIso97971, padZeropadding, padNopadding, formatHex, aes, tripledes, rc4, rabbit, rabbitLegacy);
+        		module.exports = factory(core, x64Core, libTypedarrays, encUtf16, encBase64, md5, sha1, sha256, sha224, sha512, sha384, sha3, ripemd160, hmac, pbkdf2, evpkdf, cipherCore, modeCfb, modeCtr, modeCtrGladman, modeOfb, modeEcb, padAnsix923, padIso10126, padIso97971, padZeropadding, padNopadding, formatHex, aes, tripledes, rc4, rabbit, rabbitLegacy);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -26592,7 +26814,7 @@
         }
 
         function processPasswordR2R3R4(password = '') {
-          const out = new Buffer(32);
+          const out = new Buffer$1(32);
           const length = password.length;
           let index = 0;
           while (index < length && index < 32) {
@@ -26613,7 +26835,7 @@
         function processPasswordR5(password = '') {
           password = unescape(encodeURIComponent(saslprep(password)));
           const length = Math.min(127, password.length);
-          const out = new Buffer(length);
+          const out = new Buffer$1(length);
 
           for (let i = 0; i < length; i++) {
             out[i] = password.charCodeAt(i);
@@ -26638,7 +26860,7 @@
               (wordArray.words[Math.floor(i / 4)] >> (8 * (3 - (i % 4)))) & 0xff
             );
           }
-          return Buffer.from(byteArray);
+          return Buffer$1.from(byteArray);
         }
 
         const PASSWORD_PADDING = [
@@ -26676,9 +26898,9 @@
           0x7a
         ];
 
-        const { number } = PDFObject;
+        const { number: number$1 } = PDFObject;
 
-        class PDFGradient {
+        class PDFGradient$1 {
           constructor(doc) {
             this.doc = doc;
             this.stops = [];
@@ -26781,7 +27003,7 @@
               Type: 'Pattern',
               PatternType: 2,
               Shading: shader,
-              Matrix: this.matrix.map(number)
+              Matrix: this.matrix.map(number$1)
             });
 
             pattern.end();
@@ -26880,7 +27102,7 @@
           }
         }
 
-        class PDFLinearGradient extends PDFGradient {
+        class PDFLinearGradient$1 extends PDFGradient$1 {
           constructor(doc, x1, y1, x2, y2) {
             super(doc);
             this.x1 = x1;
@@ -26900,11 +27122,11 @@
           }
 
           opacityGradient() {
-            return new PDFLinearGradient(this.doc, this.x1, this.y1, this.x2, this.y2);
+            return new PDFLinearGradient$1(this.doc, this.x1, this.y1, this.x2, this.y2);
           }
         }
 
-        class PDFRadialGradient extends PDFGradient {
+        class PDFRadialGradient$1 extends PDFGradient$1 {
           constructor(doc, x1, y1, r1, x2, y2, r2) {
             super(doc);
             this.doc = doc;
@@ -26927,7 +27149,7 @@
           }
 
           opacityGradient() {
-            return new PDFRadialGradient(
+            return new PDFRadialGradient$1(
               this.doc,
               this.x1,
               this.y1,
@@ -26939,9 +27161,9 @@
           }
         }
 
-        var Gradient = { PDFGradient, PDFLinearGradient, PDFRadialGradient };
+        var Gradient = { PDFGradient: PDFGradient$1, PDFLinearGradient: PDFLinearGradient$1, PDFRadialGradient: PDFRadialGradient$1 };
 
-        const { PDFGradient: PDFGradient$1, PDFLinearGradient: PDFLinearGradient$1, PDFRadialGradient: PDFRadialGradient$1 } = Gradient;
+        const { PDFGradient, PDFLinearGradient, PDFRadialGradient } = Gradient;
 
         var ColorMixin = {
           initColor() {
@@ -26952,7 +27174,7 @@
           },
 
           _normalizeColor(color) {
-            if (color instanceof PDFGradient$1) {
+            if (color instanceof PDFGradient) {
               return color;
             }
 
@@ -26993,7 +27215,7 @@
 
             const op = stroke ? 'SCN' : 'scn';
 
-            if (color instanceof PDFGradient$1) {
+            if (color instanceof PDFGradient) {
               this._setColorSpace('Pattern', stroke);
               color.apply(op);
             } else {
@@ -27085,11 +27307,11 @@
           },
 
           linearGradient(x1, y1, x2, y2) {
-            return new PDFLinearGradient$1(this, x1, y1, x2, y2);
+            return new PDFLinearGradient(this, x1, y1, x2, y2);
           },
 
           radialGradient(x1, y1, r1, x2, y2, r2) {
-            return new PDFRadialGradient$1(this, x1, y1, r1, x2, y2, r2);
+            return new PDFRadialGradient(this, x1, y1, r1, x2, y2, r2);
           }
         };
 
@@ -27658,7 +27880,7 @@
           }
         }
 
-        const { number: number$1 } = PDFObject;
+        const { number } = PDFObject;
 
         // This constant is used to approximate a symmetrical arc using a cubic
         // Bezier curve.
@@ -27685,7 +27907,7 @@
           },
 
           lineWidth(w) {
-            return this.addContent(`${number$1(w)} w`);
+            return this.addContent(`${number(w)} w`);
           },
 
           _CAP_STYLES: {
@@ -27715,7 +27937,7 @@
           },
 
           miterLimit(m) {
-            return this.addContent(`${number$1(m)} M`);
+            return this.addContent(`${number(m)} M`);
           },
 
           dash(length, options = {}) {
@@ -27729,8 +27951,8 @@
               throw new Error(`dash(${JSON.stringify(originalLength)}, ${JSON.stringify(options)}) invalid, lengths must be numeric and greater than zero`);
             }
 
-            length = length.map(number$1).join(' ');
-            return this.addContent(`[${length}] ${number$1(options.phase || 0)} d`);
+            length = length.map(number).join(' ');
+            return this.addContent(`[${length}] ${number(options.phase || 0)} d`);
           },
 
           undash() {
@@ -27738,30 +27960,30 @@
           },
 
           moveTo(x, y) {
-            return this.addContent(`${number$1(x)} ${number$1(y)} m`);
+            return this.addContent(`${number(x)} ${number(y)} m`);
           },
 
           lineTo(x, y) {
-            return this.addContent(`${number$1(x)} ${number$1(y)} l`);
+            return this.addContent(`${number(x)} ${number(y)} l`);
           },
 
           bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y) {
             return this.addContent(
-              `${number$1(cp1x)} ${number$1(cp1y)} ${number$1(cp2x)} ${number$1(cp2y)} ${number$1(
+              `${number(cp1x)} ${number(cp1y)} ${number(cp2x)} ${number(cp2y)} ${number(
         x
-      )} ${number$1(y)} c`
+      )} ${number(y)} c`
             );
           },
 
           quadraticCurveTo(cpx, cpy, x, y) {
             return this.addContent(
-              `${number$1(cpx)} ${number$1(cpy)} ${number$1(x)} ${number$1(y)} v`
+              `${number(cpx)} ${number(cpy)} ${number(x)} ${number(y)} v`
             );
           },
 
           rect(x, y, w, h) {
             return this.addContent(
-              `${number$1(x)} ${number$1(y)} ${number$1(w)} ${number$1(h)} re`
+              `${number(x)} ${number(y)} ${number(w)} ${number(h)} re`
             );
           },
 
@@ -27951,7 +28173,7 @@
             m[4] = m0 * dx + m2 * dy + m4;
             m[5] = m1 * dx + m3 * dy + m5;
 
-            const values = [m11, m12, m21, m22, dx, dy].map(v => number$1(v)).join(' ');
+            const values = [m11, m12, m21, m22, dx, dy].map(v => number(v)).join(' ');
             return this.addContent(`${values} cm`);
           },
 
@@ -28088,172 +28310,172 @@
           }
         }
 
-        var fs$1 = {};
+        var fs = {};
 
-        function assert$1 (a, msg) {
+        function assert (a, msg) {
           if (!a) {
             throw new Error(msg);
           }
         }
-        var binding$1 = {};
+        var binding = {};
         Object.keys(_binding).forEach(function (key) {
-          binding$1[key] = _binding[key];
+          binding[key] = _binding[key];
         });
         // zlib doesn't provide these, so kludge them in following the same
         // const naming scheme zlib uses.
-        binding$1.Z_MIN_WINDOWBITS = 8;
-        binding$1.Z_MAX_WINDOWBITS = 15;
-        binding$1.Z_DEFAULT_WINDOWBITS = 15;
+        binding.Z_MIN_WINDOWBITS = 8;
+        binding.Z_MAX_WINDOWBITS = 15;
+        binding.Z_DEFAULT_WINDOWBITS = 15;
 
         // fewer than 64 bytes per chunk is stupid.
         // technically it could work with as few as 8, but even 64 bytes
         // is absurdly low.  Usually a MB or more is best.
-        binding$1.Z_MIN_CHUNK = 64;
-        binding$1.Z_MAX_CHUNK = Infinity;
-        binding$1.Z_DEFAULT_CHUNK = (16 * 1024);
+        binding.Z_MIN_CHUNK = 64;
+        binding.Z_MAX_CHUNK = Infinity;
+        binding.Z_DEFAULT_CHUNK = (16 * 1024);
 
-        binding$1.Z_MIN_MEMLEVEL = 1;
-        binding$1.Z_MAX_MEMLEVEL = 9;
-        binding$1.Z_DEFAULT_MEMLEVEL = 8;
+        binding.Z_MIN_MEMLEVEL = 1;
+        binding.Z_MAX_MEMLEVEL = 9;
+        binding.Z_DEFAULT_MEMLEVEL = 8;
 
-        binding$1.Z_MIN_LEVEL = -1;
-        binding$1.Z_MAX_LEVEL = 9;
-        binding$1.Z_DEFAULT_LEVEL = binding$1.Z_DEFAULT_COMPRESSION;
+        binding.Z_MIN_LEVEL = -1;
+        binding.Z_MAX_LEVEL = 9;
+        binding.Z_DEFAULT_LEVEL = binding.Z_DEFAULT_COMPRESSION;
 
 
         // translation table for return codes.
-        var codes$1 = {
-          Z_OK: binding$1.Z_OK,
-          Z_STREAM_END: binding$1.Z_STREAM_END,
-          Z_NEED_DICT: binding$1.Z_NEED_DICT,
-          Z_ERRNO: binding$1.Z_ERRNO,
-          Z_STREAM_ERROR: binding$1.Z_STREAM_ERROR,
-          Z_DATA_ERROR: binding$1.Z_DATA_ERROR,
-          Z_MEM_ERROR: binding$1.Z_MEM_ERROR,
-          Z_BUF_ERROR: binding$1.Z_BUF_ERROR,
-          Z_VERSION_ERROR: binding$1.Z_VERSION_ERROR
+        var codes = {
+          Z_OK: binding.Z_OK,
+          Z_STREAM_END: binding.Z_STREAM_END,
+          Z_NEED_DICT: binding.Z_NEED_DICT,
+          Z_ERRNO: binding.Z_ERRNO,
+          Z_STREAM_ERROR: binding.Z_STREAM_ERROR,
+          Z_DATA_ERROR: binding.Z_DATA_ERROR,
+          Z_MEM_ERROR: binding.Z_MEM_ERROR,
+          Z_BUF_ERROR: binding.Z_BUF_ERROR,
+          Z_VERSION_ERROR: binding.Z_VERSION_ERROR
         };
 
-        Object.keys(codes$1).forEach(function(k) {
-          codes$1[codes$1[k]] = k;
+        Object.keys(codes).forEach(function(k) {
+          codes[codes[k]] = k;
         });
 
-        function createDeflate$1(o) {
-          return new Deflate$1(o);
+        function createDeflate(o) {
+          return new Deflate(o);
         }
 
-        function createInflate$1(o) {
-          return new Inflate$1(o);
+        function createInflate(o) {
+          return new Inflate(o);
         }
 
-        function createDeflateRaw$1(o) {
-          return new DeflateRaw$1(o);
+        function createDeflateRaw(o) {
+          return new DeflateRaw(o);
         }
 
-        function createInflateRaw$1(o) {
-          return new InflateRaw$1(o);
+        function createInflateRaw(o) {
+          return new InflateRaw(o);
         }
 
-        function createGzip$1(o) {
-          return new Gzip$1(o);
+        function createGzip(o) {
+          return new Gzip(o);
         }
 
-        function createGunzip$1(o) {
-          return new Gunzip$1(o);
+        function createGunzip(o) {
+          return new Gunzip(o);
         }
 
-        function createUnzip$1(o) {
-          return new Unzip$1(o);
+        function createUnzip(o) {
+          return new Unzip(o);
         }
 
 
         // Convenience methods.
         // compress/decompress a string or buffer in one step.
-        function deflate$2(buffer, opts, callback) {
+        function deflate(buffer, opts, callback) {
           if (typeof opts === 'function') {
             callback = opts;
             opts = {};
           }
-          return zlibBuffer$1(new Deflate$1(opts), buffer, callback);
+          return zlibBuffer(new Deflate(opts), buffer, callback);
         }
 
-        function deflateSync$1(buffer, opts) {
-          return zlibBufferSync$1(new Deflate$1(opts), buffer);
+        function deflateSync(buffer, opts) {
+          return zlibBufferSync(new Deflate(opts), buffer);
         }
 
-        function gzip$1(buffer, opts, callback) {
+        function gzip(buffer, opts, callback) {
           if (typeof opts === 'function') {
             callback = opts;
             opts = {};
           }
-          return zlibBuffer$1(new Gzip$1(opts), buffer, callback);
+          return zlibBuffer(new Gzip(opts), buffer, callback);
         }
 
-        function gzipSync$1(buffer, opts) {
-          return zlibBufferSync$1(new Gzip$1(opts), buffer);
+        function gzipSync(buffer, opts) {
+          return zlibBufferSync(new Gzip(opts), buffer);
         }
 
-        function deflateRaw$1(buffer, opts, callback) {
+        function deflateRaw(buffer, opts, callback) {
           if (typeof opts === 'function') {
             callback = opts;
             opts = {};
           }
-          return zlibBuffer$1(new DeflateRaw$1(opts), buffer, callback);
+          return zlibBuffer(new DeflateRaw(opts), buffer, callback);
         }
 
-        function deflateRawSync$1(buffer, opts) {
-          return zlibBufferSync$1(new DeflateRaw$1(opts), buffer);
+        function deflateRawSync(buffer, opts) {
+          return zlibBufferSync(new DeflateRaw(opts), buffer);
         }
 
-        function unzip$1(buffer, opts, callback) {
+        function unzip(buffer, opts, callback) {
           if (typeof opts === 'function') {
             callback = opts;
             opts = {};
           }
-          return zlibBuffer$1(new Unzip$1(opts), buffer, callback);
+          return zlibBuffer(new Unzip(opts), buffer, callback);
         }
 
-        function unzipSync$1(buffer, opts) {
-          return zlibBufferSync$1(new Unzip$1(opts), buffer);
+        function unzipSync(buffer, opts) {
+          return zlibBufferSync(new Unzip(opts), buffer);
         }
 
-        function inflate$2(buffer, opts, callback) {
+        function inflate(buffer, opts, callback) {
           if (typeof opts === 'function') {
             callback = opts;
             opts = {};
           }
-          return zlibBuffer$1(new Inflate$1(opts), buffer, callback);
+          return zlibBuffer(new Inflate(opts), buffer, callback);
         }
 
-        function inflateSync$1(buffer, opts) {
-          return zlibBufferSync$1(new Inflate$1(opts), buffer);
+        function inflateSync(buffer, opts) {
+          return zlibBufferSync(new Inflate(opts), buffer);
         }
 
-        function gunzip$1(buffer, opts, callback) {
+        function gunzip(buffer, opts, callback) {
           if (typeof opts === 'function') {
             callback = opts;
             opts = {};
           }
-          return zlibBuffer$1(new Gunzip$1(opts), buffer, callback);
+          return zlibBuffer(new Gunzip(opts), buffer, callback);
         }
 
-        function gunzipSync$1(buffer, opts) {
-          return zlibBufferSync$1(new Gunzip$1(opts), buffer);
+        function gunzipSync(buffer, opts) {
+          return zlibBufferSync(new Gunzip(opts), buffer);
         }
 
-        function inflateRaw$1(buffer, opts, callback) {
+        function inflateRaw(buffer, opts, callback) {
           if (typeof opts === 'function') {
             callback = opts;
             opts = {};
           }
-          return zlibBuffer$1(new InflateRaw$1(opts), buffer, callback);
+          return zlibBuffer(new InflateRaw(opts), buffer, callback);
         }
 
-        function inflateRawSync$1(buffer, opts) {
-          return zlibBufferSync$1(new InflateRaw$1(opts), buffer);
+        function inflateRawSync(buffer, opts) {
+          return zlibBufferSync(new InflateRaw(opts), buffer);
         }
 
-        function zlibBuffer$1(engine, buffer, callback) {
+        function zlibBuffer(engine, buffer, callback) {
           var buffers = [];
           var nread = 0;
 
@@ -28279,67 +28501,67 @@
           }
 
           function onEnd() {
-            var buf = Buffer.concat(buffers, nread);
+            var buf = Buffer$1.concat(buffers, nread);
             buffers = [];
             callback(null, buf);
             engine.close();
           }
         }
 
-        function zlibBufferSync$1(engine, buffer) {
+        function zlibBufferSync(engine, buffer) {
           if (typeof buffer === 'string')
-            buffer = new Buffer(buffer);
-          if (!isBuffer(buffer))
+            buffer = new Buffer$1(buffer);
+          if (!isBuffer$1(buffer))
             throw new TypeError('Not a string or buffer');
 
-          var flushFlag = binding$1.Z_FINISH;
+          var flushFlag = binding.Z_FINISH;
 
           return engine._processChunk(buffer, flushFlag);
         }
 
         // generic zlib
         // minimal 2-byte header
-        function Deflate$1(opts) {
-          if (!(this instanceof Deflate$1)) return new Deflate$1(opts);
-          Zlib$2.call(this, opts, binding$1.DEFLATE);
+        function Deflate(opts) {
+          if (!(this instanceof Deflate)) return new Deflate(opts);
+          Zlib.call(this, opts, binding.DEFLATE);
         }
 
-        function Inflate$1(opts) {
-          if (!(this instanceof Inflate$1)) return new Inflate$1(opts);
-          Zlib$2.call(this, opts, binding$1.INFLATE);
+        function Inflate(opts) {
+          if (!(this instanceof Inflate)) return new Inflate(opts);
+          Zlib.call(this, opts, binding.INFLATE);
         }
 
 
 
         // gzip - bigger header, same deflate compression
-        function Gzip$1(opts) {
-          if (!(this instanceof Gzip$1)) return new Gzip$1(opts);
-          Zlib$2.call(this, opts, binding$1.GZIP);
+        function Gzip(opts) {
+          if (!(this instanceof Gzip)) return new Gzip(opts);
+          Zlib.call(this, opts, binding.GZIP);
         }
 
-        function Gunzip$1(opts) {
-          if (!(this instanceof Gunzip$1)) return new Gunzip$1(opts);
-          Zlib$2.call(this, opts, binding$1.GUNZIP);
+        function Gunzip(opts) {
+          if (!(this instanceof Gunzip)) return new Gunzip(opts);
+          Zlib.call(this, opts, binding.GUNZIP);
         }
 
 
 
         // raw - no header
-        function DeflateRaw$1(opts) {
-          if (!(this instanceof DeflateRaw$1)) return new DeflateRaw$1(opts);
-          Zlib$2.call(this, opts, binding$1.DEFLATERAW);
+        function DeflateRaw(opts) {
+          if (!(this instanceof DeflateRaw)) return new DeflateRaw(opts);
+          Zlib.call(this, opts, binding.DEFLATERAW);
         }
 
-        function InflateRaw$1(opts) {
-          if (!(this instanceof InflateRaw$1)) return new InflateRaw$1(opts);
-          Zlib$2.call(this, opts, binding$1.INFLATERAW);
+        function InflateRaw(opts) {
+          if (!(this instanceof InflateRaw)) return new InflateRaw(opts);
+          Zlib.call(this, opts, binding.INFLATERAW);
         }
 
 
         // auto-detect header.
-        function Unzip$1(opts) {
-          if (!(this instanceof Unzip$1)) return new Unzip$1(opts);
-          Zlib$2.call(this, opts, binding$1.UNZIP);
+        function Unzip(opts) {
+          if (!(this instanceof Unzip)) return new Unzip(opts);
+          Zlib.call(this, opts, binding.UNZIP);
         }
 
 
@@ -28348,69 +28570,69 @@
         // true or false if there is anything in the queue when
         // you call the .write() method.
 
-        function Zlib$2(opts, mode) {
+        function Zlib(opts, mode) {
           this._opts = opts = opts || {};
-          this._chunkSize = opts.chunkSize || binding$1.Z_DEFAULT_CHUNK;
+          this._chunkSize = opts.chunkSize || binding.Z_DEFAULT_CHUNK;
 
           Transform.call(this, opts);
 
           if (opts.flush) {
-            if (opts.flush !== binding$1.Z_NO_FLUSH &&
-                opts.flush !== binding$1.Z_PARTIAL_FLUSH &&
-                opts.flush !== binding$1.Z_SYNC_FLUSH &&
-                opts.flush !== binding$1.Z_FULL_FLUSH &&
-                opts.flush !== binding$1.Z_FINISH &&
-                opts.flush !== binding$1.Z_BLOCK) {
+            if (opts.flush !== binding.Z_NO_FLUSH &&
+                opts.flush !== binding.Z_PARTIAL_FLUSH &&
+                opts.flush !== binding.Z_SYNC_FLUSH &&
+                opts.flush !== binding.Z_FULL_FLUSH &&
+                opts.flush !== binding.Z_FINISH &&
+                opts.flush !== binding.Z_BLOCK) {
               throw new Error('Invalid flush flag: ' + opts.flush);
             }
           }
-          this._flushFlag = opts.flush || binding$1.Z_NO_FLUSH;
+          this._flushFlag = opts.flush || binding.Z_NO_FLUSH;
 
           if (opts.chunkSize) {
-            if (opts.chunkSize < binding$1.Z_MIN_CHUNK ||
-                opts.chunkSize > binding$1.Z_MAX_CHUNK) {
+            if (opts.chunkSize < binding.Z_MIN_CHUNK ||
+                opts.chunkSize > binding.Z_MAX_CHUNK) {
               throw new Error('Invalid chunk size: ' + opts.chunkSize);
             }
           }
 
           if (opts.windowBits) {
-            if (opts.windowBits < binding$1.Z_MIN_WINDOWBITS ||
-                opts.windowBits > binding$1.Z_MAX_WINDOWBITS) {
+            if (opts.windowBits < binding.Z_MIN_WINDOWBITS ||
+                opts.windowBits > binding.Z_MAX_WINDOWBITS) {
               throw new Error('Invalid windowBits: ' + opts.windowBits);
             }
           }
 
           if (opts.level) {
-            if (opts.level < binding$1.Z_MIN_LEVEL ||
-                opts.level > binding$1.Z_MAX_LEVEL) {
+            if (opts.level < binding.Z_MIN_LEVEL ||
+                opts.level > binding.Z_MAX_LEVEL) {
               throw new Error('Invalid compression level: ' + opts.level);
             }
           }
 
           if (opts.memLevel) {
-            if (opts.memLevel < binding$1.Z_MIN_MEMLEVEL ||
-                opts.memLevel > binding$1.Z_MAX_MEMLEVEL) {
+            if (opts.memLevel < binding.Z_MIN_MEMLEVEL ||
+                opts.memLevel > binding.Z_MAX_MEMLEVEL) {
               throw new Error('Invalid memLevel: ' + opts.memLevel);
             }
           }
 
           if (opts.strategy) {
-            if (opts.strategy != binding$1.Z_FILTERED &&
-                opts.strategy != binding$1.Z_HUFFMAN_ONLY &&
-                opts.strategy != binding$1.Z_RLE &&
-                opts.strategy != binding$1.Z_FIXED &&
-                opts.strategy != binding$1.Z_DEFAULT_STRATEGY) {
+            if (opts.strategy != binding.Z_FILTERED &&
+                opts.strategy != binding.Z_HUFFMAN_ONLY &&
+                opts.strategy != binding.Z_RLE &&
+                opts.strategy != binding.Z_FIXED &&
+                opts.strategy != binding.Z_DEFAULT_STRATEGY) {
               throw new Error('Invalid strategy: ' + opts.strategy);
             }
           }
 
           if (opts.dictionary) {
-            if (!isBuffer(opts.dictionary)) {
+            if (!isBuffer$1(opts.dictionary)) {
               throw new Error('Invalid dictionary: it should be a Buffer instance');
             }
           }
 
-          this._binding = new binding$1.Zlib(mode);
+          this._binding = new binding.Zlib(mode);
 
           var self = this;
           this._hadError = false;
@@ -28422,23 +28644,23 @@
 
             var error = new Error(message);
             error.errno = errno;
-            error.code = binding$1.codes[errno];
+            error.code = binding.codes[errno];
             self.emit('error', error);
           };
 
-          var level = binding$1.Z_DEFAULT_COMPRESSION;
+          var level = binding.Z_DEFAULT_COMPRESSION;
           if (typeof opts.level === 'number') level = opts.level;
 
-          var strategy = binding$1.Z_DEFAULT_STRATEGY;
+          var strategy = binding.Z_DEFAULT_STRATEGY;
           if (typeof opts.strategy === 'number') strategy = opts.strategy;
 
-          this._binding.init(opts.windowBits || binding$1.Z_DEFAULT_WINDOWBITS,
+          this._binding.init(opts.windowBits || binding.Z_DEFAULT_WINDOWBITS,
                              level,
-                             opts.memLevel || binding$1.Z_DEFAULT_MEMLEVEL,
+                             opts.memLevel || binding.Z_DEFAULT_MEMLEVEL,
                              strategy,
                              opts.dictionary);
 
-          this._buffer = new Buffer(this._chunkSize);
+          this._buffer = new Buffer$1(this._chunkSize);
           this._offset = 0;
           this._closed = false;
           this._level = level;
@@ -28447,24 +28669,24 @@
           this.once('end', this.close);
         }
 
-        inherits$1(Zlib$2, Transform);
+        inherits$1(Zlib, Transform);
 
-        Zlib$2.prototype.params = function(level, strategy, callback) {
-          if (level < binding$1.Z_MIN_LEVEL ||
-              level > binding$1.Z_MAX_LEVEL) {
+        Zlib.prototype.params = function(level, strategy, callback) {
+          if (level < binding.Z_MIN_LEVEL ||
+              level > binding.Z_MAX_LEVEL) {
             throw new RangeError('Invalid compression level: ' + level);
           }
-          if (strategy != binding$1.Z_FILTERED &&
-              strategy != binding$1.Z_HUFFMAN_ONLY &&
-              strategy != binding$1.Z_RLE &&
-              strategy != binding$1.Z_FIXED &&
-              strategy != binding$1.Z_DEFAULT_STRATEGY) {
+          if (strategy != binding.Z_FILTERED &&
+              strategy != binding.Z_HUFFMAN_ONLY &&
+              strategy != binding.Z_RLE &&
+              strategy != binding.Z_FIXED &&
+              strategy != binding.Z_DEFAULT_STRATEGY) {
             throw new TypeError('Invalid strategy: ' + strategy);
           }
 
           if (this._level !== level || this._strategy !== strategy) {
             var self = this;
-            this.flush(binding$1.Z_SYNC_FLUSH, function() {
+            this.flush(binding.Z_SYNC_FLUSH, function() {
               self._binding.params(level, strategy);
               if (!self._hadError) {
                 self._level = level;
@@ -28473,31 +28695,31 @@
               }
             });
           } else {
-            nextTick$1(callback);
+            nextTick(callback);
           }
         };
 
-        Zlib$2.prototype.reset = function() {
+        Zlib.prototype.reset = function() {
           return this._binding.reset();
         };
 
         // This is the _flush function called by the transform class,
         // internally, when the last chunk has been written.
-        Zlib$2.prototype._flush = function(callback) {
-          this._transform(new Buffer(0), '', callback);
+        Zlib.prototype._flush = function(callback) {
+          this._transform(new Buffer$1(0), '', callback);
         };
 
-        Zlib$2.prototype.flush = function(kind, callback) {
+        Zlib.prototype.flush = function(kind, callback) {
           var ws = this._writableState;
 
           if (typeof kind === 'function' || (kind === void 0 && !callback)) {
             callback = kind;
-            kind = binding$1.Z_FULL_FLUSH;
+            kind = binding.Z_FULL_FLUSH;
           }
 
           if (ws.ended) {
             if (callback)
-              nextTick$1(callback);
+              nextTick(callback);
           } else if (ws.ending) {
             if (callback)
               this.once('end', callback);
@@ -28508,13 +28730,13 @@
             });
           } else {
             this._flushFlag = kind;
-            this.write(new Buffer(0), '', callback);
+            this.write(new Buffer$1(0), '', callback);
           }
         };
 
-        Zlib$2.prototype.close = function(callback) {
+        Zlib.prototype.close = function(callback) {
           if (callback)
-            nextTick$1(callback);
+            nextTick(callback);
 
           if (this._closed)
             return;
@@ -28524,18 +28746,18 @@
           this._binding.close();
 
           var self = this;
-          nextTick$1(function() {
+          nextTick(function() {
             self.emit('close');
           });
         };
 
-        Zlib$2.prototype._transform = function(chunk, encoding, cb) {
+        Zlib.prototype._transform = function(chunk, encoding, cb) {
           var flushFlag;
           var ws = this._writableState;
           var ending = ws.ending || ws.ended;
           var last = ending && (!chunk || ws.length === chunk.length);
 
-          if (!chunk === null && !isBuffer(chunk))
+          if (!chunk === null && !isBuffer$1(chunk))
             return cb(new Error('invalid input'));
 
           // If it's the last chunk, or a final flush, we use the Z_FINISH flush flag.
@@ -28543,20 +28765,20 @@
           // Z_FULL_FLUSH. Otherwise, use Z_NO_FLUSH for maximum compression
           // goodness.
           if (last)
-            flushFlag = binding$1.Z_FINISH;
+            flushFlag = binding.Z_FINISH;
           else {
             flushFlag = this._flushFlag;
             // once we've flushed the last of the queue, stop flushing and
             // go back to the normal behavior.
             if (chunk.length >= ws.length) {
-              this._flushFlag = this._opts.flush || binding$1.Z_NO_FLUSH;
+              this._flushFlag = this._opts.flush || binding.Z_NO_FLUSH;
             }
           }
 
           this._processChunk(chunk, flushFlag, cb);
         };
 
-        Zlib$2.prototype._processChunk = function(chunk, flushFlag, cb) {
+        Zlib.prototype._processChunk = function(chunk, flushFlag, cb) {
           var availInBefore = chunk && chunk.length;
           var availOutBefore = this._chunkSize - this._offset;
           var inOff = 0;
@@ -28588,7 +28810,7 @@
               throw error;
             }
 
-            var buf = Buffer.concat(buffers, nread);
+            var buf = Buffer$1.concat(buffers, nread);
             this.close();
 
             return buf;
@@ -28610,7 +28832,7 @@
               return;
 
             var have = availOutBefore - availOutAfter;
-            assert$1(have >= 0, 'have should not go down');
+            assert(have >= 0, 'have should not go down');
 
             if (have > 0) {
               var out = self._buffer.slice(self._offset, self._offset + have);
@@ -28628,7 +28850,7 @@
             if (availOutAfter === 0 || self._offset >= self._chunkSize) {
               availOutBefore = self._chunkSize;
               self._offset = 0;
-              self._buffer = new Buffer(self._chunkSize);
+              self._buffer = new Buffer$1(self._chunkSize);
             }
 
             if (availOutAfter === 0) {
@@ -28662,44 +28884,44 @@
           }
         };
 
-        inherits$1(Deflate$1, Zlib$2);
-        inherits$1(Inflate$1, Zlib$2);
-        inherits$1(Gzip$1, Zlib$2);
-        inherits$1(Gunzip$1, Zlib$2);
-        inherits$1(DeflateRaw$1, Zlib$2);
-        inherits$1(InflateRaw$1, Zlib$2);
-        inherits$1(Unzip$1, Zlib$2);
-        var zlib$1 = {
-          codes: codes$1,
-          createDeflate: createDeflate$1,
-          createInflate: createInflate$1,
-          createDeflateRaw: createDeflateRaw$1,
-          createInflateRaw: createInflateRaw$1,
-          createGzip: createGzip$1,
-          createGunzip: createGunzip$1,
-          createUnzip: createUnzip$1,
-          deflate: deflate$2,
-          deflateSync: deflateSync$1,
-          gzip: gzip$1,
-          gzipSync: gzipSync$1,
-          deflateRaw: deflateRaw$1,
-          deflateRawSync: deflateRawSync$1,
-          unzip: unzip$1,
-          unzipSync: unzipSync$1,
-          inflate: inflate$2,
-          inflateSync: inflateSync$1,
-          gunzip: gunzip$1,
-          gunzipSync: gunzipSync$1,
-          inflateRaw: inflateRaw$1,
-          inflateRawSync: inflateRawSync$1,
-          Deflate: Deflate$1,
-          Inflate: Inflate$1,
-          Gzip: Gzip$1,
-          Gunzip: Gunzip$1,
-          DeflateRaw: DeflateRaw$1,
-          InflateRaw: InflateRaw$1,
-          Unzip: Unzip$1,
-          Zlib: Zlib$2
+        inherits$1(Deflate, Zlib);
+        inherits$1(Inflate, Zlib);
+        inherits$1(Gzip, Zlib);
+        inherits$1(Gunzip, Zlib);
+        inherits$1(DeflateRaw, Zlib);
+        inherits$1(InflateRaw, Zlib);
+        inherits$1(Unzip, Zlib);
+        var zlib = {
+          codes: codes,
+          createDeflate: createDeflate,
+          createInflate: createInflate,
+          createDeflateRaw: createDeflateRaw,
+          createInflateRaw: createInflateRaw,
+          createGzip: createGzip,
+          createGunzip: createGunzip,
+          createUnzip: createUnzip,
+          deflate: deflate,
+          deflateSync: deflateSync,
+          gzip: gzip,
+          gzipSync: gzipSync,
+          deflateRaw: deflateRaw,
+          deflateRawSync: deflateRawSync,
+          unzip: unzip,
+          unzipSync: unzipSync,
+          inflate: inflate,
+          inflateSync: inflateSync,
+          gunzip: gunzip,
+          gunzipSync: gunzipSync,
+          inflateRaw: inflateRaw,
+          inflateRawSync: inflateRawSync,
+          Deflate: Deflate,
+          Inflate: Inflate,
+          Gzip: Gzip,
+          Gunzip: Gunzip,
+          DeflateRaw: DeflateRaw,
+          InflateRaw: InflateRaw,
+          Unzip: Unzip,
+          Zlib: Zlib
         };
 
         /*
@@ -28727,14 +28949,14 @@
 
         var pngNode = class PNG {
           static decode(path, fn) {
-            return fs$1.readFile(path, function(err, file) {
+            return fs.readFile(path, function(err, file) {
               const png = new PNG(file);
               return png.decode(pixels => fn(pixels));
             });
           }
 
           static load(path) {
-            const file = fs$1.readFileSync(path);
+            const file = fs.readFileSync(path);
             return new PNG(file);
           }
 
@@ -28844,7 +29066,7 @@
                       break;
                   }
 
-                  this.imgData = new Buffer(this.imgData);
+                  this.imgData = new Buffer$1(this.imgData);
                   return;
 
                 default:
@@ -28883,7 +29105,7 @@
           }
 
           decodePixels(fn) {
-            return zlib$1.inflate(this.imgData, (err, data) => {
+            return zlib.inflate(this.imgData, (err, data) => {
               if (err) {
                 throw err;
               }
@@ -28891,7 +29113,7 @@
               const { width, height } = this;
               const pixelBytes = this.pixelBitlength / 8;
 
-              const pixels = new Buffer(width * height * pixelBytes);
+              const pixels = new Buffer$1(width * height * pixelBytes);
               const { length } = data;
               let pos = 0;
 
@@ -28899,7 +29121,7 @@
                 const w = Math.ceil((width - x0) / dx);
                 const h = Math.ceil((height - y0) / dy);
                 const scanlineLength = pixelBytes * w;
-                const buffer = singlePass ? pixels : new Buffer(scanlineLength * h);
+                const buffer = singlePass ? pixels : new Buffer$1(scanlineLength * h);
                 let row = 0;
                 let c = 0;
                 while (row < h && pos < length) {
@@ -29040,7 +29262,7 @@
             const { palette } = this;
             const { length } = palette;
             const transparency = this.transparency.indexed || [];
-            const ret = new Buffer(transparency.length + length);
+            const ret = new Buffer$1(transparency.length + length);
             let pos = 0;
             let c = 0;
 
@@ -29096,7 +29318,7 @@
           }
 
           decode(fn) {
-            const ret = new Buffer(this.width * this.height * 4);
+            const ret = new Buffer$1(this.width * this.height * 4);
             return this.decodePixels(pixels => {
               this.copyToImageData(ret, pixels);
               return fn(ret);
@@ -29151,7 +29373,7 @@
             } else {
               // embed the color palette in the PDF as an object stream
               const palette = this.document.ref();
-              palette.end(new Buffer(this.image.palette));
+              palette.end(new Buffer$1(this.image.palette));
 
               // build the color space array for the image
               this.obj.data['ColorSpace'] = [
@@ -29229,8 +29451,8 @@
               let a, p;
               const colorCount = this.image.colors;
               const pixelCount = this.width * this.height;
-              const imgData = new Buffer(pixelCount * colorCount);
-              const alphaChannel = new Buffer(pixelCount);
+              const imgData = new Buffer$1(pixelCount * colorCount);
+              const alphaChannel = new Buffer$1(pixelCount);
 
               let i = (p = a = 0);
               const len = pixels.length;
@@ -29245,8 +29467,8 @@
                 i += skipByteCount;
               }
 
-              this.imgData = zlib.deflateSync(imgData);
-              this.alphaChannel = zlib.deflateSync(alphaChannel);
+              this.imgData = zlib$1.deflateSync(imgData);
+              this.alphaChannel = zlib$1.deflateSync(alphaChannel);
               return this.finalize();
             });
           }
@@ -29254,21 +29476,21 @@
           loadIndexedAlphaChannel() {
             const transparency = this.image.transparency.indexed;
             return this.image.decodePixels(pixels => {
-              const alphaChannel = new Buffer(this.width * this.height);
+              const alphaChannel = new Buffer$1(this.width * this.height);
 
               let i = 0;
               for (let j = 0, end = pixels.length; j < end; j++) {
                 alphaChannel[i++] = transparency[pixels[j]];
               }
 
-              this.alphaChannel = zlib.deflateSync(alphaChannel);
+              this.alphaChannel = zlib$1.deflateSync(alphaChannel);
               return this.finalize();
             });
           }
 
           decodeData() {
             this.image.decodePixels(pixels => {
-              this.imgData = zlib.deflateSync(pixels);
+              this.imgData = zlib$1.deflateSync(pixels);
               this.finalize();
             });
           }
@@ -29277,16 +29499,16 @@
         class PDFImage {
           static open(src, label) {
             let data;
-            if (isBuffer(src)) {
+            if (isBuffer$1(src)) {
               data = src;
             } else if (src instanceof ArrayBuffer) {
-              data = new Buffer(new Uint8Array(src));
+              data = new Buffer$1(new Uint8Array(src));
             } else {
               let match;
               if ((match = /^data:.+;base64,(.*)$/.exec(src))) {
-                data = new Buffer(match[1], 'base64');
+                data = new Buffer$1(match[1], 'base64');
               } else {
-                data = fs.readFileSync(src);
+                data = fs$1.readFileSync(src);
                 if (!data) {
                   return;
                 }
@@ -29455,7 +29677,7 @@
         					}
         				});
         				this.getStream().on('end', () => {
-        					result = Buffer.concat(chunks);
+        					result = Buffer$1.concat(chunks);
         					resolve(result);
         				});
         				this.getStream().end();
@@ -29962,8 +30184,8 @@
           // do nothing, but this method is required by node
 
           _write(data) {
-            if (!isBuffer(data)) {
-              data = new Buffer(data + '\n', 'binary');
+            if (!isBuffer$1(data)) {
+              data = new Buffer$1(data + '\n', 'binary');
             }
 
             this.push(data);
@@ -29992,7 +30214,7 @@ Please pipe the document into a Node stream.\
 
             console.warn(err.stack);
 
-            this.pipe(fs.createWriteStream(filename));
+            this.pipe(fs$1.createWriteStream(filename));
             this.end();
             return this.once('end', fn);
           }
@@ -32630,7 +32852,7 @@ Please pipe the document into a Node stream.\
 
         };
 
-        if ( module && 'object' !== 'undefined') {
+        if (module && 'object' !== 'undefined') {
           module.exports = SVGtoPDF;
         }
         });
@@ -32726,9 +32948,11 @@ Please pipe the document into a Node stream.\
 
         exports.generatePDF = generatePDF;
 
+        Object.defineProperty(exports, '__esModule', { value: true });
+
         return exports;
 
-    }({}));
+    })({});
     return worker
     };
 
@@ -32982,7 +33206,7 @@ Please pipe the document into a Node stream.\
         saveAs(pdfBlob, `${name}.pdf`);
     });
 
-    var btnListCss = "div {\r\n    width: 422px;\r\n    right: 0;\r\n    margin: 0 18px 18px 0;\r\n\r\n    text-align: center;\r\n    align-items: center;\r\n    font-family: \"Inter\", \"Helvetica neue\", Helvetica, sans-serif;\r\n    position: absolute;\r\n    z-index: 9999;\r\n    background: #f6f6f6;\r\n    min-width: 230px;\r\n\r\n    /* pass the scroll event through the btns background */\r\n    pointer-events: none;\r\n}\r\n\r\n@media screen and (max-width: 950px) {\r\n    div {\r\n        width: auto !important;\r\n    }\r\n}\r\n\r\nbutton {\r\n    width: 178px !important;\r\n    min-width: 178px;\r\n    height: 40px;\r\n\r\n    color: #fff;\r\n    background: #2e68c0;\r\n\r\n    cursor: pointer;\r\n    pointer-events: auto;\r\n\r\n    margin-bottom: 8px;\r\n    margin-right: 8px;\r\n    padding: 4px 12px;\r\n\r\n    justify-content: start;\r\n    align-self: center;\r\n\r\n    font-size: 16px;\r\n    border-radius: 6px;\r\n    border: 0;\r\n\r\n    display: inline-flex;\r\n    position: relative;\r\n\r\n    font-family: inherit;\r\n}\r\n\r\n/* fix `View in LibreScore` button text overflow */\r\nbutton:last-of-type {\r\n    width: unset !important;\r\n}\r\n\r\nbutton:hover {\r\n    background: #1a4f9f;\r\n}\r\n\r\n/* light theme btn */\r\nbutton.light {\r\n    color: #2e68c0;\r\n    background: #e1effe;\r\n}\r\n\r\nbutton.light:hover {\r\n    background: #c3ddfd;\r\n}\r\n\r\nsvg {\r\n    display: inline-block;\r\n    margin-right: 5px;\r\n    width: 20px;\r\n    height: 20px;\r\n    margin-top: auto;\r\n    margin-bottom: auto;\r\n}\r\n\r\nspan {\r\n    margin-top: auto;\r\n    margin-bottom: auto;\r\n}\r\n";
+    var btnListCss = "div {\n    width: 422px;\n    right: 0;\n    margin: 0 18px 18px 0;\n\n    text-align: center;\n    align-items: center;\n    font-family: \"Inter\", \"Helvetica neue\", Helvetica, sans-serif;\n    position: absolute;\n    z-index: 9999;\n    background: #f6f6f6;\n    min-width: 230px;\n\n    /* pass the scroll event through the btns background */\n    pointer-events: none;\n}\n\n@media screen and (max-width: 950px) {\n    div {\n        width: auto !important;\n    }\n}\n\nbutton {\n    width: 178px !important;\n    min-width: 178px;\n    height: 40px;\n\n    color: #fff;\n    background: #2e68c0;\n\n    cursor: pointer;\n    pointer-events: auto;\n\n    margin-bottom: 8px;\n    margin-right: 8px;\n    padding: 4px 12px;\n\n    justify-content: start;\n    align-self: center;\n\n    font-size: 16px;\n    border-radius: 6px;\n    border: 0;\n\n    display: inline-flex;\n    position: relative;\n\n    font-family: inherit;\n}\n\n/* fix `View in LibreScore` button text overflow */\nbutton:last-of-type {\n    width: unset !important;\n}\n\nbutton:hover {\n    background: #1a4f9f;\n}\n\n/* light theme btn */\nbutton.light {\n    color: #2e68c0;\n    background: #e1effe;\n}\n\nbutton.light:hover {\n    background: #c3ddfd;\n}\n\nsvg {\n    display: inline-block;\n    margin-right: 5px;\n    width: 20px;\n    height: 20px;\n    margin-top: auto;\n    margin-bottom: auto;\n}\n\nspan {\n    margin-top: auto;\n    margin-bottom: auto;\n}\n";
 
     function _typeof(obj) {
       "@babel/helpers - typeof";
@@ -33771,6 +33995,7 @@ Please pipe the document into a Node stream.\
           if (!options) options = {};
           if (keys === undefined || keys === null) return '';
           if (!Array.isArray(keys)) keys = [String(keys)];
+          var returnDetails = options.returnDetails !== undefined ? options.returnDetails : this.options.returnDetails;
           var keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator;
 
           var _this$extractFromKey = this.extractFromKey(keys[keys.length - 1], options),
@@ -33784,7 +34009,18 @@ Please pipe the document into a Node stream.\
           if (lng && lng.toLowerCase() === 'cimode') {
             if (appendNamespaceToCIMode) {
               var nsSeparator = options.nsSeparator || this.options.nsSeparator;
-              return namespace + nsSeparator + key;
+
+              if (returnDetails) {
+                resolved.res = "".concat(namespace).concat(nsSeparator).concat(key);
+                return resolved;
+              }
+
+              return "".concat(namespace).concat(nsSeparator).concat(key);
+            }
+
+            if (returnDetails) {
+              resolved.res = key;
+              return resolved;
             }
 
             return key;
@@ -33806,9 +34042,16 @@ Please pipe the document into a Node stream.\
                 this.logger.warn('accessing an object - but returnObjects options is not enabled!');
               }
 
-              return this.options.returnedObjectHandler ? this.options.returnedObjectHandler(resUsedKey, res, _objectSpread$2(_objectSpread$2({}, options), {}, {
+              var r = this.options.returnedObjectHandler ? this.options.returnedObjectHandler(resUsedKey, res, _objectSpread$2(_objectSpread$2({}, options), {}, {
                 ns: namespaces
               })) : "key '".concat(key, " (").concat(this.language, ")' returned an object instead of string.");
+
+              if (returnDetails) {
+                resolved.res = r;
+                return resolved;
+              }
+
+              return r;
             }
 
             if (keySeparator) {
@@ -33914,6 +34157,11 @@ Please pipe the document into a Node stream.\
             }
           }
 
+          if (returnDetails) {
+            resolved.res = res;
+            return resolved;
+          }
+
           return res;
         }
       }, {
@@ -33922,7 +34170,7 @@ Please pipe the document into a Node stream.\
           var _this3 = this;
 
           if (this.i18nFormat && this.i18nFormat.parse) {
-            res = this.i18nFormat.parse(res, options, resolved.usedLng, resolved.usedNS, resolved.usedKey, {
+            res = this.i18nFormat.parse(res, _objectSpread$2(_objectSpread$2({}, this.options.interpolation.defaultVariables), options), resolved.usedLng, resolved.usedNS, resolved.usedKey, {
               resolved: resolved
             });
           } else if (!options.skipInterpolation) {
@@ -34820,10 +35068,10 @@ Please pipe the document into a Node stream.\
                 rest = _opt$split2.slice(1);
 
             var val = rest.join(':');
+            if (!formatOptions[key.trim()]) formatOptions[key.trim()] = val.trim();
             if (val.trim() === 'false') formatOptions[key.trim()] = false;
             if (val.trim() === 'true') formatOptions[key.trim()] = true;
             if (!isNaN(val.trim())) formatOptions[key.trim()] = parseInt(val.trim(), 10);
-            if (!formatOptions[key.trim()]) formatOptions[key.trim()] = val.trim();
           });
         }
       }
@@ -34923,13 +35171,9 @@ Please pipe the document into a Node stream.\
 
     function _isNativeReflectConstruct$2() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
 
-    function remove(arr, what) {
-      var found = arr.indexOf(what);
-
-      while (found !== -1) {
-        arr.splice(found, 1);
-        found = arr.indexOf(what);
-      }
+    function removePending(q, name) {
+      delete q.pending[name];
+      q.pendingCount--;
     }
 
     var Connector = function (_EventEmitter) {
@@ -34956,6 +35200,9 @@ Please pipe the document into a Node stream.\
         _this.languageUtils = services.languageUtils;
         _this.options = options;
         _this.logger = baseLogger.create('backendConnector');
+        _this.waitingReads = [];
+        _this.maxParallelReads = options.maxParallelReads || 10;
+        _this.readingCalls = 0;
         _this.state = {};
         _this.queue = [];
 
@@ -34971,10 +35218,10 @@ Please pipe the document into a Node stream.\
         value: function queueLoad(languages, namespaces, options, callback) {
           var _this2 = this;
 
-          var toLoad = [];
-          var pending = [];
-          var toLoadLanguages = [];
-          var toLoadNamespaces = [];
+          var toLoad = {};
+          var pending = {};
+          var toLoadLanguages = {};
+          var toLoadNamespaces = {};
           languages.forEach(function (lng) {
             var hasAllNamespaces = true;
             namespaces.forEach(function (ns) {
@@ -34983,21 +35230,22 @@ Please pipe the document into a Node stream.\
               if (!options.reload && _this2.store.hasResourceBundle(lng, ns)) {
                 _this2.state[name] = 2;
               } else if (_this2.state[name] < 0) ; else if (_this2.state[name] === 1) {
-                if (pending.indexOf(name) < 0) pending.push(name);
+                if (pending[name] !== undefined) pending[name] = true;
               } else {
                 _this2.state[name] = 1;
                 hasAllNamespaces = false;
-                if (pending.indexOf(name) < 0) pending.push(name);
-                if (toLoad.indexOf(name) < 0) toLoad.push(name);
-                if (toLoadNamespaces.indexOf(ns) < 0) toLoadNamespaces.push(ns);
+                pending[name] = true;
+                toLoad[name] = true;
+                toLoadNamespaces[ns] = true;
               }
             });
-            if (!hasAllNamespaces) toLoadLanguages.push(lng);
+            if (!hasAllNamespaces) toLoadLanguages[lng] = true;
           });
 
-          if (toLoad.length || pending.length) {
+          if (Object.keys(toLoad).length || Object.keys(pending).length) {
             this.queue.push({
               pending: pending,
+              pendingCount: Object.keys(pending).length,
               loaded: {},
               errors: [],
               callback: callback
@@ -35005,10 +35253,10 @@ Please pipe the document into a Node stream.\
           }
 
           return {
-            toLoad: toLoad,
-            pending: pending,
-            toLoadLanguages: toLoadLanguages,
-            toLoadNamespaces: toLoadNamespaces
+            toLoad: Object.keys(toLoad),
+            pending: Object.keys(pending),
+            toLoadLanguages: Object.keys(toLoadLanguages),
+            toLoadNamespaces: Object.keys(toLoadNamespaces)
           };
         }
       }, {
@@ -35027,16 +35275,17 @@ Please pipe the document into a Node stream.\
           var loaded = {};
           this.queue.forEach(function (q) {
             pushPath(q.loaded, [lng], ns);
-            remove(q.pending, name);
+            removePending(q, name);
             if (err) q.errors.push(err);
 
-            if (q.pending.length === 0 && !q.done) {
+            if (q.pendingCount === 0 && !q.done) {
               Object.keys(q.loaded).forEach(function (l) {
-                if (!loaded[l]) loaded[l] = [];
+                if (!loaded[l]) loaded[l] = {};
+                var loadedKeys = Object.keys(loaded[l]);
 
-                if (q.loaded[l].length) {
-                  q.loaded[l].forEach(function (ns) {
-                    if (loaded[l].indexOf(ns) < 0) loaded[l].push(ns);
+                if (loadedKeys.length) {
+                  loadedKeys.forEach(function (ns) {
+                    if (loadedKeys[ns] !== undefined) loaded[l][ns] = true;
                   });
                 }
               });
@@ -35063,12 +35312,34 @@ Please pipe the document into a Node stream.\
           var wait = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 350;
           var callback = arguments.length > 5 ? arguments[5] : undefined;
           if (!lng.length) return callback(null, {});
+
+          if (this.readingCalls >= this.maxParallelReads) {
+            this.waitingReads.push({
+              lng: lng,
+              ns: ns,
+              fcName: fcName,
+              tried: tried,
+              wait: wait,
+              callback: callback
+            });
+            return;
+          }
+
+          this.readingCalls++;
           return this.backend[fcName](lng, ns, function (err, data) {
             if (err && data && tried < 5) {
               setTimeout(function () {
                 _this3.read.call(_this3, lng, ns, fcName, tried + 1, wait * 2, callback);
               }, wait);
               return;
+            }
+
+            _this3.readingCalls--;
+
+            if (_this3.waitingReads.length > 0) {
+              var next = _this3.waitingReads.shift();
+
+              _this3.read(next.lng, next.ns, next.fcName, next.tried, next.wait, next.callback);
             }
 
             callback(err, data);
@@ -35240,7 +35511,7 @@ Please pipe the document into a Node stream.\
 
     function _isNativeReflectConstruct$3() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
 
-    function noop$1() {}
+    function noop() {}
 
     function bindMemberFunctions(inst) {
       var mems = Object.getOwnPropertyNames(Object.getPrototypeOf(inst));
@@ -35405,7 +35676,7 @@ Please pipe the document into a Node stream.\
           }
 
           this.format = this.options.interpolation.format;
-          if (!callback) callback = noop$1;
+          if (!callback) callback = noop;
 
           if (this.options.fallbackLng && !this.services.languageDetector && !this.options.lng) {
             var codes = this.services.languageUtils.getFallbackCodes(this.options.fallbackLng);
@@ -35466,7 +35737,7 @@ Please pipe the document into a Node stream.\
         value: function loadResources(language) {
           var _this3 = this;
 
-          var callback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : noop$1;
+          var callback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : noop;
           var usedCallback = callback;
           var usedLng = typeof language === 'string' ? language : this.language;
           if (typeof language === 'function') usedCallback = language;
@@ -35514,7 +35785,7 @@ Please pipe the document into a Node stream.\
           var deferred = defer();
           if (!lngs) lngs = this.languages;
           if (!ns) ns = this.options.ns;
-          if (!callback) callback = noop$1;
+          if (!callback) callback = noop;
           this.services.backendConnector.reload(lngs, ns, function (err) {
             deferred.resolve();
             callback(err);
@@ -35730,7 +36001,7 @@ Please pipe the document into a Node stream.\
           }
 
           if (this.hasResourceBundle(lng, ns)) return true;
-          if (!this.services.backendConnector.backend) return true;
+          if (!this.services.backendConnector.backend || this.options.resources && !this.options.partialBundledLanguages) return true;
           if (loadNotPending(lng, ns) && (!fallbackLng || loadNotPending(lastLng, ns))) return true;
           return false;
         }
@@ -35792,7 +36063,7 @@ Please pipe the document into a Node stream.\
           var _this8 = this;
 
           var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-          var callback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : noop$1;
+          var callback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : noop;
 
           var mergedOptions = _objectSpread$6(_objectSpread$6(_objectSpread$6({}, this.options), options), {
             isClone: true
@@ -35847,749 +36118,154 @@ Please pipe the document into a Node stream.\
     var instance = I18n.createInstance();
     instance.createInstance = I18n.createInstance;
 
-    var createInstance = instance.createInstance;
-    var init = instance.init;
-    var loadResources = instance.loadResources;
-    var reloadResources = instance.reloadResources;
-    var use = instance.use;
-    var changeLanguage = instance.changeLanguage;
-    var getFixedT = instance.getFixedT;
-    var t = instance.t;
-    var exists = instance.exists;
-    var setDefaultNamespace = instance.setDefaultNamespace;
-    var hasLoadedNamespace = instance.hasLoadedNamespace;
-    var loadNamespaces = instance.loadNamespaces;
-    var loadLanguages = instance.loadLanguages;
+    instance.createInstance;
+    instance.init;
+    instance.loadResources;
+    instance.reloadResources;
+    instance.use;
+    instance.changeLanguage;
+    instance.getFixedT;
+    instance.t;
+    instance.exists;
+    instance.setDefaultNamespace;
+    instance.hasLoadedNamespace;
+    instance.loadNamespaces;
+    instance.loadLanguages;
 
-    var cli_usage_hint = "";
-    var cli_example_folder = "";
-    var cli_example_file = "";
-    var cli_option_input_description = "";
-    var cli_option_type_description = "";
-    var cli_option_output_description = "";
-    var cli_option_verbose_description = "";
-    var cli_outdated_version_message = "";
-    var cli_windows_paste_hint = "";
-    var cli_linux_paste_hint = "";
-    var cli_input_message = "";
-    var cli_input_suffix = "";
-    var cli_types_message = "";
-    var cli_output_message = "";
-    var cli_file_error = "";
-    var cli_input_error = "";
-    var cli_parts_message = "";
-    var cli_saved_message = "";
-    var cli_done_message = "";
-    var cli_url_error = "";
-    var cli_url_type_error = "";
-    var cli_score_not_found = "";
-    var button_parent_not_found = "";
-    var unknown_button_list_mode = "";
-    var cli_example_url = "";
-    var path_to_folder = "";
-    var path_to_file = "";
-    var cli_type_error = "";
-    var cli_file_extension_error = "";
-    var cli_file_loaded_message = "";
-    var cli_score_loaded_message = "";
-    var cli_confirm_message = "";
-    var id = "";
-    var title$1 = "";
-    var no_sheet_images_error = "";
-    var source_code = "";
-    var version$1 = "";
-    var processing = "";
-    var download = "";
-    var full_score = "";
-    var download_audio = "";
-    var ar = {
-    	cli_usage_hint: cli_usage_hint,
-    	cli_example_folder: cli_example_folder,
-    	cli_example_file: cli_example_file,
-    	cli_option_input_description: cli_option_input_description,
-    	cli_option_type_description: cli_option_type_description,
-    	cli_option_output_description: cli_option_output_description,
-    	cli_option_verbose_description: cli_option_verbose_description,
-    	cli_outdated_version_message: cli_outdated_version_message,
-    	cli_windows_paste_hint: cli_windows_paste_hint,
-    	cli_linux_paste_hint: cli_linux_paste_hint,
-    	cli_input_message: cli_input_message,
-    	cli_input_suffix: cli_input_suffix,
-    	cli_types_message: cli_types_message,
-    	cli_output_message: cli_output_message,
-    	cli_file_error: cli_file_error,
-    	cli_input_error: cli_input_error,
-    	cli_parts_message: cli_parts_message,
-    	cli_saved_message: cli_saved_message,
-    	cli_done_message: cli_done_message,
-    	cli_url_error: cli_url_error,
-    	cli_url_type_error: cli_url_type_error,
-    	cli_score_not_found: cli_score_not_found,
-    	button_parent_not_found: button_parent_not_found,
-    	unknown_button_list_mode: unknown_button_list_mode,
-    	cli_example_url: cli_example_url,
-    	path_to_folder: path_to_folder,
-    	path_to_file: path_to_file,
-    	cli_type_error: cli_type_error,
-    	cli_file_extension_error: cli_file_extension_error,
-    	cli_file_loaded_message: cli_file_loaded_message,
-    	cli_score_loaded_message: cli_score_loaded_message,
-    	cli_confirm_message: cli_confirm_message,
-    	id: id,
-    	title: title$1,
-    	no_sheet_images_error: no_sheet_images_error,
-    	source_code: source_code,
-    	version: version$1,
-    	processing: processing,
-    	download: download,
-    	full_score: full_score,
-    	download_audio: download_audio
-    };
-
-    var processing$1 = "Processing…";
-    var download$1 = "Download {{fileType}}";
-    var download_audio$1 = "Download {{fileType}} audio";
-    var full_score$1 = "Full score";
-    var button_parent_not_found$1 = "Button parent not found";
-    var unknown_button_list_mode$1 = "Unknown button list mode";
-    var cli_usage_hint$1 = "Usage: {{bin}} [options]";
-    var cli_example_url$1 = "download MP3 of URL to specified directory";
-    var path_to_folder$1 = "path/to/folder";
-    var path_to_file$1 = "path/to/file";
-    var cli_example_folder$1 = "export MIDI and PDF of all files in specified folder to current folder";
-    var cli_example_file$1 = "export FLAC of specified MusicXML file to current folder";
-    var cli_option_input_description$1 = "URL, file, or folder to download or convert from";
-    var cli_option_type_description$1 = "Type of files to download";
-    var cli_option_output_description$1 = "Folder to save files to";
-    var cli_option_verbose_description$1 = "Run with verbose logging";
-    var cli_outdated_version_message$1 = "\nNew version is available! Current version is {{installed}}\nRun npm i -g dl-librescore@{{latest}} to update";
-    var cli_windows_paste_hint$1 = "right-click to paste";
-    var cli_linux_paste_hint$1 = "usually Ctrl+Shift+V to paste";
-    var cli_input_message$1 = "MuseScore URL or path to file or folder:";
-    var cli_input_suffix$1 = "starts with https://musescore.com/ or is a path";
-    var cli_types_message$1 = "Filetype Selection";
-    var cli_output_message$1 = "Output Directory:";
-    var cli_file_error$1 = "File does not exist";
-    var cli_type_error$1 = "No types chosen";
-    var cli_file_extension_error$1 = "Invalid file extension, only gp, gp3, gp4, gp5, gpx, gtp, kar, mid, midi, mscx, mscz, musicxml, mxl, ptb, and xml are supported";
-    var cli_file_loaded_message$1 = "File loaded";
-    var cli_score_loaded_message$1 = "Score loaded by Webmscore";
-    var cli_input_error$1 = "Try using the Webmscore website instead: https://librescore.github.io";
-    var cli_parts_message$1 = "Part Selection";
-    var cli_saved_message$1 = "Saved {{file}}";
-    var cli_done_message$1 = "Done";
-    var cli_url_error$1 = "Invalid URL";
-    var cli_url_type_error$1 = "Only MIDI, MP3, and PDF are downloadable from a URL";
-    var cli_score_not_found$1 = "Score not found";
-    var cli_confirm_message$1 = "Continue?";
-    var id$1 = "ID: {{id}}";
-    var title$2 = "Title: {{title}}";
-    var no_sheet_images_error$1 = "No sheet images found";
-    var source_code$1 = "Source Code";
-    var version$2 = "Version: {{version}}";
-    var en = {
-    	processing: processing$1,
-    	download: download$1,
-    	download_audio: download_audio$1,
-    	full_score: full_score$1,
-    	button_parent_not_found: button_parent_not_found$1,
-    	unknown_button_list_mode: unknown_button_list_mode$1,
-    	cli_usage_hint: cli_usage_hint$1,
-    	cli_example_url: cli_example_url$1,
-    	path_to_folder: path_to_folder$1,
-    	path_to_file: path_to_file$1,
-    	cli_example_folder: cli_example_folder$1,
-    	cli_example_file: cli_example_file$1,
-    	cli_option_input_description: cli_option_input_description$1,
-    	cli_option_type_description: cli_option_type_description$1,
-    	cli_option_output_description: cli_option_output_description$1,
-    	cli_option_verbose_description: cli_option_verbose_description$1,
-    	cli_outdated_version_message: cli_outdated_version_message$1,
-    	cli_windows_paste_hint: cli_windows_paste_hint$1,
-    	cli_linux_paste_hint: cli_linux_paste_hint$1,
-    	cli_input_message: cli_input_message$1,
-    	cli_input_suffix: cli_input_suffix$1,
-    	cli_types_message: cli_types_message$1,
-    	cli_output_message: cli_output_message$1,
-    	cli_file_error: cli_file_error$1,
-    	cli_type_error: cli_type_error$1,
-    	cli_file_extension_error: cli_file_extension_error$1,
-    	cli_file_loaded_message: cli_file_loaded_message$1,
-    	cli_score_loaded_message: cli_score_loaded_message$1,
-    	cli_input_error: cli_input_error$1,
-    	cli_parts_message: cli_parts_message$1,
-    	cli_saved_message: cli_saved_message$1,
-    	cli_done_message: cli_done_message$1,
-    	cli_url_error: cli_url_error$1,
-    	cli_url_type_error: cli_url_type_error$1,
-    	cli_score_not_found: cli_score_not_found$1,
-    	cli_confirm_message: cli_confirm_message$1,
-    	id: id$1,
-    	title: title$2,
-    	no_sheet_images_error: no_sheet_images_error$1,
-    	source_code: source_code$1,
-    	version: version$2
-    };
-
-    var processing$2 = "Cargando…";
-    var download$2 = "Descargar {{fileType}}";
-    var download_audio$2 = "Descargar audio {{fileType}}";
-    var full_score$2 = "Partitura completa";
-    var cli_file_error$2 = "";
-    var cli_type_error$2 = "";
-    var cli_file_extension_error$2 = "";
-    var cli_file_loaded_message$2 = "";
-    var cli_score_loaded_message$2 = "";
-    var cli_input_error$2 = "";
-    var cli_parts_message$2 = "";
-    var cli_saved_message$2 = "";
-    var cli_done_message$2 = "";
-    var cli_url_error$2 = "";
-    var cli_url_type_error$2 = "";
-    var cli_score_not_found$2 = "";
-    var cli_confirm_message$2 = "";
-    var id$2 = "";
-    var title$3 = "";
-    var no_sheet_images_error$2 = "";
-    var source_code$2 = "";
-    var version$3 = "";
-    var cli_usage_hint$2 = "";
-    var button_parent_not_found$2 = "";
-    var unknown_button_list_mode$2 = "";
-    var cli_example_url$2 = "";
-    var path_to_folder$2 = "";
-    var path_to_file$2 = "";
-    var cli_example_folder$2 = "";
-    var cli_example_file$2 = "";
-    var cli_option_input_description$2 = "";
-    var cli_option_type_description$2 = "";
-    var cli_option_output_description$2 = "";
-    var cli_option_verbose_description$2 = "";
-    var cli_outdated_version_message$2 = "";
-    var cli_windows_paste_hint$2 = "";
-    var cli_linux_paste_hint$2 = "";
-    var cli_input_message$2 = "";
-    var cli_input_suffix$2 = "";
-    var cli_types_message$2 = "";
-    var cli_output_message$2 = "";
-    var es = {
-    	processing: processing$2,
-    	download: download$2,
-    	download_audio: download_audio$2,
-    	full_score: full_score$2,
-    	cli_file_error: cli_file_error$2,
-    	cli_type_error: cli_type_error$2,
-    	cli_file_extension_error: cli_file_extension_error$2,
-    	cli_file_loaded_message: cli_file_loaded_message$2,
-    	cli_score_loaded_message: cli_score_loaded_message$2,
-    	cli_input_error: cli_input_error$2,
-    	cli_parts_message: cli_parts_message$2,
-    	cli_saved_message: cli_saved_message$2,
-    	cli_done_message: cli_done_message$2,
-    	cli_url_error: cli_url_error$2,
-    	cli_url_type_error: cli_url_type_error$2,
-    	cli_score_not_found: cli_score_not_found$2,
-    	cli_confirm_message: cli_confirm_message$2,
-    	id: id$2,
-    	title: title$3,
-    	no_sheet_images_error: no_sheet_images_error$2,
-    	source_code: source_code$2,
-    	version: version$3,
-    	cli_usage_hint: cli_usage_hint$2,
-    	button_parent_not_found: button_parent_not_found$2,
-    	unknown_button_list_mode: unknown_button_list_mode$2,
-    	cli_example_url: cli_example_url$2,
-    	path_to_folder: path_to_folder$2,
-    	path_to_file: path_to_file$2,
-    	cli_example_folder: cli_example_folder$2,
-    	cli_example_file: cli_example_file$2,
-    	cli_option_input_description: cli_option_input_description$2,
-    	cli_option_type_description: cli_option_type_description$2,
-    	cli_option_output_description: cli_option_output_description$2,
-    	cli_option_verbose_description: cli_option_verbose_description$2,
-    	cli_outdated_version_message: cli_outdated_version_message$2,
-    	cli_windows_paste_hint: cli_windows_paste_hint$2,
-    	cli_linux_paste_hint: cli_linux_paste_hint$2,
-    	cli_input_message: cli_input_message$2,
-    	cli_input_suffix: cli_input_suffix$2,
-    	cli_types_message: cli_types_message$2,
-    	cli_output_message: cli_output_message$2
-    };
-
-    var processing$3 = "En traitement…";
-    var download$3 = "Télécharger {{fileType}}";
-    var full_score$3 = "Grande partition";
-    var download_audio$3 = "Télécharger audio {{fileType}}";
-    var cli_usage_hint$3 = "";
-    var button_parent_not_found$3 = "";
-    var unknown_button_list_mode$3 = "";
-    var cli_example_url$3 = "";
-    var path_to_folder$3 = "";
-    var path_to_file$3 = "";
-    var cli_example_folder$3 = "";
-    var cli_example_file$3 = "";
-    var cli_option_input_description$3 = "";
-    var cli_option_type_description$3 = "";
-    var cli_option_output_description$3 = "";
-    var cli_option_verbose_description$3 = "";
-    var cli_outdated_version_message$3 = "";
-    var cli_windows_paste_hint$3 = "";
-    var cli_linux_paste_hint$3 = "";
-    var cli_input_message$3 = "";
-    var cli_input_suffix$3 = "";
-    var cli_types_message$3 = "";
-    var cli_output_message$3 = "";
-    var cli_file_error$3 = "";
-    var cli_type_error$3 = "";
-    var cli_file_extension_error$3 = "";
-    var cli_file_loaded_message$3 = "";
-    var cli_score_loaded_message$3 = "";
-    var cli_input_error$3 = "";
-    var cli_parts_message$3 = "";
-    var cli_saved_message$3 = "";
-    var cli_done_message$3 = "";
-    var cli_url_error$3 = "";
-    var cli_url_type_error$3 = "";
-    var cli_score_not_found$3 = "";
-    var cli_confirm_message$3 = "";
-    var id$3 = "";
-    var title$4 = "";
-    var no_sheet_images_error$3 = "";
-    var source_code$3 = "";
-    var version$4 = "";
-    var fr = {
-    	processing: processing$3,
-    	download: download$3,
-    	full_score: full_score$3,
-    	download_audio: download_audio$3,
-    	cli_usage_hint: cli_usage_hint$3,
-    	button_parent_not_found: button_parent_not_found$3,
-    	unknown_button_list_mode: unknown_button_list_mode$3,
-    	cli_example_url: cli_example_url$3,
-    	path_to_folder: path_to_folder$3,
-    	path_to_file: path_to_file$3,
-    	cli_example_folder: cli_example_folder$3,
-    	cli_example_file: cli_example_file$3,
-    	cli_option_input_description: cli_option_input_description$3,
-    	cli_option_type_description: cli_option_type_description$3,
-    	cli_option_output_description: cli_option_output_description$3,
-    	cli_option_verbose_description: cli_option_verbose_description$3,
-    	cli_outdated_version_message: cli_outdated_version_message$3,
-    	cli_windows_paste_hint: cli_windows_paste_hint$3,
-    	cli_linux_paste_hint: cli_linux_paste_hint$3,
-    	cli_input_message: cli_input_message$3,
-    	cli_input_suffix: cli_input_suffix$3,
-    	cli_types_message: cli_types_message$3,
-    	cli_output_message: cli_output_message$3,
-    	cli_file_error: cli_file_error$3,
-    	cli_type_error: cli_type_error$3,
-    	cli_file_extension_error: cli_file_extension_error$3,
-    	cli_file_loaded_message: cli_file_loaded_message$3,
-    	cli_score_loaded_message: cli_score_loaded_message$3,
-    	cli_input_error: cli_input_error$3,
-    	cli_parts_message: cli_parts_message$3,
-    	cli_saved_message: cli_saved_message$3,
-    	cli_done_message: cli_done_message$3,
-    	cli_url_error: cli_url_error$3,
-    	cli_url_type_error: cli_url_type_error$3,
-    	cli_score_not_found: cli_score_not_found$3,
-    	cli_confirm_message: cli_confirm_message$3,
-    	id: id$3,
-    	title: title$4,
-    	no_sheet_images_error: no_sheet_images_error$3,
-    	source_code: source_code$3,
-    	version: version$4
-    };
-
-    var processing$4 = "Caricamento…";
-    var download$4 = "Scaricare {{fileType}}";
-    var download_audio$4 = "Scaricare {{fileType}} audio";
-    var full_score$4 = "Partitura completa";
-    var cli_usage_hint$4 = "";
-    var button_parent_not_found$4 = "";
-    var unknown_button_list_mode$4 = "";
-    var cli_example_url$4 = "";
-    var path_to_folder$4 = "";
-    var path_to_file$4 = "";
-    var cli_example_folder$4 = "";
-    var cli_example_file$4 = "";
-    var cli_option_input_description$4 = "";
-    var cli_option_type_description$4 = "";
-    var cli_option_output_description$4 = "";
-    var cli_option_verbose_description$4 = "";
-    var cli_outdated_version_message$4 = "";
-    var cli_windows_paste_hint$4 = "";
-    var cli_linux_paste_hint$4 = "";
-    var cli_input_message$4 = "";
-    var cli_input_suffix$4 = "";
-    var cli_types_message$4 = "";
-    var cli_output_message$4 = "";
-    var cli_file_error$4 = "";
-    var cli_type_error$4 = "";
-    var cli_file_extension_error$4 = "";
-    var cli_file_loaded_message$4 = "";
-    var cli_score_loaded_message$4 = "";
-    var cli_input_error$4 = "";
-    var cli_parts_message$4 = "";
-    var cli_saved_message$4 = "";
-    var cli_done_message$4 = "";
-    var cli_url_error$4 = "";
-    var cli_url_type_error$4 = "";
-    var cli_score_not_found$4 = "";
-    var cli_confirm_message$4 = "";
-    var id$4 = "";
-    var title$5 = "";
-    var no_sheet_images_error$4 = "";
-    var source_code$4 = "";
-    var version$5 = "";
-    var it = {
-    	processing: processing$4,
-    	download: download$4,
-    	download_audio: download_audio$4,
-    	full_score: full_score$4,
-    	cli_usage_hint: cli_usage_hint$4,
-    	button_parent_not_found: button_parent_not_found$4,
-    	unknown_button_list_mode: unknown_button_list_mode$4,
-    	cli_example_url: cli_example_url$4,
-    	path_to_folder: path_to_folder$4,
-    	path_to_file: path_to_file$4,
-    	cli_example_folder: cli_example_folder$4,
-    	cli_example_file: cli_example_file$4,
-    	cli_option_input_description: cli_option_input_description$4,
-    	cli_option_type_description: cli_option_type_description$4,
-    	cli_option_output_description: cli_option_output_description$4,
-    	cli_option_verbose_description: cli_option_verbose_description$4,
-    	cli_outdated_version_message: cli_outdated_version_message$4,
-    	cli_windows_paste_hint: cli_windows_paste_hint$4,
-    	cli_linux_paste_hint: cli_linux_paste_hint$4,
-    	cli_input_message: cli_input_message$4,
-    	cli_input_suffix: cli_input_suffix$4,
-    	cli_types_message: cli_types_message$4,
-    	cli_output_message: cli_output_message$4,
-    	cli_file_error: cli_file_error$4,
-    	cli_type_error: cli_type_error$4,
-    	cli_file_extension_error: cli_file_extension_error$4,
-    	cli_file_loaded_message: cli_file_loaded_message$4,
-    	cli_score_loaded_message: cli_score_loaded_message$4,
-    	cli_input_error: cli_input_error$4,
-    	cli_parts_message: cli_parts_message$4,
-    	cli_saved_message: cli_saved_message$4,
-    	cli_done_message: cli_done_message$4,
-    	cli_url_error: cli_url_error$4,
-    	cli_url_type_error: cli_url_type_error$4,
-    	cli_score_not_found: cli_score_not_found$4,
-    	cli_confirm_message: cli_confirm_message$4,
-    	id: id$4,
-    	title: title$5,
-    	no_sheet_images_error: no_sheet_images_error$4,
-    	source_code: source_code$4,
-    	version: version$5
-    };
-
-    var processing$5 = "処理中…";
-    var download$5 = "{{fileType}}をダウンロード";
-    var download_audio$5 = "{{fileType}}オーディオをダウンロード";
-    var full_score$5 = "フルスコア";
-    var cli_url_error$5 = "";
-    var cli_url_type_error$5 = "";
-    var cli_score_not_found$5 = "";
-    var cli_usage_hint$5 = "";
-    var button_parent_not_found$5 = "";
-    var unknown_button_list_mode$5 = "";
-    var cli_example_url$5 = "";
-    var path_to_folder$5 = "";
-    var path_to_file$5 = "";
-    var cli_example_folder$5 = "";
-    var cli_example_file$5 = "";
-    var cli_option_input_description$5 = "";
-    var cli_option_type_description$5 = "";
-    var cli_option_output_description$5 = "";
-    var cli_option_verbose_description$5 = "";
-    var cli_outdated_version_message$5 = "";
-    var cli_windows_paste_hint$5 = "";
-    var cli_linux_paste_hint$5 = "";
-    var cli_input_message$5 = "";
-    var cli_input_suffix$5 = "";
-    var cli_types_message$5 = "";
-    var cli_output_message$5 = "";
-    var cli_file_error$5 = "";
-    var cli_type_error$5 = "";
-    var cli_file_extension_error$5 = "";
-    var cli_file_loaded_message$5 = "";
-    var cli_score_loaded_message$5 = "";
-    var cli_input_error$5 = "";
-    var cli_parts_message$5 = "";
-    var cli_saved_message$5 = "";
-    var cli_done_message$5 = "";
-    var id$5 = "";
-    var cli_confirm_message$5 = "";
-    var title$6 = "";
-    var no_sheet_images_error$5 = "";
-    var source_code$5 = "";
-    var version$6 = "";
-    var ja = {
-    	processing: processing$5,
-    	download: download$5,
-    	download_audio: download_audio$5,
-    	full_score: full_score$5,
-    	cli_url_error: cli_url_error$5,
-    	cli_url_type_error: cli_url_type_error$5,
-    	cli_score_not_found: cli_score_not_found$5,
-    	cli_usage_hint: cli_usage_hint$5,
-    	button_parent_not_found: button_parent_not_found$5,
-    	unknown_button_list_mode: unknown_button_list_mode$5,
-    	cli_example_url: cli_example_url$5,
-    	path_to_folder: path_to_folder$5,
-    	path_to_file: path_to_file$5,
-    	cli_example_folder: cli_example_folder$5,
-    	cli_example_file: cli_example_file$5,
-    	cli_option_input_description: cli_option_input_description$5,
-    	cli_option_type_description: cli_option_type_description$5,
-    	cli_option_output_description: cli_option_output_description$5,
-    	cli_option_verbose_description: cli_option_verbose_description$5,
-    	cli_outdated_version_message: cli_outdated_version_message$5,
-    	cli_windows_paste_hint: cli_windows_paste_hint$5,
-    	cli_linux_paste_hint: cli_linux_paste_hint$5,
-    	cli_input_message: cli_input_message$5,
-    	cli_input_suffix: cli_input_suffix$5,
-    	cli_types_message: cli_types_message$5,
-    	cli_output_message: cli_output_message$5,
-    	cli_file_error: cli_file_error$5,
-    	cli_type_error: cli_type_error$5,
-    	cli_file_extension_error: cli_file_extension_error$5,
-    	cli_file_loaded_message: cli_file_loaded_message$5,
-    	cli_score_loaded_message: cli_score_loaded_message$5,
-    	cli_input_error: cli_input_error$5,
-    	cli_parts_message: cli_parts_message$5,
-    	cli_saved_message: cli_saved_message$5,
-    	cli_done_message: cli_done_message$5,
-    	id: id$5,
-    	cli_confirm_message: cli_confirm_message$5,
-    	title: title$6,
-    	no_sheet_images_error: no_sheet_images_error$5,
-    	source_code: source_code$5,
-    	version: version$6
-    };
-
-    var processing$6 = "처리중…";
-    var download$6 = "다운로드 {{fileType}}";
-    var download_audio$6 = "{{fileType}} 오디오 다운로드";
-    var full_score$6 = "풀 스코어";
-    var cli_done_message$6 = "";
-    var cli_score_not_found$6 = "";
-    var cli_confirm_message$6 = "";
-    var cli_usage_hint$6 = "";
-    var button_parent_not_found$6 = "";
-    var unknown_button_list_mode$6 = "";
-    var cli_example_url$6 = "";
-    var path_to_folder$6 = "";
-    var path_to_file$6 = "";
-    var cli_example_folder$6 = "";
-    var cli_example_file$6 = "";
-    var cli_option_input_description$6 = "";
-    var cli_option_type_description$6 = "";
-    var cli_option_output_description$6 = "";
-    var cli_option_verbose_description$6 = "";
-    var cli_outdated_version_message$6 = "";
-    var cli_windows_paste_hint$6 = "";
-    var cli_linux_paste_hint$6 = "";
-    var cli_input_message$6 = "";
-    var cli_input_suffix$6 = "";
-    var cli_types_message$6 = "";
-    var cli_output_message$6 = "";
-    var cli_file_error$6 = "";
-    var cli_type_error$6 = "";
-    var cli_file_extension_error$6 = "";
-    var cli_file_loaded_message$6 = "";
-    var cli_score_loaded_message$6 = "";
-    var cli_input_error$6 = "";
-    var cli_parts_message$6 = "";
-    var cli_saved_message$6 = "";
-    var cli_url_error$6 = "";
-    var cli_url_type_error$6 = "";
-    var id$6 = "";
-    var title$7 = "";
-    var no_sheet_images_error$6 = "";
-    var source_code$6 = "";
-    var version$7 = "";
-    var ko = {
-    	processing: processing$6,
-    	download: download$6,
-    	download_audio: download_audio$6,
-    	full_score: full_score$6,
-    	cli_done_message: cli_done_message$6,
-    	cli_score_not_found: cli_score_not_found$6,
-    	cli_confirm_message: cli_confirm_message$6,
-    	cli_usage_hint: cli_usage_hint$6,
-    	button_parent_not_found: button_parent_not_found$6,
-    	unknown_button_list_mode: unknown_button_list_mode$6,
-    	cli_example_url: cli_example_url$6,
-    	path_to_folder: path_to_folder$6,
-    	path_to_file: path_to_file$6,
-    	cli_example_folder: cli_example_folder$6,
-    	cli_example_file: cli_example_file$6,
-    	cli_option_input_description: cli_option_input_description$6,
-    	cli_option_type_description: cli_option_type_description$6,
-    	cli_option_output_description: cli_option_output_description$6,
-    	cli_option_verbose_description: cli_option_verbose_description$6,
-    	cli_outdated_version_message: cli_outdated_version_message$6,
-    	cli_windows_paste_hint: cli_windows_paste_hint$6,
-    	cli_linux_paste_hint: cli_linux_paste_hint$6,
-    	cli_input_message: cli_input_message$6,
-    	cli_input_suffix: cli_input_suffix$6,
-    	cli_types_message: cli_types_message$6,
-    	cli_output_message: cli_output_message$6,
-    	cli_file_error: cli_file_error$6,
-    	cli_type_error: cli_type_error$6,
-    	cli_file_extension_error: cli_file_extension_error$6,
-    	cli_file_loaded_message: cli_file_loaded_message$6,
-    	cli_score_loaded_message: cli_score_loaded_message$6,
-    	cli_input_error: cli_input_error$6,
-    	cli_parts_message: cli_parts_message$6,
-    	cli_saved_message: cli_saved_message$6,
-    	cli_url_error: cli_url_error$6,
-    	cli_url_type_error: cli_url_type_error$6,
-    	id: id$6,
-    	title: title$7,
-    	no_sheet_images_error: no_sheet_images_error$6,
-    	source_code: source_code$6,
-    	version: version$7
-    };
-
-    var cli_usage_hint$7 = "";
-    var processing$7 = "";
-    var download$7 = "";
-    var full_score$7 = "";
-    var download_audio$7 = "";
-    var button_parent_not_found$7 = "";
-    var unknown_button_list_mode$7 = "";
-    var cli_example_url$7 = "";
-    var path_to_folder$7 = "";
-    var path_to_file$7 = "";
-    var cli_example_folder$7 = "";
-    var cli_example_file$7 = "";
-    var cli_option_input_description$7 = "";
-    var cli_option_type_description$7 = "";
-    var cli_option_output_description$7 = "";
-    var cli_option_verbose_description$7 = "";
-    var cli_outdated_version_message$7 = "";
-    var cli_windows_paste_hint$7 = "";
-    var cli_linux_paste_hint$7 = "";
-    var cli_input_message$7 = "";
-    var cli_input_suffix$7 = "";
-    var cli_types_message$7 = "";
-    var cli_output_message$7 = "";
-    var cli_file_error$7 = "";
-    var cli_type_error$7 = "";
-    var cli_file_extension_error$7 = "";
-    var cli_file_loaded_message$7 = "";
-    var cli_score_loaded_message$7 = "";
-    var cli_input_error$7 = "";
-    var cli_parts_message$7 = "";
-    var cli_saved_message$7 = "";
-    var cli_done_message$7 = "";
-    var cli_url_error$7 = "";
-    var cli_url_type_error$7 = "";
-    var cli_score_not_found$7 = "";
-    var cli_confirm_message$7 = "";
-    var id$7 = "";
-    var title$8 = "";
-    var no_sheet_images_error$7 = "";
-    var source_code$7 = "";
-    var version$8 = "";
-    var ru = {
-    	cli_usage_hint: cli_usage_hint$7,
-    	processing: processing$7,
-    	download: download$7,
-    	full_score: full_score$7,
-    	download_audio: download_audio$7,
-    	button_parent_not_found: button_parent_not_found$7,
-    	unknown_button_list_mode: unknown_button_list_mode$7,
-    	cli_example_url: cli_example_url$7,
-    	path_to_folder: path_to_folder$7,
-    	path_to_file: path_to_file$7,
-    	cli_example_folder: cli_example_folder$7,
-    	cli_example_file: cli_example_file$7,
-    	cli_option_input_description: cli_option_input_description$7,
-    	cli_option_type_description: cli_option_type_description$7,
-    	cli_option_output_description: cli_option_output_description$7,
-    	cli_option_verbose_description: cli_option_verbose_description$7,
-    	cli_outdated_version_message: cli_outdated_version_message$7,
-    	cli_windows_paste_hint: cli_windows_paste_hint$7,
-    	cli_linux_paste_hint: cli_linux_paste_hint$7,
-    	cli_input_message: cli_input_message$7,
-    	cli_input_suffix: cli_input_suffix$7,
-    	cli_types_message: cli_types_message$7,
-    	cli_output_message: cli_output_message$7,
-    	cli_file_error: cli_file_error$7,
-    	cli_type_error: cli_type_error$7,
-    	cli_file_extension_error: cli_file_extension_error$7,
-    	cli_file_loaded_message: cli_file_loaded_message$7,
-    	cli_score_loaded_message: cli_score_loaded_message$7,
-    	cli_input_error: cli_input_error$7,
-    	cli_parts_message: cli_parts_message$7,
-    	cli_saved_message: cli_saved_message$7,
-    	cli_done_message: cli_done_message$7,
-    	cli_url_error: cli_url_error$7,
-    	cli_url_type_error: cli_url_type_error$7,
-    	cli_score_not_found: cli_score_not_found$7,
-    	cli_confirm_message: cli_confirm_message$7,
-    	id: id$7,
-    	title: title$8,
-    	no_sheet_images_error: no_sheet_images_error$7,
-    	source_code: source_code$7,
-    	version: version$8
-    };
-
-    var processing$8 = "处理中…";
-    var download$8 = "下载 {{fileType}}";
-    var download_audio$8 = "下载 {{fileType}} 音频";
-    var full_score$8 = "完整乐谱";
-    var cli_usage_hint$8 = "";
-    var button_parent_not_found$8 = "";
-    var unknown_button_list_mode$8 = "";
-    var cli_example_url$8 = "";
-    var path_to_folder$8 = "";
-    var path_to_file$8 = "";
-    var cli_example_folder$8 = "";
-    var cli_example_file$8 = "";
-    var cli_option_input_description$8 = "";
-    var cli_option_type_description$8 = "";
-    var cli_option_output_description$8 = "";
-    var cli_option_verbose_description$8 = "";
-    var cli_outdated_version_message$8 = "";
-    var cli_windows_paste_hint$8 = "";
-    var cli_linux_paste_hint$8 = "";
-    var cli_input_message$8 = "";
-    var cli_input_suffix$8 = "";
-    var cli_types_message$8 = "";
-    var cli_output_message$8 = "";
-    var cli_file_error$8 = "";
-    var cli_type_error$8 = "";
-    var cli_file_extension_error$8 = "";
-    var cli_file_loaded_message$8 = "";
-    var cli_score_loaded_message$8 = "";
-    var cli_input_error$8 = "";
-    var cli_parts_message$8 = "";
-    var cli_saved_message$8 = "";
-    var cli_done_message$8 = "";
-    var cli_url_error$8 = "";
-    var cli_url_type_error$8 = "";
-    var cli_score_not_found$8 = "";
-    var cli_confirm_message$8 = "";
-    var id$8 = "";
+    var cli_usage_hint$9 = "";
+    var cli_example_folder$9 = "";
+    var cli_example_file$9 = "";
+    var cli_option_input_description$9 = "";
+    var cli_option_type_description$9 = "";
+    var cli_option_output_description$9 = "";
+    var cli_option_verbose_description$9 = "";
+    var cli_outdated_version_message$9 = "";
+    var cli_windows_paste_hint$9 = "";
+    var cli_linux_paste_hint$9 = "";
+    var cli_input_message$9 = "";
+    var cli_input_suffix$9 = "";
+    var cli_types_message$9 = "";
+    var cli_output_message$9 = "";
+    var cli_file_error$9 = "";
+    var cli_input_error$9 = "";
+    var cli_parts_message$9 = "";
+    var cli_saved_message$9 = "";
+    var cli_done_message$9 = "";
+    var cli_url_error$9 = "";
+    var cli_url_type_error$9 = "";
+    var cli_score_not_found$9 = "";
+    var button_parent_not_found$9 = "";
+    var unknown_button_list_mode$9 = "";
+    var cli_example_url$9 = "";
+    var path_to_folder$9 = "";
+    var path_to_file$9 = "";
+    var cli_type_error$9 = "";
+    var cli_file_extension_error$9 = "";
+    var cli_file_loaded_message$9 = "";
+    var cli_score_loaded_message$9 = "";
+    var cli_confirm_message$9 = "";
+    var id$9 = "";
     var title$9 = "";
-    var no_sheet_images_error$8 = "";
-    var source_code$8 = "";
+    var no_sheet_images_error$9 = "";
+    var source_code$9 = "";
     var version$9 = "";
-    var zh_Hans = {
+    var processing$9 = "";
+    var download$9 = "";
+    var full_score$9 = "";
+    var download_audio$9 = "";
+    var ar = {
+    	cli_usage_hint: cli_usage_hint$9,
+    	cli_example_folder: cli_example_folder$9,
+    	cli_example_file: cli_example_file$9,
+    	cli_option_input_description: cli_option_input_description$9,
+    	cli_option_type_description: cli_option_type_description$9,
+    	cli_option_output_description: cli_option_output_description$9,
+    	cli_option_verbose_description: cli_option_verbose_description$9,
+    	cli_outdated_version_message: cli_outdated_version_message$9,
+    	cli_windows_paste_hint: cli_windows_paste_hint$9,
+    	cli_linux_paste_hint: cli_linux_paste_hint$9,
+    	cli_input_message: cli_input_message$9,
+    	cli_input_suffix: cli_input_suffix$9,
+    	cli_types_message: cli_types_message$9,
+    	cli_output_message: cli_output_message$9,
+    	cli_file_error: cli_file_error$9,
+    	cli_input_error: cli_input_error$9,
+    	cli_parts_message: cli_parts_message$9,
+    	cli_saved_message: cli_saved_message$9,
+    	cli_done_message: cli_done_message$9,
+    	cli_url_error: cli_url_error$9,
+    	cli_url_type_error: cli_url_type_error$9,
+    	cli_score_not_found: cli_score_not_found$9,
+    	button_parent_not_found: button_parent_not_found$9,
+    	unknown_button_list_mode: unknown_button_list_mode$9,
+    	cli_example_url: cli_example_url$9,
+    	path_to_folder: path_to_folder$9,
+    	path_to_file: path_to_file$9,
+    	cli_type_error: cli_type_error$9,
+    	cli_file_extension_error: cli_file_extension_error$9,
+    	cli_file_loaded_message: cli_file_loaded_message$9,
+    	cli_score_loaded_message: cli_score_loaded_message$9,
+    	cli_confirm_message: cli_confirm_message$9,
+    	id: id$9,
+    	title: title$9,
+    	no_sheet_images_error: no_sheet_images_error$9,
+    	source_code: source_code$9,
+    	version: version$9,
+    	processing: processing$9,
+    	download: download$9,
+    	full_score: full_score$9,
+    	download_audio: download_audio$9
+    };
+
+    var processing$8 = "Processing…";
+    var download$8 = "Download {{fileType}}";
+    var download_audio$8 = "Download {{fileType}} audio";
+    var full_score$8 = "Full score";
+    var button_parent_not_found$8 = "Button parent not found";
+    var unknown_button_list_mode$8 = "Unknown button list mode";
+    var cli_usage_hint$8 = "Usage: {{bin}} [options]";
+    var cli_example_url$8 = "download MP3 of URL to specified directory";
+    var path_to_folder$8 = "path/to/folder";
+    var path_to_file$8 = "path/to/file";
+    var cli_example_folder$8 = "export MIDI and PDF of all files in specified folder to current folder";
+    var cli_example_file$8 = "export FLAC of specified MusicXML file to current folder";
+    var cli_option_input_description$8 = "URL, file, or folder to download or convert from";
+    var cli_option_type_description$8 = "Type of files to download";
+    var cli_option_output_description$8 = "Folder to save files to";
+    var cli_option_verbose_description$8 = "Run with verbose logging";
+    var cli_outdated_version_message$8 = "\nNew version is available! Current version is {{installed}}\nRun npm i -g dl-librescore@{{latest}} to update";
+    var cli_windows_paste_hint$8 = "right-click to paste";
+    var cli_linux_paste_hint$8 = "usually Ctrl+Shift+V to paste";
+    var cli_input_message$8 = "MuseScore URL or path to file or folder:";
+    var cli_input_suffix$8 = "starts with https://musescore.com/ or is a path";
+    var cli_types_message$8 = "Filetype Selection";
+    var cli_output_message$8 = "Output Directory:";
+    var cli_file_error$8 = "File does not exist";
+    var cli_type_error$8 = "No types chosen";
+    var cli_file_extension_error$8 = "Invalid file extension, only gp, gp3, gp4, gp5, gpx, gtp, kar, mid, midi, mscx, mscz, musicxml, mxl, ptb, and xml are supported";
+    var cli_file_loaded_message$8 = "File loaded";
+    var cli_score_loaded_message$8 = "Score loaded by Webmscore";
+    var cli_input_error$8 = "Try using the Webmscore website instead: https://librescore.github.io";
+    var cli_parts_message$8 = "Part Selection";
+    var cli_saved_message$8 = "Saved {{file}}";
+    var cli_done_message$8 = "Done";
+    var cli_url_error$8 = "Invalid URL";
+    var cli_url_type_error$8 = "Only MIDI, MP3, and PDF are downloadable from a URL";
+    var cli_score_not_found$8 = "Score not found";
+    var cli_confirm_message$8 = "Continue?";
+    var id$8 = "ID: {{id}}";
+    var title$8 = "Title: {{title}}";
+    var no_sheet_images_error$8 = "No sheet images found";
+    var source_code$8 = "Source Code";
+    var version$8 = "Version: {{version}}";
+    var en = {
     	processing: processing$8,
     	download: download$8,
     	download_audio: download_audio$8,
     	full_score: full_score$8,
-    	cli_usage_hint: cli_usage_hint$8,
     	button_parent_not_found: button_parent_not_found$8,
     	unknown_button_list_mode: unknown_button_list_mode$8,
+    	cli_usage_hint: cli_usage_hint$8,
     	cli_example_url: cli_example_url$8,
     	path_to_folder: path_to_folder$8,
     	path_to_file: path_to_file$8,
@@ -36620,10 +36296,690 @@ Please pipe the document into a Node stream.\
     	cli_score_not_found: cli_score_not_found$8,
     	cli_confirm_message: cli_confirm_message$8,
     	id: id$8,
-    	title: title$9,
+    	title: title$8,
     	no_sheet_images_error: no_sheet_images_error$8,
     	source_code: source_code$8,
-    	version: version$9
+    	version: version$8
+    };
+
+    var processing$7 = "Cargando…";
+    var download$7 = "Descargar {{fileType}}";
+    var download_audio$7 = "Descargar audio {{fileType}}";
+    var full_score$7 = "Partitura completa";
+    var cli_file_error$7 = "";
+    var cli_type_error$7 = "";
+    var cli_file_extension_error$7 = "";
+    var cli_file_loaded_message$7 = "";
+    var cli_score_loaded_message$7 = "";
+    var cli_input_error$7 = "";
+    var cli_parts_message$7 = "";
+    var cli_saved_message$7 = "";
+    var cli_done_message$7 = "";
+    var cli_url_error$7 = "";
+    var cli_url_type_error$7 = "";
+    var cli_score_not_found$7 = "";
+    var cli_confirm_message$7 = "";
+    var id$7 = "";
+    var title$7 = "";
+    var no_sheet_images_error$7 = "";
+    var source_code$7 = "";
+    var version$7 = "";
+    var cli_usage_hint$7 = "";
+    var button_parent_not_found$7 = "";
+    var unknown_button_list_mode$7 = "";
+    var cli_example_url$7 = "";
+    var path_to_folder$7 = "";
+    var path_to_file$7 = "";
+    var cli_example_folder$7 = "";
+    var cli_example_file$7 = "";
+    var cli_option_input_description$7 = "";
+    var cli_option_type_description$7 = "";
+    var cli_option_output_description$7 = "";
+    var cli_option_verbose_description$7 = "";
+    var cli_outdated_version_message$7 = "";
+    var cli_windows_paste_hint$7 = "";
+    var cli_linux_paste_hint$7 = "";
+    var cli_input_message$7 = "";
+    var cli_input_suffix$7 = "";
+    var cli_types_message$7 = "";
+    var cli_output_message$7 = "";
+    var es = {
+    	processing: processing$7,
+    	download: download$7,
+    	download_audio: download_audio$7,
+    	full_score: full_score$7,
+    	cli_file_error: cli_file_error$7,
+    	cli_type_error: cli_type_error$7,
+    	cli_file_extension_error: cli_file_extension_error$7,
+    	cli_file_loaded_message: cli_file_loaded_message$7,
+    	cli_score_loaded_message: cli_score_loaded_message$7,
+    	cli_input_error: cli_input_error$7,
+    	cli_parts_message: cli_parts_message$7,
+    	cli_saved_message: cli_saved_message$7,
+    	cli_done_message: cli_done_message$7,
+    	cli_url_error: cli_url_error$7,
+    	cli_url_type_error: cli_url_type_error$7,
+    	cli_score_not_found: cli_score_not_found$7,
+    	cli_confirm_message: cli_confirm_message$7,
+    	id: id$7,
+    	title: title$7,
+    	no_sheet_images_error: no_sheet_images_error$7,
+    	source_code: source_code$7,
+    	version: version$7,
+    	cli_usage_hint: cli_usage_hint$7,
+    	button_parent_not_found: button_parent_not_found$7,
+    	unknown_button_list_mode: unknown_button_list_mode$7,
+    	cli_example_url: cli_example_url$7,
+    	path_to_folder: path_to_folder$7,
+    	path_to_file: path_to_file$7,
+    	cli_example_folder: cli_example_folder$7,
+    	cli_example_file: cli_example_file$7,
+    	cli_option_input_description: cli_option_input_description$7,
+    	cli_option_type_description: cli_option_type_description$7,
+    	cli_option_output_description: cli_option_output_description$7,
+    	cli_option_verbose_description: cli_option_verbose_description$7,
+    	cli_outdated_version_message: cli_outdated_version_message$7,
+    	cli_windows_paste_hint: cli_windows_paste_hint$7,
+    	cli_linux_paste_hint: cli_linux_paste_hint$7,
+    	cli_input_message: cli_input_message$7,
+    	cli_input_suffix: cli_input_suffix$7,
+    	cli_types_message: cli_types_message$7,
+    	cli_output_message: cli_output_message$7
+    };
+
+    var processing$6 = "En traitement…";
+    var download$6 = "Télécharger {{fileType}}";
+    var full_score$6 = "Partition complète";
+    var download_audio$6 = "Télécharger audio {{fileType}}";
+    var cli_usage_hint$6 = "";
+    var button_parent_not_found$6 = "";
+    var unknown_button_list_mode$6 = "";
+    var cli_example_url$6 = "";
+    var path_to_folder$6 = "";
+    var path_to_file$6 = "";
+    var cli_example_folder$6 = "";
+    var cli_example_file$6 = "";
+    var cli_option_input_description$6 = "";
+    var cli_option_type_description$6 = "";
+    var cli_option_output_description$6 = "";
+    var cli_option_verbose_description$6 = "";
+    var cli_outdated_version_message$6 = "";
+    var cli_windows_paste_hint$6 = "";
+    var cli_linux_paste_hint$6 = "";
+    var cli_input_message$6 = "";
+    var cli_input_suffix$6 = "";
+    var cli_types_message$6 = "";
+    var cli_output_message$6 = "";
+    var cli_file_error$6 = "";
+    var cli_type_error$6 = "";
+    var cli_file_extension_error$6 = "";
+    var cli_file_loaded_message$6 = "";
+    var cli_score_loaded_message$6 = "";
+    var cli_input_error$6 = "";
+    var cli_parts_message$6 = "";
+    var cli_saved_message$6 = "";
+    var cli_done_message$6 = "";
+    var cli_url_error$6 = "";
+    var cli_url_type_error$6 = "";
+    var cli_score_not_found$6 = "";
+    var cli_confirm_message$6 = "";
+    var id$6 = "";
+    var title$6 = "";
+    var no_sheet_images_error$6 = "";
+    var source_code$6 = "";
+    var version$6 = "";
+    var fr = {
+    	processing: processing$6,
+    	download: download$6,
+    	full_score: full_score$6,
+    	download_audio: download_audio$6,
+    	cli_usage_hint: cli_usage_hint$6,
+    	button_parent_not_found: button_parent_not_found$6,
+    	unknown_button_list_mode: unknown_button_list_mode$6,
+    	cli_example_url: cli_example_url$6,
+    	path_to_folder: path_to_folder$6,
+    	path_to_file: path_to_file$6,
+    	cli_example_folder: cli_example_folder$6,
+    	cli_example_file: cli_example_file$6,
+    	cli_option_input_description: cli_option_input_description$6,
+    	cli_option_type_description: cli_option_type_description$6,
+    	cli_option_output_description: cli_option_output_description$6,
+    	cli_option_verbose_description: cli_option_verbose_description$6,
+    	cli_outdated_version_message: cli_outdated_version_message$6,
+    	cli_windows_paste_hint: cli_windows_paste_hint$6,
+    	cli_linux_paste_hint: cli_linux_paste_hint$6,
+    	cli_input_message: cli_input_message$6,
+    	cli_input_suffix: cli_input_suffix$6,
+    	cli_types_message: cli_types_message$6,
+    	cli_output_message: cli_output_message$6,
+    	cli_file_error: cli_file_error$6,
+    	cli_type_error: cli_type_error$6,
+    	cli_file_extension_error: cli_file_extension_error$6,
+    	cli_file_loaded_message: cli_file_loaded_message$6,
+    	cli_score_loaded_message: cli_score_loaded_message$6,
+    	cli_input_error: cli_input_error$6,
+    	cli_parts_message: cli_parts_message$6,
+    	cli_saved_message: cli_saved_message$6,
+    	cli_done_message: cli_done_message$6,
+    	cli_url_error: cli_url_error$6,
+    	cli_url_type_error: cli_url_type_error$6,
+    	cli_score_not_found: cli_score_not_found$6,
+    	cli_confirm_message: cli_confirm_message$6,
+    	id: id$6,
+    	title: title$6,
+    	no_sheet_images_error: no_sheet_images_error$6,
+    	source_code: source_code$6,
+    	version: version$6
+    };
+
+    var processing$5 = "Caricamento…";
+    var download$5 = "Scaricare {{fileType}}";
+    var download_audio$5 = "Scaricare {{fileType}} audio";
+    var full_score$5 = "Partitura completa";
+    var cli_usage_hint$5 = "";
+    var button_parent_not_found$5 = "";
+    var unknown_button_list_mode$5 = "";
+    var cli_example_url$5 = "";
+    var path_to_folder$5 = "";
+    var path_to_file$5 = "";
+    var cli_example_folder$5 = "";
+    var cli_example_file$5 = "";
+    var cli_option_input_description$5 = "";
+    var cli_option_type_description$5 = "";
+    var cli_option_output_description$5 = "";
+    var cli_option_verbose_description$5 = "";
+    var cli_outdated_version_message$5 = "";
+    var cli_windows_paste_hint$5 = "";
+    var cli_linux_paste_hint$5 = "";
+    var cli_input_message$5 = "";
+    var cli_input_suffix$5 = "";
+    var cli_types_message$5 = "";
+    var cli_output_message$5 = "";
+    var cli_file_error$5 = "";
+    var cli_type_error$5 = "";
+    var cli_file_extension_error$5 = "";
+    var cli_file_loaded_message$5 = "";
+    var cli_score_loaded_message$5 = "";
+    var cli_input_error$5 = "";
+    var cli_parts_message$5 = "";
+    var cli_saved_message$5 = "";
+    var cli_done_message$5 = "";
+    var cli_url_error$5 = "";
+    var cli_url_type_error$5 = "";
+    var cli_score_not_found$5 = "";
+    var cli_confirm_message$5 = "";
+    var id$5 = "";
+    var title$5 = "";
+    var no_sheet_images_error$5 = "";
+    var source_code$5 = "";
+    var version$5 = "";
+    var it = {
+    	processing: processing$5,
+    	download: download$5,
+    	download_audio: download_audio$5,
+    	full_score: full_score$5,
+    	cli_usage_hint: cli_usage_hint$5,
+    	button_parent_not_found: button_parent_not_found$5,
+    	unknown_button_list_mode: unknown_button_list_mode$5,
+    	cli_example_url: cli_example_url$5,
+    	path_to_folder: path_to_folder$5,
+    	path_to_file: path_to_file$5,
+    	cli_example_folder: cli_example_folder$5,
+    	cli_example_file: cli_example_file$5,
+    	cli_option_input_description: cli_option_input_description$5,
+    	cli_option_type_description: cli_option_type_description$5,
+    	cli_option_output_description: cli_option_output_description$5,
+    	cli_option_verbose_description: cli_option_verbose_description$5,
+    	cli_outdated_version_message: cli_outdated_version_message$5,
+    	cli_windows_paste_hint: cli_windows_paste_hint$5,
+    	cli_linux_paste_hint: cli_linux_paste_hint$5,
+    	cli_input_message: cli_input_message$5,
+    	cli_input_suffix: cli_input_suffix$5,
+    	cli_types_message: cli_types_message$5,
+    	cli_output_message: cli_output_message$5,
+    	cli_file_error: cli_file_error$5,
+    	cli_type_error: cli_type_error$5,
+    	cli_file_extension_error: cli_file_extension_error$5,
+    	cli_file_loaded_message: cli_file_loaded_message$5,
+    	cli_score_loaded_message: cli_score_loaded_message$5,
+    	cli_input_error: cli_input_error$5,
+    	cli_parts_message: cli_parts_message$5,
+    	cli_saved_message: cli_saved_message$5,
+    	cli_done_message: cli_done_message$5,
+    	cli_url_error: cli_url_error$5,
+    	cli_url_type_error: cli_url_type_error$5,
+    	cli_score_not_found: cli_score_not_found$5,
+    	cli_confirm_message: cli_confirm_message$5,
+    	id: id$5,
+    	title: title$5,
+    	no_sheet_images_error: no_sheet_images_error$5,
+    	source_code: source_code$5,
+    	version: version$5
+    };
+
+    var processing$4 = "処理中…";
+    var download$4 = "{{fileType}}をダウンロード";
+    var download_audio$4 = "{{fileType}}オーディオをダウンロード";
+    var full_score$4 = "フルスコア";
+    var cli_url_error$4 = "";
+    var cli_url_type_error$4 = "";
+    var cli_score_not_found$4 = "";
+    var cli_usage_hint$4 = "";
+    var button_parent_not_found$4 = "";
+    var unknown_button_list_mode$4 = "";
+    var cli_example_url$4 = "";
+    var path_to_folder$4 = "";
+    var path_to_file$4 = "";
+    var cli_example_folder$4 = "";
+    var cli_example_file$4 = "";
+    var cli_option_input_description$4 = "";
+    var cli_option_type_description$4 = "";
+    var cli_option_output_description$4 = "";
+    var cli_option_verbose_description$4 = "";
+    var cli_outdated_version_message$4 = "";
+    var cli_windows_paste_hint$4 = "";
+    var cli_linux_paste_hint$4 = "";
+    var cli_input_message$4 = "";
+    var cli_input_suffix$4 = "";
+    var cli_types_message$4 = "";
+    var cli_output_message$4 = "";
+    var cli_file_error$4 = "";
+    var cli_type_error$4 = "";
+    var cli_file_extension_error$4 = "";
+    var cli_file_loaded_message$4 = "";
+    var cli_score_loaded_message$4 = "";
+    var cli_input_error$4 = "";
+    var cli_parts_message$4 = "";
+    var cli_saved_message$4 = "";
+    var cli_done_message$4 = "";
+    var id$4 = "";
+    var cli_confirm_message$4 = "";
+    var title$4 = "";
+    var no_sheet_images_error$4 = "";
+    var source_code$4 = "";
+    var version$4 = "";
+    var ja = {
+    	processing: processing$4,
+    	download: download$4,
+    	download_audio: download_audio$4,
+    	full_score: full_score$4,
+    	cli_url_error: cli_url_error$4,
+    	cli_url_type_error: cli_url_type_error$4,
+    	cli_score_not_found: cli_score_not_found$4,
+    	cli_usage_hint: cli_usage_hint$4,
+    	button_parent_not_found: button_parent_not_found$4,
+    	unknown_button_list_mode: unknown_button_list_mode$4,
+    	cli_example_url: cli_example_url$4,
+    	path_to_folder: path_to_folder$4,
+    	path_to_file: path_to_file$4,
+    	cli_example_folder: cli_example_folder$4,
+    	cli_example_file: cli_example_file$4,
+    	cli_option_input_description: cli_option_input_description$4,
+    	cli_option_type_description: cli_option_type_description$4,
+    	cli_option_output_description: cli_option_output_description$4,
+    	cli_option_verbose_description: cli_option_verbose_description$4,
+    	cli_outdated_version_message: cli_outdated_version_message$4,
+    	cli_windows_paste_hint: cli_windows_paste_hint$4,
+    	cli_linux_paste_hint: cli_linux_paste_hint$4,
+    	cli_input_message: cli_input_message$4,
+    	cli_input_suffix: cli_input_suffix$4,
+    	cli_types_message: cli_types_message$4,
+    	cli_output_message: cli_output_message$4,
+    	cli_file_error: cli_file_error$4,
+    	cli_type_error: cli_type_error$4,
+    	cli_file_extension_error: cli_file_extension_error$4,
+    	cli_file_loaded_message: cli_file_loaded_message$4,
+    	cli_score_loaded_message: cli_score_loaded_message$4,
+    	cli_input_error: cli_input_error$4,
+    	cli_parts_message: cli_parts_message$4,
+    	cli_saved_message: cli_saved_message$4,
+    	cli_done_message: cli_done_message$4,
+    	id: id$4,
+    	cli_confirm_message: cli_confirm_message$4,
+    	title: title$4,
+    	no_sheet_images_error: no_sheet_images_error$4,
+    	source_code: source_code$4,
+    	version: version$4
+    };
+
+    var processing$3 = "처리중…";
+    var download$3 = "다운로드 {{fileType}}";
+    var download_audio$3 = "{{fileType}} 오디오 다운로드";
+    var full_score$3 = "풀 스코어";
+    var cli_done_message$3 = "";
+    var cli_score_not_found$3 = "";
+    var cli_confirm_message$3 = "";
+    var cli_usage_hint$3 = "";
+    var button_parent_not_found$3 = "";
+    var unknown_button_list_mode$3 = "";
+    var cli_example_url$3 = "";
+    var path_to_folder$3 = "";
+    var path_to_file$3 = "";
+    var cli_example_folder$3 = "";
+    var cli_example_file$3 = "";
+    var cli_option_input_description$3 = "";
+    var cli_option_type_description$3 = "";
+    var cli_option_output_description$3 = "";
+    var cli_option_verbose_description$3 = "";
+    var cli_outdated_version_message$3 = "";
+    var cli_windows_paste_hint$3 = "";
+    var cli_linux_paste_hint$3 = "";
+    var cli_input_message$3 = "";
+    var cli_input_suffix$3 = "";
+    var cli_types_message$3 = "";
+    var cli_output_message$3 = "";
+    var cli_file_error$3 = "";
+    var cli_type_error$3 = "";
+    var cli_file_extension_error$3 = "";
+    var cli_file_loaded_message$3 = "";
+    var cli_score_loaded_message$3 = "";
+    var cli_input_error$3 = "";
+    var cli_parts_message$3 = "";
+    var cli_saved_message$3 = "";
+    var cli_url_error$3 = "";
+    var cli_url_type_error$3 = "";
+    var id$3 = "";
+    var title$3 = "";
+    var no_sheet_images_error$3 = "";
+    var source_code$3 = "";
+    var version$3 = "";
+    var ko = {
+    	processing: processing$3,
+    	download: download$3,
+    	download_audio: download_audio$3,
+    	full_score: full_score$3,
+    	cli_done_message: cli_done_message$3,
+    	cli_score_not_found: cli_score_not_found$3,
+    	cli_confirm_message: cli_confirm_message$3,
+    	cli_usage_hint: cli_usage_hint$3,
+    	button_parent_not_found: button_parent_not_found$3,
+    	unknown_button_list_mode: unknown_button_list_mode$3,
+    	cli_example_url: cli_example_url$3,
+    	path_to_folder: path_to_folder$3,
+    	path_to_file: path_to_file$3,
+    	cli_example_folder: cli_example_folder$3,
+    	cli_example_file: cli_example_file$3,
+    	cli_option_input_description: cli_option_input_description$3,
+    	cli_option_type_description: cli_option_type_description$3,
+    	cli_option_output_description: cli_option_output_description$3,
+    	cli_option_verbose_description: cli_option_verbose_description$3,
+    	cli_outdated_version_message: cli_outdated_version_message$3,
+    	cli_windows_paste_hint: cli_windows_paste_hint$3,
+    	cli_linux_paste_hint: cli_linux_paste_hint$3,
+    	cli_input_message: cli_input_message$3,
+    	cli_input_suffix: cli_input_suffix$3,
+    	cli_types_message: cli_types_message$3,
+    	cli_output_message: cli_output_message$3,
+    	cli_file_error: cli_file_error$3,
+    	cli_type_error: cli_type_error$3,
+    	cli_file_extension_error: cli_file_extension_error$3,
+    	cli_file_loaded_message: cli_file_loaded_message$3,
+    	cli_score_loaded_message: cli_score_loaded_message$3,
+    	cli_input_error: cli_input_error$3,
+    	cli_parts_message: cli_parts_message$3,
+    	cli_saved_message: cli_saved_message$3,
+    	cli_url_error: cli_url_error$3,
+    	cli_url_type_error: cli_url_type_error$3,
+    	id: id$3,
+    	title: title$3,
+    	no_sheet_images_error: no_sheet_images_error$3,
+    	source_code: source_code$3,
+    	version: version$3
+    };
+
+    var processing$2 = "Memproses…";
+    var download$2 = "Muat turun {{fileType}}";
+    var download_audio$2 = "Muat turun audio {{fileType}}";
+    var button_parent_not_found$2 = "Induk butang tidak ditemui";
+    var unknown_button_list_mode$2 = "Mod senarai butang tidak diketahui";
+    var cli_usage_hint$2 = "Penggunaan: {{bin}} [pilihan]";
+    var path_to_folder$2 = "laluan/ke/folder";
+    var path_to_file$2 = "laluan/ke/fail";
+    var cli_example_folder$2 = "eksport MIDI dan PDF semua fail dalam folder tertentu ke folder semasa";
+    var cli_example_file$2 = "eksport FLAC fail MusicXML yang ditentukan ke folder semasa";
+    var cli_option_type_description$2 = "Jenis fail untuk dimuat turun";
+    var cli_option_output_description$2 = "Folder untuk menyimpan fail ke";
+    var cli_option_verbose_description$2 = "Jalankan dengan pengelogan verbose";
+    var cli_windows_paste_hint$2 = "klik kanan untuk menampal";
+    var cli_linux_paste_hint$2 = "biasanya Ctrl+Shift+V untuk menampal";
+    var cli_input_message$2 = "URL MuseScore atau laluan ke fail atau folder:";
+    var cli_input_suffix$2 = "bermula dengan https://musescore.com/ atau ialah laluan";
+    var cli_types_message$2 = "Pemilihan jenis fail";
+    var cli_output_message$2 = "Direktori Output:";
+    var cli_file_error$2 = "Fail tidak wujud";
+    var cli_type_error$2 = "Tiada jenis yang dipilih";
+    var cli_file_loaded_message$2 = "Fail dimuatkan";
+    var cli_score_loaded_message$2 = "Skor dimuatkan oleh Webmscore";
+    var cli_parts_message$2 = "Pemilihan Bahagian";
+    var cli_saved_message$2 = "{{file}} disimpan";
+    var cli_done_message$2 = "Selesai";
+    var cli_url_error$2 = "URL tidak sah";
+    var cli_input_error$2 = "Cuba gunakan tapak web Webmscore: https://librescore.github.io";
+    var cli_score_not_found$2 = "Skor tidak ditemui";
+    var cli_confirm_message$2 = "Teruskan?";
+    var title$2 = "Tajuk: {{title}}";
+    var source_code$2 = "Kod sumber";
+    var version$2 = "Versi: {{version}}";
+    var id$2 = "ID : {{id}}";
+    var full_score$2 = "Skor penuh";
+    var cli_example_url$2 = "muat turun MP3 URL ke direktori tertentu";
+    var cli_option_input_description$2 = "URL, fail atau folder untuk memuat turun atau menukar daripada";
+    var cli_outdated_version_message$2 = "\nVersi baharu tersedia! Versi semasa {{installed}}\nJalankan npm i -g dl-librescore@{{latest}} untuk mengemas kini";
+    var cli_file_extension_error$2 = "Sambungan fail tidak sah, hanya gp, gp3, gp4, gp5, gpx, gtp, kar, mid, midi, mscx, mscz, musicxml, mxl, ptb dan xml disokong";
+    var cli_url_type_error$2 = "Hanya MIDI, MP3 dan PDF boleh dimuat turun daripada URL";
+    var no_sheet_images_error$2 = "Tiada imej helaian ditemui";
+    var ms = {
+    	processing: processing$2,
+    	download: download$2,
+    	download_audio: download_audio$2,
+    	button_parent_not_found: button_parent_not_found$2,
+    	unknown_button_list_mode: unknown_button_list_mode$2,
+    	cli_usage_hint: cli_usage_hint$2,
+    	path_to_folder: path_to_folder$2,
+    	path_to_file: path_to_file$2,
+    	cli_example_folder: cli_example_folder$2,
+    	cli_example_file: cli_example_file$2,
+    	cli_option_type_description: cli_option_type_description$2,
+    	cli_option_output_description: cli_option_output_description$2,
+    	cli_option_verbose_description: cli_option_verbose_description$2,
+    	cli_windows_paste_hint: cli_windows_paste_hint$2,
+    	cli_linux_paste_hint: cli_linux_paste_hint$2,
+    	cli_input_message: cli_input_message$2,
+    	cli_input_suffix: cli_input_suffix$2,
+    	cli_types_message: cli_types_message$2,
+    	cli_output_message: cli_output_message$2,
+    	cli_file_error: cli_file_error$2,
+    	cli_type_error: cli_type_error$2,
+    	cli_file_loaded_message: cli_file_loaded_message$2,
+    	cli_score_loaded_message: cli_score_loaded_message$2,
+    	cli_parts_message: cli_parts_message$2,
+    	cli_saved_message: cli_saved_message$2,
+    	cli_done_message: cli_done_message$2,
+    	cli_url_error: cli_url_error$2,
+    	cli_input_error: cli_input_error$2,
+    	cli_score_not_found: cli_score_not_found$2,
+    	cli_confirm_message: cli_confirm_message$2,
+    	title: title$2,
+    	source_code: source_code$2,
+    	version: version$2,
+    	id: id$2,
+    	full_score: full_score$2,
+    	cli_example_url: cli_example_url$2,
+    	cli_option_input_description: cli_option_input_description$2,
+    	cli_outdated_version_message: cli_outdated_version_message$2,
+    	cli_file_extension_error: cli_file_extension_error$2,
+    	cli_url_type_error: cli_url_type_error$2,
+    	no_sheet_images_error: no_sheet_images_error$2
+    };
+
+    var cli_usage_hint$1 = "";
+    var processing$1 = "";
+    var download$1 = "";
+    var full_score$1 = "Партитура целиком";
+    var download_audio$1 = "";
+    var button_parent_not_found$1 = "";
+    var unknown_button_list_mode$1 = "";
+    var cli_example_url$1 = "";
+    var path_to_folder$1 = "";
+    var path_to_file$1 = "";
+    var cli_example_folder$1 = "";
+    var cli_example_file$1 = "";
+    var cli_option_input_description$1 = "";
+    var cli_option_type_description$1 = "";
+    var cli_option_output_description$1 = "";
+    var cli_option_verbose_description$1 = "";
+    var cli_outdated_version_message$1 = "";
+    var cli_windows_paste_hint$1 = "";
+    var cli_linux_paste_hint$1 = "";
+    var cli_input_message$1 = "";
+    var cli_input_suffix$1 = "";
+    var cli_types_message$1 = "";
+    var cli_output_message$1 = "";
+    var cli_file_error$1 = "";
+    var cli_type_error$1 = "";
+    var cli_file_extension_error$1 = "";
+    var cli_file_loaded_message$1 = "";
+    var cli_score_loaded_message$1 = "";
+    var cli_input_error$1 = "";
+    var cli_parts_message$1 = "";
+    var cli_saved_message$1 = "";
+    var cli_done_message$1 = "";
+    var cli_url_error$1 = "";
+    var cli_url_type_error$1 = "";
+    var cli_score_not_found$1 = "";
+    var cli_confirm_message$1 = "";
+    var id$1 = "";
+    var title$1 = "";
+    var no_sheet_images_error$1 = "";
+    var source_code$1 = "";
+    var version$1 = "";
+    var ru = {
+    	cli_usage_hint: cli_usage_hint$1,
+    	processing: processing$1,
+    	download: download$1,
+    	full_score: full_score$1,
+    	download_audio: download_audio$1,
+    	button_parent_not_found: button_parent_not_found$1,
+    	unknown_button_list_mode: unknown_button_list_mode$1,
+    	cli_example_url: cli_example_url$1,
+    	path_to_folder: path_to_folder$1,
+    	path_to_file: path_to_file$1,
+    	cli_example_folder: cli_example_folder$1,
+    	cli_example_file: cli_example_file$1,
+    	cli_option_input_description: cli_option_input_description$1,
+    	cli_option_type_description: cli_option_type_description$1,
+    	cli_option_output_description: cli_option_output_description$1,
+    	cli_option_verbose_description: cli_option_verbose_description$1,
+    	cli_outdated_version_message: cli_outdated_version_message$1,
+    	cli_windows_paste_hint: cli_windows_paste_hint$1,
+    	cli_linux_paste_hint: cli_linux_paste_hint$1,
+    	cli_input_message: cli_input_message$1,
+    	cli_input_suffix: cli_input_suffix$1,
+    	cli_types_message: cli_types_message$1,
+    	cli_output_message: cli_output_message$1,
+    	cli_file_error: cli_file_error$1,
+    	cli_type_error: cli_type_error$1,
+    	cli_file_extension_error: cli_file_extension_error$1,
+    	cli_file_loaded_message: cli_file_loaded_message$1,
+    	cli_score_loaded_message: cli_score_loaded_message$1,
+    	cli_input_error: cli_input_error$1,
+    	cli_parts_message: cli_parts_message$1,
+    	cli_saved_message: cli_saved_message$1,
+    	cli_done_message: cli_done_message$1,
+    	cli_url_error: cli_url_error$1,
+    	cli_url_type_error: cli_url_type_error$1,
+    	cli_score_not_found: cli_score_not_found$1,
+    	cli_confirm_message: cli_confirm_message$1,
+    	id: id$1,
+    	title: title$1,
+    	no_sheet_images_error: no_sheet_images_error$1,
+    	source_code: source_code$1,
+    	version: version$1
+    };
+
+    var processing = "处理中…";
+    var download = "下载 {{fileType}}";
+    var download_audio = "下载 {{fileType}} 音频";
+    var full_score = "完整乐谱";
+    var cli_usage_hint = "";
+    var button_parent_not_found = "";
+    var unknown_button_list_mode = "";
+    var cli_example_url = "";
+    var path_to_folder = "";
+    var path_to_file = "";
+    var cli_example_folder = "";
+    var cli_example_file = "";
+    var cli_option_input_description = "";
+    var cli_option_type_description = "";
+    var cli_option_output_description = "";
+    var cli_option_verbose_description = "";
+    var cli_outdated_version_message = "";
+    var cli_windows_paste_hint = "";
+    var cli_linux_paste_hint = "";
+    var cli_input_message = "";
+    var cli_input_suffix = "";
+    var cli_types_message = "";
+    var cli_output_message = "";
+    var cli_file_error = "";
+    var cli_type_error = "";
+    var cli_file_extension_error = "";
+    var cli_file_loaded_message = "";
+    var cli_score_loaded_message = "";
+    var cli_input_error = "";
+    var cli_parts_message = "";
+    var cli_saved_message = "";
+    var cli_done_message = "";
+    var cli_url_error = "";
+    var cli_url_type_error = "";
+    var cli_score_not_found = "";
+    var cli_confirm_message = "";
+    var id = "";
+    var title = "";
+    var no_sheet_images_error = "";
+    var source_code = "";
+    var version = "";
+    var zh_Hans = {
+    	processing: processing,
+    	download: download,
+    	download_audio: download_audio,
+    	full_score: full_score,
+    	cli_usage_hint: cli_usage_hint,
+    	button_parent_not_found: button_parent_not_found,
+    	unknown_button_list_mode: unknown_button_list_mode,
+    	cli_example_url: cli_example_url,
+    	path_to_folder: path_to_folder,
+    	path_to_file: path_to_file,
+    	cli_example_folder: cli_example_folder,
+    	cli_example_file: cli_example_file,
+    	cli_option_input_description: cli_option_input_description,
+    	cli_option_type_description: cli_option_type_description,
+    	cli_option_output_description: cli_option_output_description,
+    	cli_option_verbose_description: cli_option_verbose_description,
+    	cli_outdated_version_message: cli_outdated_version_message,
+    	cli_windows_paste_hint: cli_windows_paste_hint,
+    	cli_linux_paste_hint: cli_linux_paste_hint,
+    	cli_input_message: cli_input_message,
+    	cli_input_suffix: cli_input_suffix,
+    	cli_types_message: cli_types_message,
+    	cli_output_message: cli_output_message,
+    	cli_file_error: cli_file_error,
+    	cli_type_error: cli_type_error,
+    	cli_file_extension_error: cli_file_extension_error,
+    	cli_file_loaded_message: cli_file_loaded_message,
+    	cli_score_loaded_message: cli_score_loaded_message,
+    	cli_input_error: cli_input_error,
+    	cli_parts_message: cli_parts_message,
+    	cli_saved_message: cli_saved_message,
+    	cli_done_message: cli_done_message,
+    	cli_url_error: cli_url_error,
+    	cli_url_type_error: cli_url_type_error,
+    	cli_score_not_found: cli_score_not_found,
+    	cli_confirm_message: cli_confirm_message,
+    	id: id,
+    	title: title,
+    	no_sheet_images_error: no_sheet_images_error,
+    	source_code: source_code,
+    	version: version
     };
 
     var i18nextInit = instance.init({
@@ -36638,6 +36994,7 @@ Please pipe the document into a Node stream.\
             it: { translation: it },
             ja: { translation: ja },
             ko: { translation: ko },
+            ms: { translation: ms },
             ru: { translation: ru },
             "zh-Hans": { translation: zh_Hans },
         },
@@ -36945,7 +37302,7 @@ Please pipe the document into a Node stream.\
         const scoreinfo = new ScoreInfoInPage(document);
         const fallback = () => {
             // btns fallback to load from MSCZ file (`Individual Parts`)
-            return  void 0 ;
+            return void 0 ;
         };
         btnList.add({
             name: i18next.t("download", { fileType: "PDF" }),
@@ -36970,4 +37327,4 @@ Please pipe the document into a Node stream.\
           );
       });
 
-}());
+})();

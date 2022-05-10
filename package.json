@@ -1,6 +1,6 @@
 {
     "name": "dl-librescore",
-    "version": "0.34.0",
+    "version": "0.34.1",
     "description": "Download sheet music",
     "main": "dist/main.user.js",
     "bin": "dist/cli.js",
@@ -32,24 +32,24 @@
         "dist/main.user.js"
     ],
     "dependencies": {
-        "@librescore/fonts": "^0.4.0",
-        "@librescore/sf3": "^0.3.0",
-        "detect-node": "^2.0.4",
-        "i18next": "^21.6.13",
-        "inquirer": "^7.3.3",
-        "node-fetch": "^2.6.1",
-        "ora": "^5.1.0",
+        "@librescore/fonts": "^0.4.1",
+        "@librescore/sf3": "^0.6.1",
+        "detect-node": "^2.1.0",
+        "i18next": "^21.8.0",
+        "inquirer": "^8.2.4",
+        "node-fetch": "^2.6.7",
+        "ora": "^5.4.1",
         "webmscore": "^0.21.0",
-        "yargs": "^17.3.0"
+        "yargs": "^17.4.1"
     },
     "devDependencies": {
         "@rollup/plugin-json": "^4.1.0",
-        "@types/file-saver": "^2.0.1",
-        "@types/inquirer": "^7.3.1",
-        "@types/pdfkit": "^0.10.6",
-        "@types/yargs": "^17.0.7",
+        "@types/file-saver": "^2.0.5",
+        "@types/inquirer": "^8.2.1",
+        "@types/pdfkit": "^0.12.6",
+        "@types/yargs": "^17.0.10",
         "pdfkit": "git+https://github.com/LibreScore/pdfkit.git",
-        "rollup": "^1.32.1",
+        "rollup": "^2.72.1",
         "rollup-plugin-commonjs": "^10.1.0",
         "rollup-plugin-node-builtins": "^2.1.2",
         "rollup-plugin-node-globals": "^1.4.0",
@@ -57,8 +57,8 @@
         "rollup-plugin-string": "^3.0.0",
         "rollup-plugin-typescript": "^1.0.1",
         "svg-to-pdfkit": "^0.1.8",
-        "tslib": "^1.14.1",
-        "typescript": "^4.1.2"
+        "tslib": "^2.4.0",
+        "typescript": "^4.6.4"
     },
     "scripts": {
         "build": "rollup -c",
