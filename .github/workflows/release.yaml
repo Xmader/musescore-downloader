@@ -57,19 +57,9 @@ jobs:
                   cp dist/main.user.js $ARTIFACTS_DIR/dl-librescore.user.js
                   wget -q https://github.com/LibreScore/dl-librescore/archive/$REF.tar.gz -O $ARTIFACTS_DIR/source.tar.gz
 
-            - name: Upload to IPFS
-              uses: aquiladev/ipfs-action@v0.2.2-alpha.0
-              id: ipfs
-              with:
-                  path: ${{ env.ARTIFACTS_DIR }}
-                  timeout: 60000
-                  service: infura
-                  verbose: true
-
             - name: Github Release
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  IPFS_HASH: ${{ steps.ipfs.outputs.hash }}
               run: |
                   cd $ARTIFACTS_DIR
                   rm *.tar.gz
@@ -83,7 +73,6 @@ jobs:
                   hub release create \
                     "${assets[@]}" \
                     -m v$VERSION \
-                    -m "IPFS Mirror: [$IPFS_HASH](https://ipfs.io/ipfs/$IPFS_HASH)" \
                     -t $REF \
                     v$VERSION
 
