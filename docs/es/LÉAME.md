@@ -47,7 +47,7 @@ Hay 4 programas instalables diferentes:
 
 1. Instala [Tampermonkey](https://www.tampermonkey.net)
 
-> Nota: Si ya ha instalado una versión antigua del script llamada "musescore-downloader", "mcsz downloader" o "musescore-dl", por favor, desinstálela desde el panel de control de Tampermonkey
+> Note: If you already installed an old version of the script called "musescore-downloader", "mcsz downloader", or "musescore-dl", please uninstall it from the Tampermonkey dashboard
 
 2. Vaya al último archivo [dl-librescore.user.js](https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js)
 3. Pulse el botón instalar

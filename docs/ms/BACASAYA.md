@@ -47,7 +47,7 @@ Terdapat 4 program boleh dipasang yang berbeza:
 
 1. Pasang [Tampermonkey](https://www.tampermonkey.net)
 
-> Nota: Jika anda telah memasang versi lama skrip yang dipanggil "musescore-downloader", "mcsz downloader", atau "musescore-dl" sila nyahpasangnya daripada papan pemuka Tampermonkey
+> Note: If you already installed an old version of the script called "musescore-downloader", "mcsz downloader", or "musescore-dl", please uninstall it from the Tampermonkey dashboard
 
 2. Pergi ke fail [dl-librescore.user.js](https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js) terkini
 3. Tekan butang Pasang
