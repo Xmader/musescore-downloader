@@ -34,8 +34,8 @@ Terdapat 4 program boleh dipasang yang berbeza:
 
 ### Aplikasi
 
-1. Go to the [README](../../../app-librescore#installation) page of the `app-librescore` repository
-2. Follow the installation instructions for your device to install it
+1. Pergi ke halaman [BACASAYA](https://github.com/LibreScore/app-librescore/blob/master/docs/ms/BACASAYA.md#pemasangan) repositori `app-librescore`
+2. Ikut arahan pemasangan untuk peranti anda memasangnya
 
 ### Skrip pengguna
 
