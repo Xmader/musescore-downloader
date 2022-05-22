@@ -47,16 +47,16 @@ Hay 4 programas instalables diferentes:
 
 1. Instale [Tampermonkey](https://www.tampermonkey.net)
 
-> Nota: Si ya ha instalado una versión antigua del script llamada "musescore-downloader", "mcsz downloader" o "musescore-dl", por favor, desinstálela desde el panel de control de Tampermonkey
+> Nota: Si ya instaló una versión antigua del script llamado "musescore-downloader", "mcsz downloader" o "musescore-dl", por favor, desinstálelo desde el panel de control de Tampermonkey
 
 2. Vaya al último archivo [dl-librescore.user.js](https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js)
-3. Pulse el botón instalar
+3. Pulse el botón Instalar
 
 #### Atajo
 
-1. Instale [LibreScore shortcut](https://www.icloud.com/shortcuts/901d8778d2da4f7db9272d3b2232d0fe)
-2. En Safari, cuando vea una canción en MuseScore, presione <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" height="16">.
-3. Toque el acceso directo de LibreScore para activar la extensión
+1. Instale el [Atajo de LibreScore](https://www.icloud.com/shortcuts/901d8778d2da4f7db9272d3b2232d0fe)
+2. En Safari, cuando esté viendo una canción en MuseScore, toque <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" height="16">.
+3. Toque el Atajo de LibreScore para activar la extensión
 
 > Nota: Antes de poder ejecutar JavaScript desde un acceso directo, debe activar la opción de permitir la ejecución de scripts
 >
