@@ -10,7 +10,7 @@
 
 <img src="https://github.com/LibreScore/dl-musescore/raw/master/images/logo.png" width="256" alt="Logotipo de LibreScore">
 
-[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![GitHub todos los lanzamientos](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=Aplicación)](https://github.com/LibreScore/app-librescore/releases/latest) [![GitHub todos los lanzamientos](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Userscript)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/dl-librescore?label=Command-line+tool)](https://www.npmjs.com/package/dl-librescore)
+[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![GitHub todos los lanzamientos](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=Aplicación)](https://github.com/LibreScore/app-librescore/releases/latest) [![GitHub todos los lanzamientos](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Guión+de+usuario)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/dl-librescore?label=Command-line+tool)](https://www.npmjs.com/package/dl-librescore)
 
 Descargue partituras
 
@@ -22,12 +22,12 @@ Descargue partituras
 
 Hay 4 programas instalables diferentes:
 
-| Programa                                                                            | MSCZ | MIDI | MP3 | PDF | Conversión|     | Windows | macOS | Linux | Android | iOS/iPadOS |
+| Program                                                                            | MSCZ | MIDI | MP3 | PDF | Conversion |     | Windows | macOS | Linux | Android | iOS/iPadOS |
 | ---------------------------------------------------------------------------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | ---------- |
-| [Aplicación](#aplicación)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
+| [App](#app)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
 | [Userscript](#userscript)               | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
-| [Herramienta de línea de comandos](#herramienta-de-línea-de-comandos) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
-| [Sitio web de Webmscore](#sitio-web-de-webmscore) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
+| [Command-line tool](#command-line-tool) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
+| [Webmscore website](#webmscore-website) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 
 > Nota: `Conversión` se refiere a la capacidad de convertir archivos en otros tipos de archivos, incluidos los que no se pueden descargar en el programa.
 > Los objetivos de conversión incluyen: Partes individuales, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ y MSCX.
@@ -37,7 +37,7 @@ Hay 4 programas instalables diferentes:
 1. Vaya a la página [LÉAME](../../../app-librescore#instalación) del repositorio `app-librescore`
 2. Sigue las instrucciones de instalación de su dispositivo para instalarlo
 
-### Script del usuario
+### Guión de usuario
 
 > Nota: Si su dispositivo está en iOS o iPadOS, por favor, siga las instrucciones de [Atajo](#atajo).
 >
@@ -58,38 +58,38 @@ Hay 4 programas instalables diferentes:
 2. En Safari, cuando esté viendo una canción en MuseScore, toque <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" height="16">.
 3. Toque el Atajo de LibreScore para activar la extensión
 
-> Nota: Antes de poder ejecutar JavaScript desde un acceso directo, debe activar la opción de permitir la ejecución de scripts
+> Nota: Para poder ejecutar JavaScript desde un atajo, debes activar la opción "Permitir ejecutar scripts"
 >
-> 1. Ve a Configuración <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/492fec5aff74dbdef9b526177c3804b4.png" height="16"> > Accesos directos > Avanzados
-> 2. 2. Activa la opción "Permitir la ejecución de scripts".
+> 1. Ve a Configuración <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/492fec5aff74dbdef9b526177c3804b4.png" height="16"> > Atajos > Avanzado
+> 2. Activa "Permitir ejecutar scripts"
 
 #### Marcador
 
-1. Crear un nuevo marcador (normalmente Ctrl+D)
-2. Escriba `LibreScore` en el campo nombre
-3. Escribe `javascript:(function () {let code = document.createElement('script');code.src = 'https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js';document.body.appendChild(code);}())` para el campo URL
-4. Guardar el marcador
+1. Cree un nuevo marcador (normalmente Ctrl+D)
+2. Escriba `LibreScore` para el campo Nombre
+3. Escriba `javascript:(function () {let code = document.createElement('script');code.src = 'https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js';document.body.appendChild(code);}())` para el campo URL
+4. Guarde el marcador
 5. Cuando vea una canción en MuseScore, haga clic en el marcador para activar la extensión
 
 ### Herramienta de línea de comandos
 
-1. Instale [Node.js LTS](https://nodejs.org)
-2. Abra una terminal (no _abra_ la aplicación Node.js)
-3. Escriba `npx dl-librescore@latest`, y presione `Enter ↵`
+1. Instale [Node.js LTS](https://nodejs.org/es)
+2. Abra una terminal (_no_ abra la aplicación Node.js)
+3. Escriba `npx dl-librescore@latest`, luego presione `Entrar ↵`
 
 ### Sitio web de Webmscore
 
-1. Abrir [Webmscore](https://librescore.github.io)
+1. Abra [Webmscore](https://librescore.github.io)
 
-> Nota: Puede acceder al sitio web sin conexión instalándolo como PWA
+> Nota: Puede acceder al sitio web sin conexión instalándolo como un PWA
 
-## Construcción
+## Compilación
 
-1. Instala [Node.js LTS](https://nodejs.org)
+1. Instale [Node.js LTS](https://nodejs.org/es)
 2. `npm install` para instalar paquetes
 3. `npm run build` para compilar
 
 - Instale `./dist/main.user.js` con Tampermonkey
-- `node ./dist/cli.js` para ejecutar un comando en consola
+- `node ./dist/cli.js` para ejecutar la herramienta de línea de comandos
 
 </div>
