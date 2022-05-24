@@ -67,7 +67,7 @@ Terdapat 4 program boleh dipasang yang berbeza:
 
 1. Buat penanda halaman baharu (biasanya Ctrl+D)
 2. Taipkan `LibreScore` untuk medan Nama
-3. Taipkan `javascript:(function () {let code = document.createElement('script');code.src = 'https://github.com/LibreScore/dl-librescore/releases/latest/download/dl- librescore.user.js';document.body.appendChild(kod);}())` untuk medan URL
+3. Taipkan `javascript:(function () {let code = document.createElement('script');code.src = 'https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js';document.body.appendChild(code);}())` untuk medan URL
 4. Simpan penanda halaman
 5. Apabila melihat lagu di MuseScore, klik penanda halaman untuk mengaktifkan sambungan
 
