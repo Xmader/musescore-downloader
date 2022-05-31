@@ -421,31 +421,27 @@ void (async () => {
                 const fileName =
                     scoreinfo.fileName || (await score.titleFilenameSafe());
                 // spinner.start();
-                await Promise.all(
-                    filetypes.map(async (type) => {
-                        await Promise.all(
-                            parts.map(async (part) => {
-                                // select part
-                                await score.setExcerptId(part.id);
+                for (const type of filetypes) {
+                    for (const part of parts) {
+                        // select part
+                        await score.setExcerptId(part.value);
 
-                                // generate file data
-                                const data = await type.action(score);
+                        // generate file data
+                        const data = await type.action(score);
 
-                                // save to filesystem
-                                const n = `${fileName} - ${part.name}.${type.fileExt}`;
-                                const f = path.join(argv.output, n);
-                                await fs.promises.writeFile(f, data);
-                                if (argv.verbose) {
-                                    spinner.info(
-                                        i18next.t("cli_saved_message", {
-                                            file: chalk.underline(f),
-                                        })
-                                    );
-                                }
-                            })
-                        );
-                    })
-                );
+                        // save to filesystem
+                        const n = `${fileName} - ${part.name}.${type.fileExt}`;
+                        const f = path.join(argv.output, n);
+                        await fs.promises.writeFile(f, data);
+                        if (argv.verbose) {
+                            spinner.info(
+                                i18next.t("cli_saved_message", {
+                                    file: chalk.underline(f),
+                                })
+                            );
+                        }
+                    }
+                }
             })
         );
         spinner.succeed(i18next.t("cli_done_message"));
