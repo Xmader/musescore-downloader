@@ -53,7 +53,9 @@ function getLocale(): string {
             if (
                 [
                     "ab",
+                    "be",
                     "et",
+                    "hy",
                     "kk",
                     "ky",
                     "lv",
@@ -61,6 +63,7 @@ function getLocale(): string {
                     "ro-MD",
                     "ru",
                     "tg",
+                    "tk",
                     "uk",
                     "uz",
                 ].some((e) => localeOrder[0].startsWith(e)) &&
