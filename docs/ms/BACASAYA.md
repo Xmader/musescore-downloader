@@ -1,6 +1,6 @@
 <div dir="ltr" align="left">
 
-&#8206;[English](/docs/en/README.md) | &#8206;**Melayu** | &#8206;[[+]](https://librescore.ddns.net/projects/librescore/docs)
+&#8206;[English](/docs/en/README.md) | &#8206;[español](/docs/es/LÉAME.md) | &#8206;**Melayu** | &#8206;[[+]](https://librescore.ddns.net/projects/librescore/docs)
 
 [//]: # "\+\_==!|!=_=!|!==_/+/ ***JANGAN EDIT DI ATAS BARIS INI*** /+/^^+#|#+^+#|#+^^\+\"
 
@@ -10,7 +10,7 @@
 
 <img src="https://github.com/LibreScore/dl-musescore/raw/master/images/logo.png" width="256" alt="LibreScore logo">
 
-[![ Discord ](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![Github Semua Keluaran](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=App)](https://github.com/LibreScore/app-librescore/releases/latest) [![Github Semua Keluaran](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Userscript)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/dl-librescore?label=Command-line+tool)](https://www.npmjs.com/package/dl-librescore)
+[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![Github Semua Keluaran](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=Aplikasi)](https://github.com/LibreScore/app-librescore/releases/latest) [![Github Semua Keluaran](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Skrip+pengguna)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/dl-librescore?label=Alat+baris+arahan)](https://www.npmjs.com/package/dl-librescore)
 
 Muat turun lembaran muzik
 
@@ -24,30 +24,30 @@ Terdapat 4 program boleh dipasang yang berbeza:
 
 | Program                                                                            | MSCZ | MIDI | MP3 | PDF | Penukaran |     | Windows | macOS | Linux | Android | iOS/iPadOS |
 | ---------------------------------------------------------------------------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | ---------- |
-| [Aplikasi](https://github.com/LibreScore/dl-librescore#app)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
-| [Userscript](https://github.com/LibreScore/dl-librescore#userscript)               | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
-| [Alat baris arahan](https://github.com/LibreScore/dl-librescore#command-line-tool) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
-| [Laman Web Webmscore](https://github.com/LibreScore/dl-librescore#webmscore-website) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
+| [Aplikasi](#aplikasi)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
+| [Skrip pengguna](#skrip-pengguna)               | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
+| [Alat baris arahan](#alat-baris-arahan) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
+| [Laman web Webmscore](#laman-web-webmscore) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 
 > Nota: `Penukaran` merujuk kepada keupayaan untuk menukar fail kepada jenis fail lain, termasuk yang tidak boleh dimuat turun dalam program.
 > Sasaran penukaran termasuk: Bahagian Individu, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ dan MSCX.
 
 ### Aplikasi
 
-1. Pergi ke halaman [README](https://github.com/LibreScore/app-librescore#installation) repositori `app-librescore`
+1. Pergi ke halaman [BACASAYA](https://github.com/LibreScore/app-librescore/blob/master/docs/ms/BACASAYA.md#pemasangan) repositori `app-librescore`
 2. Ikut arahan pemasangan untuk peranti anda memasangnya
 
 ### Skrip pengguna
 
-> Nota: Jika peranti anda menggunakan iOS atau iPadOS, sila ikut arahan [Pintasan](https://github.com/LibreScore/dl-librescore#shortcut).
+> Nota: Jika peranti anda menggunakan iOS atau iPadOS, sila ikut arahan [Pintasan](#pintasan).
 >
-> Nota: Jika anda tidak boleh memasang sambungan penyemak imbas pada peranti anda, sila ikut arahan [Penanda Halaman](https://github.com/LibreScore/dl-librescore#bookmark) sebaliknya.
+> Nota: Jika anda tidak boleh memasang sambungan penyemak imbas pada peranti anda, sila ikut arahan [Penanda Halaman](#penanda-halaman) sebaliknya.
 
 #### Sambungan penyemak imbas
 
 1. Pasang [Tampermonkey](https://www.tampermonkey.net)
 
-> Nota: Jika anda telah memasang versi lama skrip yang dipanggil "musescore-downloader", "mcsz downloader", atau "musescore-dl" sila nyahpasangnya daripada papan pemuka Tampermonkey
+> Nota: Jika anda telah memasang versi lama skrip yang dipanggil "musescore-downloader", "mcsz downloader", atau "musescore-dl", sila nyahpasangnya daripada papan pemuka Tampermonkey
 
 2. Pergi ke fail [dl-librescore.user.js](https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js) terkini
 3. Tekan butang Pasang
@@ -67,14 +67,14 @@ Terdapat 4 program boleh dipasang yang berbeza:
 
 1. Buat penanda halaman baharu (biasanya Ctrl+D)
 2. Taipkan `LibreScore` untuk medan Nama
-3. Taipkan `javascript:(function () {let code = document.createElement('script');code.src = 'https://github.com/LibreScore/dl-librescore/releases/latest/download/dl- librescore.user.js';document.body.appendChild(kod);}())` untuk medan URL
+3. Taipkan `javascript:(function () {let code = document.createElement('script');code.src = 'https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js';document.body.appendChild(code);}())` untuk medan URL
 4. Simpan penanda halaman
 5. Apabila melihat lagu di MuseScore, klik penanda halaman untuk mengaktifkan sambungan
 
 ### Alat baris arahan
 
 1. Pasang [Node.js LTS](https://nodejs.org)
-2. Buka terminal (jangan _jangan_ buka aplikasi Node.js)
+2. Buka terminal (_jangan_ buka aplikasi Node.js)
 3. Taip `npx dl-librescore@latest`, kemudian tekan `Enter ↵`
 
 ### Laman web Webmscore
@@ -83,7 +83,7 @@ Terdapat 4 program boleh dipasang yang berbeza:
 
 > Nota: Anda boleh mengakses tapak web di luar talian dengan memasangnya sebagai PWA
 
-## Bangunan
+## Penyusunan
 
 1. Pasang [Node.js LTS](https://nodejs.org)
 2. `npm install` untuk memasang pakej
