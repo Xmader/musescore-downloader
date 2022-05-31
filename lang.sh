@@ -15,8 +15,6 @@ sed -i "${import_first_line}i import i18n from "'"'"i18next"'"'";" src/i18n/inde
 
 map_first_line=$(awk '/'"languageMap = \["'/,/'"\];"'/ {printf NR "\n"}' src/i18n/index.ts | head -n 1)
 map_last_line=$(awk '/'"languageMap = \["'/,/'"\];"'/ {printf NR "\n"}' src/i18n/index.ts | tail -n 1 | head -n 1)
-echo $map_first_line
-echo $map_last_line
 sed -i "${map_first_line},${map_last_line}d" src/i18n/index.ts
 sed -i "${map_first_line}i let languageMap = [" src/i18n/index.ts
 

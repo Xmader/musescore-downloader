@@ -419,7 +419,7 @@ var wrapper = (function () {
 
     return data;
   }
-  var isIE10 = typeof window !== 'undefined' && window.navigator && window.navigator.userAgent && window.navigator.userAgent.indexOf('MSIE') > -1;
+  var isIE10 = typeof window !== 'undefined' && window.navigator && typeof window.navigator.userAgentData === 'undefined' && window.navigator.userAgent && window.navigator.userAgent.indexOf('MSIE') > -1;
   var chars = [' ', ',', '?', '!', ';'];
   function looksLikeObjectPath(key, nsSeparator, keySeparator) {
     nsSeparator = nsSeparator || '';
@@ -1742,7 +1742,7 @@ var wrapper = (function () {
             str = str.replace(match[0], safeValue);
 
             if (skipOnVariables) {
-              todo.regex.lastIndex += safeValue.length;
+              todo.regex.lastIndex += value.length;
               todo.regex.lastIndex -= match[0].length;
             } else {
               todo.regex.lastIndex = 0;
@@ -2023,13 +2023,13 @@ var wrapper = (function () {
             if (!options.reload && _this2.store.hasResourceBundle(lng, ns)) {
               _this2.state[name] = 2;
             } else if (_this2.state[name] < 0) ; else if (_this2.state[name] === 1) {
-              if (pending[name] !== undefined) pending[name] = true;
+              if (pending[name] === undefined) pending[name] = true;
             } else {
               _this2.state[name] = 1;
               hasAllNamespaces = false;
-              pending[name] = true;
-              toLoad[name] = true;
-              toLoadNamespaces[ns] = true;
+              if (pending[name] === undefined) pending[name] = true;
+              if (toLoad[name] === undefined) toLoad[name] = true;
+              if (toLoadNamespaces[ns] === undefined) toLoadNamespaces[ns] = true;
             }
           });
           if (!hasAllNamespaces) toLoadLanguages[lng] = true;
@@ -3775,9 +3775,65 @@ var wrapper = (function () {
   	version: version
   };
 
+  function getLocale$1() {
+      var _a, _b;
+      let languageMap = [
+          "ar",
+          "en",
+          "es",
+          "fr",
+          "it",
+          "ja",
+          "ko",
+          "ms",
+          "ru",
+          "zh-Hans",
+      ];
+      let locale = "en";
+      if (typeof window !== "undefined") {
+          let localeOrder = (_b = (_a = navigator.languages) === null || _a === void 0 ? void 0 : _a.concat(Intl.DateTimeFormat().resolvedOptions().locale)) !== null && _b !== void 0 ? _b : ["en"];
+          let localeArray = Object.values(languageMap).map((arr) => arr[0]);
+          localeOrder.some((localeItem) => {
+              if (localeArray.includes(localeItem)) {
+                  locale = localeItem;
+                  return true;
+              }
+              else if (localeArray.includes(localeItem.substring(0, 2))) {
+                  locale = localeItem.substring(0, 2);
+                  return true;
+              }
+              else if (localeArray.some((locale) => locale.startsWith(localeItem.substring(0, 2)))) {
+                  locale = localeArray.find((locale) => locale.startsWith(localeItem.substring(0, 2)));
+                  return true;
+              }
+          });
+          if (locale === "en") {
+              if ([
+                  "ab",
+                  "et",
+                  "kk",
+                  "ky",
+                  "lv",
+                  "os",
+                  "ro-MD",
+                  "ru",
+                  "tg",
+                  "uk",
+                  "uz",
+              ].some((e) => localeOrder[0].startsWith(e)) &&
+                  localeArray.includes("ru")) {
+                  locale = "ru";
+              }
+              else {
+                  locale = "en";
+              }
+          }
+      }
+      return locale;
+  }
   instance.init({
       compatibilityJSON: "v3",
-      lng: Intl.DateTimeFormat().resolvedOptions().locale,
+      lng: getLocale$1(),
       fallbackLng: "en",
       resources: {
           ar: { translation: ar },
@@ -3793,6 +3849,62 @@ var wrapper = (function () {
       },
   });
 
+  function getLocale() {
+      var _a, _b;
+      let languageMap = [
+          "ar",
+          "en",
+          "es",
+          "fr",
+          "it",
+          "ja",
+          "ko",
+          "ms",
+          "ru",
+          "zh-Hans",
+      ];
+      let locale = "en";
+      if (typeof window !== "undefined") {
+          let localeOrder = (_b = (_a = navigator.languages) === null || _a === void 0 ? void 0 : _a.concat(Intl.DateTimeFormat().resolvedOptions().locale)) !== null && _b !== void 0 ? _b : ["en"];
+          let localeArray = Object.values(languageMap).map((arr) => arr[0]);
+          localeOrder.some((localeItem) => {
+              if (localeArray.includes(localeItem)) {
+                  locale = localeItem;
+                  return true;
+              }
+              else if (localeArray.includes(localeItem.substring(0, 2))) {
+                  locale = localeItem.substring(0, 2);
+                  return true;
+              }
+              else if (localeArray.some((locale) => locale.startsWith(localeItem.substring(0, 2)))) {
+                  locale = localeArray.find((locale) => locale.startsWith(localeItem.substring(0, 2)));
+                  return true;
+              }
+          });
+          if (locale === "en") {
+              if ([
+                  "ab",
+                  "et",
+                  "kk",
+                  "ky",
+                  "lv",
+                  "os",
+                  "ro-MD",
+                  "ru",
+                  "tg",
+                  "uk",
+                  "uz",
+              ].some((e) => localeOrder[0].startsWith(e)) &&
+                  localeArray.includes("ru")) {
+                  locale = "ru";
+              }
+              else {
+                  locale = "en";
+              }
+          }
+      }
+      return locale;
+  }
   const i18next = instance;
 
   (async () => {

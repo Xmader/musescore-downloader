@@ -5,7 +5,7 @@
 // @supportURL   https://github.com/LibreScore/dl-librescore/issues
 // @updateURL    https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js
 // @downloadURL  https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js
-// @version      0.34.1
+// @version      0.34.2
 // @description  Download sheet music
 // @author       LibreScore
 // @icon         https://librescore.org/img/icons/logo.svg
@@ -441,7 +441,7 @@
 
         return data;
       }
-      var isIE10 = typeof window !== 'undefined' && window.navigator && window.navigator.userAgent && window.navigator.userAgent.indexOf('MSIE') > -1;
+      var isIE10 = typeof window !== 'undefined' && window.navigator && typeof window.navigator.userAgentData === 'undefined' && window.navigator.userAgent && window.navigator.userAgent.indexOf('MSIE') > -1;
       var chars = [' ', ',', '?', '!', ';'];
       function looksLikeObjectPath(key, nsSeparator, keySeparator) {
         nsSeparator = nsSeparator || '';
@@ -1764,7 +1764,7 @@
                 str = str.replace(match[0], safeValue);
 
                 if (skipOnVariables) {
-                  todo.regex.lastIndex += safeValue.length;
+                  todo.regex.lastIndex += value.length;
                   todo.regex.lastIndex -= match[0].length;
                 } else {
                   todo.regex.lastIndex = 0;
@@ -2045,13 +2045,13 @@
                 if (!options.reload && _this2.store.hasResourceBundle(lng, ns)) {
                   _this2.state[name] = 2;
                 } else if (_this2.state[name] < 0) ; else if (_this2.state[name] === 1) {
-                  if (pending[name] !== undefined) pending[name] = true;
+                  if (pending[name] === undefined) pending[name] = true;
                 } else {
                   _this2.state[name] = 1;
                   hasAllNamespaces = false;
-                  pending[name] = true;
-                  toLoad[name] = true;
-                  toLoadNamespaces[ns] = true;
+                  if (pending[name] === undefined) pending[name] = true;
+                  if (toLoad[name] === undefined) toLoad[name] = true;
+                  if (toLoadNamespaces[ns] === undefined) toLoadNamespaces[ns] = true;
                 }
               });
               if (!hasAllNamespaces) toLoadLanguages[lng] = true;
@@ -3797,9 +3797,65 @@
       	version: version
       };
 
+      function getLocale$1() {
+          var _a, _b;
+          let languageMap = [
+              "ar",
+              "en",
+              "es",
+              "fr",
+              "it",
+              "ja",
+              "ko",
+              "ms",
+              "ru",
+              "zh-Hans",
+          ];
+          let locale = "en";
+          if (typeof window !== "undefined") {
+              let localeOrder = (_b = (_a = navigator.languages) === null || _a === void 0 ? void 0 : _a.concat(Intl.DateTimeFormat().resolvedOptions().locale)) !== null && _b !== void 0 ? _b : ["en"];
+              let localeArray = Object.values(languageMap).map((arr) => arr[0]);
+              localeOrder.some((localeItem) => {
+                  if (localeArray.includes(localeItem)) {
+                      locale = localeItem;
+                      return true;
+                  }
+                  else if (localeArray.includes(localeItem.substring(0, 2))) {
+                      locale = localeItem.substring(0, 2);
+                      return true;
+                  }
+                  else if (localeArray.some((locale) => locale.startsWith(localeItem.substring(0, 2)))) {
+                      locale = localeArray.find((locale) => locale.startsWith(localeItem.substring(0, 2)));
+                      return true;
+                  }
+              });
+              if (locale === "en") {
+                  if ([
+                      "ab",
+                      "et",
+                      "kk",
+                      "ky",
+                      "lv",
+                      "os",
+                      "ro-MD",
+                      "ru",
+                      "tg",
+                      "uk",
+                      "uz",
+                  ].some((e) => localeOrder[0].startsWith(e)) &&
+                      localeArray.includes("ru")) {
+                      locale = "ru";
+                  }
+                  else {
+                      locale = "en";
+                  }
+              }
+          }
+          return locale;
+      }
       instance.init({
           compatibilityJSON: "v3",
-          lng: Intl.DateTimeFormat().resolvedOptions().locale,
+          lng: getLocale$1(),
           fallbackLng: "en",
           resources: {
               ar: { translation: ar },
@@ -3815,6 +3871,62 @@
           },
       });
 
+      function getLocale() {
+          var _a, _b;
+          let languageMap = [
+              "ar",
+              "en",
+              "es",
+              "fr",
+              "it",
+              "ja",
+              "ko",
+              "ms",
+              "ru",
+              "zh-Hans",
+          ];
+          let locale = "en";
+          if (typeof window !== "undefined") {
+              let localeOrder = (_b = (_a = navigator.languages) === null || _a === void 0 ? void 0 : _a.concat(Intl.DateTimeFormat().resolvedOptions().locale)) !== null && _b !== void 0 ? _b : ["en"];
+              let localeArray = Object.values(languageMap).map((arr) => arr[0]);
+              localeOrder.some((localeItem) => {
+                  if (localeArray.includes(localeItem)) {
+                      locale = localeItem;
+                      return true;
+                  }
+                  else if (localeArray.includes(localeItem.substring(0, 2))) {
+                      locale = localeItem.substring(0, 2);
+                      return true;
+                  }
+                  else if (localeArray.some((locale) => locale.startsWith(localeItem.substring(0, 2)))) {
+                      locale = localeArray.find((locale) => locale.startsWith(localeItem.substring(0, 2)));
+                      return true;
+                  }
+              });
+              if (locale === "en") {
+                  if ([
+                      "ab",
+                      "et",
+                      "kk",
+                      "ky",
+                      "lv",
+                      "os",
+                      "ro-MD",
+                      "ru",
+                      "tg",
+                      "uk",
+                      "uz",
+                  ].some((e) => localeOrder[0].startsWith(e)) &&
+                      localeArray.includes("ru")) {
+                      locale = "ru";
+                  }
+                  else {
+                      locale = "en";
+                  }
+              }
+          }
+          return locale;
+      }
       const i18next = instance;
     
       (async () => {
@@ -4136,7 +4248,7 @@
     var C__Users_peter_Documents_source_repos_musescoreDl_node_modules_detectNode = Object.prototype.toString.call(typeof process !== 'undefined' ? process : 0) === '[object process]';
 
     const _GM = (typeof GM === "object" ? GM : undefined);
-    const isGmAvailable = (requiredMethod = "info") => {
+    const isGmAvailable = (requiredMethod) => {
         return (typeof GM !== "undefined" && typeof GM[requiredMethod] !== "undefined");
     };
 
@@ -4507,6 +4619,11 @@
           ? global$1$1.TYPED_ARRAY_SUPPORT
           : true;
 
+        /*
+         * Export kMaxLength after typed array support is determined.
+         */
+        kMaxLength$1();
+
         function kMaxLength$1 () {
           return Buffer$1.TYPED_ARRAY_SUPPORT
             ? 0x7fffffff
@@ -4598,6 +4715,8 @@
         if (Buffer$1.TYPED_ARRAY_SUPPORT) {
           Buffer$1.prototype.__proto__ = Uint8Array.prototype;
           Buffer$1.__proto__ = Uint8Array;
+          if (typeof Symbol !== 'undefined' && Symbol.species &&
+              Buffer$1[Symbol.species] === Buffer$1) ;
         }
 
         function assertSize$1 (size) {
@@ -7465,6 +7584,11 @@
           ? global$1$1.TYPED_ARRAY_SUPPORT
           : true;
 
+        /*
+         * Export kMaxLength after typed array support is determined.
+         */
+        kMaxLength();
+
         function kMaxLength () {
           return Buffer.TYPED_ARRAY_SUPPORT
             ? 0x7fffffff
@@ -7556,6 +7680,8 @@
         if (Buffer.TYPED_ARRAY_SUPPORT) {
           Buffer.prototype.__proto__ = Uint8Array.prototype;
           Buffer.__proto__ = Uint8Array;
+          if (typeof Symbol !== 'undefined' && Symbol.species &&
+              Buffer[Symbol.species] === Buffer) ;
         }
 
         function assertSize (size) {
@@ -17856,7 +17982,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = factory();
+        		module.exports = exports = factory();
         	}
         }(commonjsGlobal, function () {
 
@@ -18610,7 +18736,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = factory(core);
+        		module.exports = exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -18909,7 +19035,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = factory(core);
+        		module.exports = exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -18980,7 +19106,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = factory(core);
+        		module.exports = exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -19124,7 +19250,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = factory(core);
+        		module.exports = exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -19254,7 +19380,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = factory(core);
+        		module.exports = exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -19517,7 +19643,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = factory(core);
+        		module.exports = exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -19662,7 +19788,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = factory(core);
+        		module.exports = exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -19856,7 +19982,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, sha256);
+        		module.exports = exports = factory(core, sha256);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -19931,7 +20057,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, x64Core);
+        		module.exports = exports = factory(core, x64Core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -20249,7 +20375,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, x64Core, sha512);
+        		module.exports = exports = factory(core, x64Core, sha512);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -20327,7 +20453,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, x64Core);
+        		module.exports = exports = factory(core, x64Core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -20644,7 +20770,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = factory(core);
+        		module.exports = exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -20906,7 +21032,7 @@
         (function (root, factory) {
         	{
         		// CommonJS
-        		module.exports = factory(core);
+        		module.exports = exports = factory(core);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -21044,7 +21170,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, sha1, hmac);
+        		module.exports = exports = factory(core, sha1, hmac);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -21184,7 +21310,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, sha1, hmac);
+        		module.exports = exports = factory(core, sha1, hmac);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -21311,7 +21437,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, evpkdf);
+        		module.exports = exports = factory(core, evpkdf);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22186,7 +22312,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, cipherCore);
+        		module.exports = exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22259,7 +22385,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, cipherCore);
+        		module.exports = exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22312,7 +22438,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, cipherCore);
+        		module.exports = exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22423,7 +22549,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, cipherCore);
+        		module.exports = exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22472,7 +22598,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, cipherCore);
+        		module.exports = exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22507,7 +22633,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, cipherCore);
+        		module.exports = exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22551,7 +22677,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, cipherCore);
+        		module.exports = exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22590,7 +22716,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, cipherCore);
+        		module.exports = exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22625,7 +22751,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, cipherCore);
+        		module.exports = exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22665,7 +22791,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, cipherCore);
+        		module.exports = exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22690,7 +22816,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, cipherCore);
+        		module.exports = exports = factory(core, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22751,7 +22877,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, encBase64, md5, evpkdf, cipherCore);
+        		module.exports = exports = factory(core, encBase64, md5, evpkdf, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -22978,7 +23104,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, encBase64, md5, evpkdf, cipherCore);
+        		module.exports = exports = factory(core, encBase64, md5, evpkdf, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -23743,7 +23869,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, encBase64, md5, evpkdf, cipherCore);
+        		module.exports = exports = factory(core, encBase64, md5, evpkdf, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -23877,7 +24003,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, encBase64, md5, evpkdf, cipherCore);
+        		module.exports = exports = factory(core, encBase64, md5, evpkdf, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -24064,7 +24190,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, encBase64, md5, evpkdf, cipherCore);
+        		module.exports = exports = factory(core, encBase64, md5, evpkdf, cipherCore);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -24249,7 +24375,7 @@
         (function (root, factory, undef) {
         	{
         		// CommonJS
-        		module.exports = factory(core, x64Core, libTypedarrays, encUtf16, encBase64, md5, sha1, sha256, sha224, sha512, sha384, sha3, ripemd160, hmac, pbkdf2, evpkdf, cipherCore, modeCfb, modeCtr, modeCtrGladman, modeOfb, modeEcb, padAnsix923, padIso10126, padIso97971, padZeropadding, padNopadding, formatHex, aes, tripledes, rc4, rabbit, rabbitLegacy);
+        		module.exports = exports = factory(core, x64Core, libTypedarrays, encUtf16, encBase64, md5, sha1, sha256, sha224, sha512, sha384, sha3, ripemd160, hmac, pbkdf2, evpkdf, cipherCore, modeCfb, modeCtr, modeCtrGladman, modeOfb, modeEcb, padAnsix923, padIso10126, padIso97971, padZeropadding, padNopadding, formatHex, aes, tripledes, rc4, rabbit, rabbitLegacy);
         	}
         }(commonjsGlobal, function (CryptoJS) {
 
@@ -33626,7 +33752,7 @@ Please pipe the document into a Node stream.\
 
       return data;
     }
-    var isIE10 = typeof window !== 'undefined' && window.navigator && window.navigator.userAgent && window.navigator.userAgent.indexOf('MSIE') > -1;
+    var isIE10 = typeof window !== 'undefined' && window.navigator && typeof window.navigator.userAgentData === 'undefined' && window.navigator.userAgent && window.navigator.userAgent.indexOf('MSIE') > -1;
     var chars = [' ', ',', '?', '!', ';'];
     function looksLikeObjectPath(key, nsSeparator, keySeparator) {
       nsSeparator = nsSeparator || '';
@@ -34949,7 +35075,7 @@ Please pipe the document into a Node stream.\
               str = str.replace(match[0], safeValue);
 
               if (skipOnVariables) {
-                todo.regex.lastIndex += safeValue.length;
+                todo.regex.lastIndex += value.length;
                 todo.regex.lastIndex -= match[0].length;
               } else {
                 todo.regex.lastIndex = 0;
@@ -35230,13 +35356,13 @@ Please pipe the document into a Node stream.\
               if (!options.reload && _this2.store.hasResourceBundle(lng, ns)) {
                 _this2.state[name] = 2;
               } else if (_this2.state[name] < 0) ; else if (_this2.state[name] === 1) {
-                if (pending[name] !== undefined) pending[name] = true;
+                if (pending[name] === undefined) pending[name] = true;
               } else {
                 _this2.state[name] = 1;
                 hasAllNamespaces = false;
-                pending[name] = true;
-                toLoad[name] = true;
-                toLoadNamespaces[ns] = true;
+                if (pending[name] === undefined) pending[name] = true;
+                if (toLoad[name] === undefined) toLoad[name] = true;
+                if (toLoadNamespaces[ns] === undefined) toLoadNamespaces[ns] = true;
               }
             });
             if (!hasAllNamespaces) toLoadLanguages[lng] = true;
@@ -36982,9 +37108,65 @@ Please pipe the document into a Node stream.\
     	version: version
     };
 
+    function getLocale() {
+        var _a, _b;
+        let languageMap = [
+            "ar",
+            "en",
+            "es",
+            "fr",
+            "it",
+            "ja",
+            "ko",
+            "ms",
+            "ru",
+            "zh-Hans",
+        ];
+        let locale = "en";
+        if (typeof window !== "undefined") {
+            let localeOrder = (_b = (_a = navigator.languages) === null || _a === void 0 ? void 0 : _a.concat(Intl.DateTimeFormat().resolvedOptions().locale)) !== null && _b !== void 0 ? _b : ["en"];
+            let localeArray = Object.values(languageMap).map((arr) => arr[0]);
+            localeOrder.some((localeItem) => {
+                if (localeArray.includes(localeItem)) {
+                    locale = localeItem;
+                    return true;
+                }
+                else if (localeArray.includes(localeItem.substring(0, 2))) {
+                    locale = localeItem.substring(0, 2);
+                    return true;
+                }
+                else if (localeArray.some((locale) => locale.startsWith(localeItem.substring(0, 2)))) {
+                    locale = localeArray.find((locale) => locale.startsWith(localeItem.substring(0, 2)));
+                    return true;
+                }
+            });
+            if (locale === "en") {
+                if ([
+                    "ab",
+                    "et",
+                    "kk",
+                    "ky",
+                    "lv",
+                    "os",
+                    "ro-MD",
+                    "ru",
+                    "tg",
+                    "uk",
+                    "uz",
+                ].some((e) => localeOrder[0].startsWith(e)) &&
+                    localeArray.includes("ru")) {
+                    locale = "ru";
+                }
+                else {
+                    locale = "en";
+                }
+            }
+        }
+        return locale;
+    }
     var i18nextInit = instance.init({
         compatibilityJSON: "v3",
-        lng: Intl.DateTimeFormat().resolvedOptions().locale,
+        lng: getLocale(),
         fallbackLng: "en",
         resources: {
             ar: { translation: ar },
