@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #* STEP 0
-sudo npm i -g prettier
+# sudo npm i -g prettier
 I18N_PATH="./src/i18n"
 
 #* STEP 1
