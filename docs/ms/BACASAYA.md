@@ -35,7 +35,7 @@ Terdapat 4 program boleh dipasang yang berbeza:
 ### Aplikasi
 
 1. Pergi ke halaman [BACASAYA](https://github.com/LibreScore/app-librescore/blob/master/docs/ms/BACASAYA.md#pemasangan) repositori `app-librescore`
-2. Ikut arahan pemasangan untuk peranti anda memasangnya
+2. Ikut arahan pemasangan untuk peranti anda
 
 ### Skrip pengguna
 

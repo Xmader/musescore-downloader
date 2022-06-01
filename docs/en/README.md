@@ -35,7 +35,7 @@ There are 4 different installable programs:
 ### App
 
 1. Go to the [README](https://github.com/LibreScore/app-librescore#installation) page of the `app-librescore` repository
-2. Follow the installation instructions for your device to install it
+2. Follow the installation instructions for your device
 
 ### Userscript
 

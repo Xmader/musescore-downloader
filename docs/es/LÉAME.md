@@ -35,7 +35,7 @@ Hay 4 programas instalables diferentes:
 ### Aplicación
 
 1. Vaya a la página [LÉAME](https://github.com/LibreScore/app-librescore/blob/master/docs/es/LÉAME.md#instalación) del repositorio `app-librescore`
-2. Sigue las instrucciones de instalación de su dispositivo para instalarlo
+2. Sigue las instrucciones de instalación de su dispositivo
 
 ### Guión de usuario
 
