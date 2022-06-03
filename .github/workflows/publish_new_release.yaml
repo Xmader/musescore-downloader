@@ -1,0 +1,72 @@
+name: Publish new release
+
+on:
+    schedule:
+        - cron: "0 0 * * 0"
+    workflow_dispatch:
+        inputs:
+            version:
+                description: "The version number. default: the version number in package.json"
+                required: false
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+env:
+    VERSION: ${{ github.event.inputs.version }}
+    NPM_TAG: latest
+    REF: ${{ github.sha }}
+    ARTIFACTS_DIR: ./.artifacts
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  ref: ${{ env.REF }}
+            - name: Check for new release
+              run: |
+                  echo "updated=false" >> $GITHUB_ENV
+                  if [[ "$(npm show dl-librescore version)" != "$(node -p "require('./package.json').version")" ]]; then
+                      echo "updated=true" >> $GITHUB_ENV
+                  fi
+            - uses: actions/setup-node@v2.4.1
+              if: env.updated
+              with:
+                  node-version: 16
+                  registry-url: https://registry.npmjs.org/
+            - name: Build userscript and command-line tool
+              if: env.updated
+              run: |
+                  VER=$(node -p "require('./package.json').version")
+                  echo "VERSION=$VER" >> $GITHUB_ENV
+                  npm install
+                  npm version --allow-same-version --no-git-tag $VERSION
+                  npm run build
+                  npm run pack:ext
+            - name: Publish command-line tool to NPM
+              if: env.updated
+              run: npm publish --tag $NPM_TAG
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+            - name: Publish GitHub Release
+              if: env.updated
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  mkdir -p $ARTIFACTS_DIR
+                  cp dist/main.user.js $ARTIFACTS_DIR/dl-librescore.user.js
+                  wget -q https://github.com/LibreScore/dl-librescore/archive/$REF.tar.gz -O $ARTIFACTS_DIR/source.tar.gz
+                  cd $ARTIFACTS_DIR
+                  rm *.tar.gz
+                  files=$(ls .)
+                  assets=()
+                  for f in $files; do [ -f "$f" ] && assets+=(-a "$f"); done
+                  SHORT_SHA=$(echo $REF | cut -c 1-7)
+                  hub release create "${assets[@]}" -m v$VERSION -t $REF v$VERSION
+            - name: Delete workflow run
+              if: ${{ !env.updated }}
+              run: |
+                  curl -i -u ${{ secrets.LIBRESCORE_USERNAME }}:${{ secrets.LIBRESCORE_TOKEN }} -d '{"event_type":"delete_action","client_payload":{"run_id":"'"${{ github.run_id }}"'","repo":"LibreScore/dl-librescore"}}' -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/LibreScore/actions/dispatches
