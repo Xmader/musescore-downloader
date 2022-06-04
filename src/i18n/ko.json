@@ -19,7 +19,7 @@
     "cli_option_output_description": "파일을 저장할 폴더",
     "cli_option_verbose_description": "자세한 로깅 활성화",
     "cli_outdated_version_message": "\n새 버전이 출시되었습니다! 현재 버전은 {{installed}}입니다.\nnpm i -g dl-librescore@{{latest}} 를 실행해서 업데이트해 주세요",
-    "cli_windows_paste_hint": "왼쪽 클릭으로 붙여넣기",
+    "cli_windows_paste_hint": "오른쪽 클릭으로 붙여넣기",
     "cli_linux_paste_hint": "대부분은 Ctrl+Shift+V 로 붙여넣기",
     "cli_input_message": "MuseScore URL 또는 파일/폴더의 경로:",
     "cli_input_suffix": "https://musescore.com/ 으로 시작하거나 경로임",
