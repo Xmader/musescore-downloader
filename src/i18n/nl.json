@@ -1,1 +1,8 @@
-{}
+{
+    "download": "Download {{fileType}}",
+    "download_audio": "Download {{fileType}} audio",
+    "full_score": "Volledige partituur",
+    "unknown_button_list_mode": "Ongekende knop lijst modus",
+    "processing": "Verwerken…",
+    "button_parent_not_found": "Parent knop niet gevonden"
+}
