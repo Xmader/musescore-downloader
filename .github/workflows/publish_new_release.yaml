@@ -33,12 +33,12 @@ jobs:
                       echo "updated=true" >> $GITHUB_ENV
                   fi
             - uses: actions/setup-node@v2.4.1
-              if: env.updated
+              if: env.updated == 'true'
               with:
                   node-version: 16
                   registry-url: https://registry.npmjs.org/
             - name: Build userscript and command-line tool
-              if: env.updated
+              if: env.updated == 'true'
               run: |
                   VER=$(node -p "require('./package.json').version")
                   echo "VERSION=$VER" >> $GITHUB_ENV
@@ -47,12 +47,12 @@ jobs:
                   npm run build
                   npm run pack:ext
             - name: Publish command-line tool to NPM
-              if: env.updated
+              if: env.updated == 'true'
               run: npm publish --tag $NPM_TAG
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
             - name: Publish GitHub Release
-              if: env.updated
+              if: env.updated == 'true'
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
@@ -67,6 +67,6 @@ jobs:
                   SHORT_SHA=$(echo $REF | cut -c 1-7)
                   hub release create "${assets[@]}" -m v$VERSION -t $REF v$VERSION
             - name: Delete workflow run
-              if: ${{ !env.updated }}
+              if: env.updated == 'false'
               run: |
                   curl -i -u ${{ secrets.LIBRESCORE_USERNAME }}:${{ secrets.LIBRESCORE_TOKEN }} -d '{"event_type":"delete_action","client_payload":{"run_id":"'"${{ github.run_id }}"'","repo":"LibreScore/dl-librescore"}}' -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/LibreScore/actions/dispatches
