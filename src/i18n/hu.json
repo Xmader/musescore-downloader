@@ -1,1 +1,6 @@
-{}
+{
+    "download": "Letöltés {{fileType}}",
+    "download_audio": "{{fileType}} audió letöltése",
+    "full_score": "Teljes kotta",
+    "processing": "Feldolgozás…"
+}
