@@ -47,7 +47,7 @@ Il existe 4 programmes installables différents :
 
 1. Installez [Tampermonkey](https://www.tampermonkey.net)
 
-> Remarque : Si vous avez déjà installé une ancienne version du script appelée "musescore-downloader", "mcsz downloader" ou "musescore-dl", veuillez la désinstaller depuis le tableau de bord Tampermonkey
+> Remarque : Si vous avez déjà installé une ancienne version du script appelée « musescore-downloader », « mcsz downloader » ou « musescore-dl », veuillez la désinstaller depuis le tableau de bord Tampermonkey
 
 2. Accédez au dernier fichier [dl-librescore.user.js](https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js)
 3. Appuyez sur le bouton Installer
@@ -55,7 +55,7 @@ Il existe 4 programmes installables différents :
 #### Raccourci
 
 1. Installez le [raccourci LibreScore](https://www.icloud.com/shortcuts/901d8778d2da4f7db9272d3b2232d0fe)
-2. Dans Safari, Lors de l'affichage d'une chanson sur MuseScore, appuyez sur <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" height="16">
+2. Dans Safari, lors de l'affichage d'une chanson sur MuseScore, appuyez sur <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" height="16">
 3. Appuyez sur le raccourci LibreScore pour activer l'extension
 
 > Remarque : Avant de pouvoir exécuter JavaScript depuis un raccourci, vous devez activer « Autoriser l’exécution de scripts »
