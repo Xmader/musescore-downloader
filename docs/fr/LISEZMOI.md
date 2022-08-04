@@ -29,8 +29,8 @@ Il existe 4 programmes installables différents :
 | [Outil de ligne-de-commande](#outil-de-ligne-de-commande) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
 | [Site web de Webmscore](#site-web-de-webmscore) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 
-> Remarque : `Conversion` fait référence à la possibilité de convertir des fichiers en d'autres types de fichiers, y compris ceux qui ne sont pas téléchargeables dans le programme.
-> Les types de conversion incluent : Parties individuelles, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ et MSCX.
+> Note: `Conversion` refers to the ability to convert files into other file types, including those not downloadable in the program.
+> Conversion types include: Individual Parts, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ, and MSCX.
 
 ### App
 

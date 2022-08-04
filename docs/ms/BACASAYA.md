@@ -29,8 +29,8 @@ Terdapat 4 program boleh dipasang yang berbeza:
 | [Alat baris arahan](#alat-baris-arahan) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
 | [Laman web Webmscore](#laman-web-webmscore) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 
-> Nota: `Penukaran` merujuk kepada keupayaan untuk menukar fail kepada jenis fail lain, termasuk yang tidak boleh dimuat turun dalam program.
-> Sasaran penukaran termasuk: Bahagian Individu, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ dan MSCX.
+> Note: `Conversion` refers to the ability to convert files into other file types, including those not downloadable in the program.
+> Conversion types include: Individual Parts, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ, and MSCX.
 
 ### Apl
 
