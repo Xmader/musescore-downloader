@@ -1,6 +1,6 @@
 <div dir="ltr" align="left">
 
-&#8206;[English](/docs/en/README.md) | &#8206;**español** | &#8206;[Melayu](/docs/ms/BACASAYA.md) | &#8206;[[+]](https://librescore.ddns.net/projects/librescore/docs)
+&#8206;[English](/docs/en/README.md) | &#8206;**español** | &#8206;[français](/docs/fr/LISEZMOI.md) | &#8206;[Melayu](/docs/ms/BACASAYA.md) | &#8206;[[+]](https://librescore.ddns.net/projects/librescore/docs)
 
 [//]: # "\+\_==!|!=_=!|!==_/+/ ***NO EDITAR ENCIMA DE ESTA LÍNEA*** /+/^^+#|#+^+#|#+^^\+\"
 
@@ -10,7 +10,7 @@
 
 <img src="https://github.com/LibreScore/dl-musescore/raw/master/images/logo.png" width="256" alt="Logotipo de LibreScore">
 
-[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![GitHub todos los lanzamientos](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=Aplicación)](https://github.com/LibreScore/app-librescore/releases/latest) [![GitHub todos los lanzamientos](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Guión+de+usuario)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/dl-librescore?label=Herramienta+de+línea+de+comandos)](https://www.npmjs.com/package/dl-librescore)
+[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![GitHub todos los lanzamientos](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=App)](https://github.com/LibreScore/app-librescore/releases/latest) [![GitHub todos los lanzamientos](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Guión+de+usuario)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/dl-librescore?label=Herramienta+de+línea-de-comandos)](https://www.npmjs.com/package/dl-librescore)
 
 Descargar partituras
 
@@ -24,15 +24,15 @@ Hay 4 programas instalables diferentes:
 
 | Programa                                                                            | MSCZ | MIDI | MP3 | PDF | Conversión |     | Windows | macOS | Linux | Android | iOS/iPadOS |
 | ---------------------------------------------------------------------------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | ---------- |
-| [Aplicación](#aplicación)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
+| [App](#app)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
 | [Guión de usuario](#guión-de-usuario)               | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
-| [Herramienta de línea de comandos](#herramienta-de-línea-de-comandos) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
+| [Herramienta de línea-de-comandos](#herramienta-de-línea-de-comandos) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
 | [Sitio web de Webmscore](#sitio-web-de-webmscore) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 
 > Nota: `Conversión` se refiere a la capacidad de convertir archivos en otros tipos de archivos, incluidos los que no se pueden descargar en el programa.
-> Los objetivos de conversión incluyen: Partes individuales, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ y MSCX.
+> Los tipos de conversión incluyen: Partes individuales, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ y MSCX.
 
-### Aplicación
+### App
 
 1. Vaya a la página [LÉAME](https://github.com/LibreScore/app-librescore/blob/master/docs/es/LÉAME.md#instalación) del repositorio `app-librescore`
 2. Sigue las instrucciones de instalación de su dispositivo
@@ -71,7 +71,7 @@ Hay 4 programas instalables diferentes:
 4. Guarde el marcador
 5. Cuando vea una canción en MuseScore, haga clic en el marcador para activar la extensión
 
-### Herramienta de línea de comandos
+### Herramienta de línea-de-comandos
 
 1. Instale [Node.js LTS](https://nodejs.org/es)
 2. Abra una terminal (_no_ abra la aplicación Node.js)
@@ -90,6 +90,6 @@ Hay 4 programas instalables diferentes:
 3. `npm run build` para compilar
 
 - Instale `./dist/main.user.js` con Tampermonkey
-- `node ./dist/cli.js` para ejecutar la herramienta de línea de comandos
+- `node ./dist/cli.js` para ejecutar la herramienta de línea-de-comandos
 
 </div>

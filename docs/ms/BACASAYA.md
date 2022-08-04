@@ -1,6 +1,6 @@
 <div dir="ltr" align="left">
 
-&#8206;[English](/docs/en/README.md) | &#8206;[español](/docs/es/LÉAME.md) | &#8206;**Melayu** | &#8206;[[+]](https://librescore.ddns.net/projects/librescore/docs)
+&#8206;[English](/docs/en/README.md) | &#8206;[español](/docs/es/LÉAME.md) | &#8206;[français](/docs/fr/LISEZMOI.md) | &#8206;**Melayu** | &#8206;[[+]](https://librescore.ddns.net/projects/librescore/docs)
 
 [//]: # "\+\_==!|!=_=!|!==_/+/ ***JANGAN EDIT DI ATAS BARIS INI*** /+/^^+#|#+^+#|#+^^\+\"
 
@@ -10,7 +10,7 @@
 
 <img src="https://github.com/LibreScore/dl-musescore/raw/master/images/logo.png" width="256" alt="LibreScore logo">
 
-[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![Github Semua Keluaran](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=Aplikasi)](https://github.com/LibreScore/app-librescore/releases/latest) [![Github Semua Keluaran](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Skrip+pengguna)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/dl-librescore?label=Alat+baris+arahan)](https://www.npmjs.com/package/dl-librescore)
+[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![Github Semua Keluaran](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=Apl)](https://github.com/LibreScore/app-librescore/releases/latest) [![Github Semua Keluaran](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Skrip+pengguna)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/dl-librescore?label=Alat+baris+arahan)](https://www.npmjs.com/package/dl-librescore)
 
 Muat turun lembaran muzik
 
@@ -24,7 +24,7 @@ Terdapat 4 program boleh dipasang yang berbeza:
 
 | Program                                                                            | MSCZ | MIDI | MP3 | PDF | Penukaran |     | Windows | macOS | Linux | Android | iOS/iPadOS |
 | ---------------------------------------------------------------------------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | ---------- |
-| [Aplikasi](#aplikasi)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
+| [Apl](#apl)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
 | [Skrip pengguna](#skrip-pengguna)               | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 | [Alat baris arahan](#alat-baris-arahan) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
 | [Laman web Webmscore](#laman-web-webmscore) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
@@ -32,7 +32,7 @@ Terdapat 4 program boleh dipasang yang berbeza:
 > Nota: `Penukaran` merujuk kepada keupayaan untuk menukar fail kepada jenis fail lain, termasuk yang tidak boleh dimuat turun dalam program.
 > Sasaran penukaran termasuk: Bahagian Individu, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ dan MSCX.
 
-### Aplikasi
+### Apl
 
 1. Pergi ke halaman [BACASAYA](https://github.com/LibreScore/app-librescore/blob/master/docs/ms/BACASAYA.md#pemasangan) repositori `app-librescore`
 2. Ikut arahan pemasangan untuk peranti anda
