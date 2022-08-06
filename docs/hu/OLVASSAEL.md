@@ -10,7 +10,7 @@
 
 <img src="https://github.com/LibreScore/dl-musescore/raw/master/images/logo.png" width="256" alt="LibreScore logó">
 
-[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![Github minden verzió](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=App)](https://github.com/LibreScore/app-librescore/releases/latest) [![Github minden verzió](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Userscript)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/dl-librescore?label=Parancssoros+program)](https://www.npmjs.com/package/dl-librescore)
+[![Discord](https://img.shields.io/discord/774491656643674122?color=5865F2&label=&labelColor=555555&logo=discord&logoColor=FFFFFF)](https://discord.gg/DKu7cUZ4XQ) [![Weblate](https://librescore.ddns.net/widgets/librescore/-/dl-librescore/svg-badge.svg)](https://librescore.ddns.net/engage/librescore) [![Github minden verzió](https://img.shields.io/github/downloads/LibreScore/app-librescore/total.svg?label=App)](https://github.com/LibreScore/app-librescore/releases/latest) [![Github minden verzió](https://img.shields.io/github/downloads/LibreScore/dl-librescore/total.svg?label=Userscript)](https://github.com/LibreScore/dl-librescore/releases/latest) [![npm](https://img.shields.io/npm/dt/dl-librescore?label=Parancssoros+eszköz)](https://www.npmjs.com/package/dl-librescore)
 
 Kotta letöltése
 
@@ -26,70 +26,70 @@ Kotta letöltése
 | ---------------------------------------------------------------------------------- | ---- | ---- | --- | --- | ---------- | --- | ------- | ----- | ----- | ------- | ---------- |
 | [App](#app)                             | ✔️   | ✔️   | ✔️  | ❌  | ❌         |     | ✔️      | ✔️    | ❌    | ✔️      | ❌         |
 | [Userscript](#userscript)               | ❌   | ✔️   | ✔️  | ✔️  | ❌         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
-| [Parancssoros program](#parancssoros-program) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
-| [Webmscore weboldal](#webmscore-weboldal) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
+| [Parancssoros eszköz](#parancssoros-eszköz) | ❌   | ✔️   | ✔️  | ✔️  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ❌         |
+| [Webmscore webhely](#webmscore-webhely) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 
 > Megjegyzés: A `Konvertálás` a fájltípus megváltoztatására használható, olyan fájl típusra is konvertálhatsz amiben esetleg nem is tudtad letölteni a kottát.
-> Ezekre lehet konvertálni: Külön szólamok(szétsztedi különboző fájlba a szólamokat), PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ és MSCX.
+> Ezekre lehet konvertálni: Külön szólamok, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ és MSCX.
 
 ### App
 
-1. Menj a `app-librescore` repository [OLVASSAEL](https://github.com/LibreScore/app-librescore/blob/master/docs/hu/OLVASSAEL.md#telepítés) oldalára
-2. Kövesd a telepítési utasításokat az eszközödhöz
+1. Menjen aa `app-librescore` tárhely [OLVASSAEL](https://github.com/LibreScore/app-librescore/blob/master/docs/hu/OLVASSAEL.md#telepítés) oldalára
+2. Kövesse a telepítési utasításokat az eszközödhöz
 
 ### Userscript
 
-> Megjegyzés: Ha iPhone vagy iPad eszközöd van, akkor kövesd [ezeket](#shortcut) az utasításokat.
+> Megjegyzés: Ha eszköze iOS vagy iPadOS operációs rendszert használ, kövesse a [Parancsok](#parancsok) utasításokat.
 >
-> Megjegyzés: Ha nem tudod telepíteni a böngésző bővítményt az eszközödön, akkor a [Könyvjelző](#bookmark) utasításokat kövesd.
+> Megjegyzés: Ha nem tud böngésző bővítményeket telepíteni eszközére, kövesse a [Könyvjelző](#könyvjelző) utasításokat.
 
 #### Böngésző bővítmény
 
-1. Telepítés [Tampermonkey](https://www.tampermonkey.net)
+1. Telepítse [Tampermonkey](https://www.tampermonkey.net)
 
 > Megjegyzés: Ha korábban már telepítetted a "musescore-downloader", "mcsz downloader", "mcsz downloader" vagy "musescore-dl" nevű script egy régebbi verzióját, távolítsd el a Tampermonkey kezelőfalról.
 
-2. Keresd meg a legfrissebb [dl-librescore.user.js](https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js) fájlt
-3. Nyomd meg a Telepítés gombot
+2. Nyissa meg a legújabb [dl-librescore.user.js](https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js) fájlt
+3. Nyomja meg a Telepítés gombot
 
-#### Parancs
+#### Parancsok
 
-1. Telepítsd a [LibreScore parancs-ot](https://www.icloud.com/shortcuts/901d8778d2da4f7db9272d3b2232d0fe)
-2. A Safari-ban, amikor nézel egy kottát a MuseScore weboldalon nyomj rá <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" height="16">
-3. Nyomj rá a LibreScore parancs-ra a bővítmény aktiválásához
+1. Telepítse a [LibreScore parancsot](https://www.icloud.com/shortcuts/901d8778d2da4f7db9272d3b2232d0fe)
+2. A Safariban, amikor egy dalt néz meg a MuseScore-on, érintse meg a <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/01f5a9889bbecc202d8cbb3067a261ad.png" height="16">
+3. Érintse meg a LibreScore parancsot a bővítmény aktiválásához
 
-> Megjegyzés: Mielőtt futtatni tudod a JavaScript-et a paranccsal, engedélyezned kell a Szkriptek futtatását.
+> Megjegyzés: Mielőtt futtathatna JavaScriptet egy parancsból, be kell kapcsolnia Szkriptek futtatásának engedélyezése lehetőséget.
 >
-> 1. Menj a beállításokba <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/492fec5aff74dbdef9b526177c3804b4.png" height="16"> > Parancsok > Haladó
-> 2. Engedélyezd a "Szkriptek futtatásának engedélyezése" lehetőséget
+> 1. Válassza a Beállítások <img src="https://help.apple.com/assets/61800C7E6EA4632586448084/61800C896EA463258644809A/en_US/492fec5aff74dbdef9b526177c3804b4.png" height="16"> > Parancsok > Haladó menüpontot.
+> 2. Kapcsolja be a Szkriptek futtatásának engedélyezése lehetőséget.
 
 #### Könyvjelző
 
-1. Adj hozzá egy új könyvjelzőt (általában Ctrl+D)
-2. A Név mezőbe ezt add meg: `LibreScore`
-3. Az URL mezőbe a következőt add meg: `javascript:(function () {let code = document.createElement('script');code.src = 'https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js';document.body.appendChild(code);}())`
-4. Mentsd el a könyvjelzőt
-5. Amikor megnyitottál egy kottát MuseScore-on, akkor kattints a könyvjelzőre a bővítmény aktiválásához
+1. Hozzon létre egy új könyvjelzőt (általában Ctrl+D)
+2. Írja be a `LibreScore` szót a Név mezőbe
+3. Írja be a következőt `javascript:(function () {let code = document.createElement('script');code.src = 'https://github.com/LibreScore/dl-librescore/releases/latest/download/dl-librescore.user.js';document.body.appendChild(code);}())` az URL mezőben
+4. Mentse el a könyvjelzőt
+5. Amikor egy dalt néz meg a MuseScore-on, kattintson a könyvjelzőre a bővítmény aktiválásához
 
-### Parancssoros program
+### Parancssoros eszköz
 
-1. Telepítsd a [Node.js LTS-t](https://nodejs.org)
-2. Nyisd meg a terminált (_NE_ nyisd meg a Node.js programot)
-3. Írd be hogy: `npx dl-librescore@latest`, majd nyomj`Enter-t ↵`
+1. Telepítse a [Node.js LTS-t](https://nodejs.org)
+2. Nyisson meg egy terminált (_ne_ nyissa meg a Node.js alkalmazást)
+3. Írja be, hogy `npx dl-librescore@latest`, majd nyomja meg az `Enter ↵` billentyűt
 
-### Webmscore weboldal
+### Webmscore webhely
 
 1. [Webmscore](https://librescore.github.io) megnyitása
 
-> Megjegyzés: Hozzáférhetsz a weboldalhoz internet nélkül is, ha telepíted PWA-ként
+> Megjegyzés: A webhelyet offline is elérheti, ha PWA-ként telepíti
 
 ## Összeállítás
 
-1. [Node.js LTS](https://nodejs.org) telepítése
-2. Használd az `npm install` parancsot a csomagok telepítéséhez
-3. Használd az `npm run build` parancsot a program összeállításához.
+1. Telepítse a [Node.js LTS-t](https://nodejs.org)
+2. `npm install` a csomagok telepítéséhez
+3. `npm run build` a fordításhoz
 
-- Használd a `./dist/main.user.js` parancsot a Tampermonkey-val való telepítéshez
-- Használd a `node ./dist/cli.js` parancsot, a Parancssoros program futtatásához
+- Telepítse a `./dist/main.user.js` fájlt a Tampermonkey segítségével
+- `node ./dist/cli.js` a parancssori eszköz futtatásához
 
 </div>
