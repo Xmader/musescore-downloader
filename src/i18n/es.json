@@ -5,7 +5,7 @@
     "full_score": "Partitura completa",
     "cli_file_error": "El archivo no existe",
     "cli_type_error": "No hay tipos elegidos",
-    "cli_file_extension_error": "Extensión de archivos invalido, solo file extension, only gp, gp3, gp4, gp5, gpx, gtp, kar, mid, midi, mscx, mscz, musicxml, mxl, ptb, and xml son soportados",
+    "cli_file_extension_error": "Extensión de archivo no válida, solo se admiten gp, gp3, gp4, gp5, gpx, gtp, kar, mid, midi, mscx, mscz, musicxml, mxl, ptb y xml",
     "cli_file_loaded_message": "Archivo cargado",
     "cli_score_loaded_message": "Partitura cargada por Webmscore",
     "cli_input_error": "Prueba utilizar la página web de Webmscore en lugar de: https://librescore.github.io",
