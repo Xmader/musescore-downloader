@@ -30,7 +30,7 @@ Kotta letöltése
 | [Webmscore webhely](#webmscore-webhely) | ❌   | ❌   | ❌  | ❌  | ✔️         |     | ✔️      | ✔️    | ✔️    | ✔️      | ✔️         |
 
 > Megjegyzés: A `Konvertálás` a fájltípus megváltoztatására használható, olyan fájl típusra is konvertálhatsz amiben esetleg nem is tudtad letölteni a kottát.
-> Ezekre lehet konvertálni: Külön szólamok, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ és MSCX.
+> Ezekre lehet konvertálni: Külön kivonatok, PDF, PNG, SVG, MP3, WAV, FLAC, OGG, MIDI, MusicXML, MSCZ és MSCX.
 
 ### App
 
