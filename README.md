@@ -1,6 +1,7 @@
   
-# musescore-downloader
+## musescore-downloader
 
+# This repository has been archived. See the up-to-date official repository: [https://github.com/LibreScore/dl-librescore](https://github.com/LibreScore/dl-librescore)
 **English** | [简体中文](#musescore-downloader-1)  | [Español](#musescore-downloader-2)  | [Italian](#musescore-downloader-3) 
 
 > download sheet music from musescore.com for free, no login or Musescore Pro required
