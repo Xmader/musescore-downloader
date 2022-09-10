@@ -1,5 +1,6 @@
 import i18n from "i18next";
 import ar from "./ar.json";
+import cs from "./cs.json";
 import de from "./de.json";
 import en from "./en.json";
 import es from "./es.json";
@@ -16,6 +17,7 @@ import zh_Hans from "./zh-Hans.json";
 function getLocale(): string {
   let languageMap = [
     "ar",
+    "cs",
     "de",
     "en",
     "es",
@@ -90,6 +92,7 @@ export default i18n.init({
   fallbackLng: "en",
   resources: {
     ar: { translation: ar },
+    cs: { translation: cs },
     de: { translation: de },
     en: { translation: en },
     es: { translation: es },
