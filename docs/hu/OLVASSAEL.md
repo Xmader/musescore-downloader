@@ -1,6 +1,6 @@
 <div dir="ltr" align="left">
 
-&#8206;[English](/docs/en/README.md) | &#8206;[español](/docs/es/LÉAME.md) | &#8206;[français](/docs/fr/LISEZMOI.md) | &#8206;**magyar** | &#8206;[Melayu](/docs/ms/BACASAYA.md) | &#8206;[[+]](https://librescore.ddns.net/projects/librescore/docs)
+‎[English](/docs/en/README.md) | ‎[español](/docs/es/LÉAME.md) | ‎[français](/docs/fr/LISEZMOI.md) | ‎**magyar** | ‎[Melayu](/docs/ms/BACASAYA.md) | ‎[[+]](https://librescore.ddns.net/projects/librescore/docs)
 
 [//]: # "\+\_==!|!=_=!|!==_/+/ ***NE MÓDOSÍTS SEMMIT E SOR FELETT*** /+/^^+#|#+^+#|#+^^\+\"
 
