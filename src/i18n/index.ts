@@ -11,6 +11,7 @@ import ja from "./ja.json";
 import ko from "./ko.json";
 import ms from "./ms.json";
 import nl from "./nl.json";
+import pl from "./pl.json";
 import pt from "./pt.json";
 import ru from "./ru.json";
 import tr from "./tr.json";
@@ -30,6 +31,7 @@ function getLocale(): string {
     "ko",
     "ms",
     "nl",
+    "pl",
     "pt",
     "ru",
     "tr",
@@ -107,6 +109,7 @@ export default i18n.init({
     ko: { translation: ko },
     ms: { translation: ms },
     nl: { translation: nl },
+    pl: { translation: pl },
     pt: { translation: pt },
     ru: { translation: ru },
     tr: { translation: tr },
