@@ -6,6 +6,7 @@ import en from "./en.json";
 import es from "./es.json";
 import fr from "./fr.json";
 import hu from "./hu.json";
+import id from "./id.json";
 import it from "./it.json";
 import ja from "./ja.json";
 import ko from "./ko.json";
@@ -26,6 +27,7 @@ function getLocale(): string {
     "es",
     "fr",
     "hu",
+    "id",
     "it",
     "ja",
     "ko",
@@ -104,6 +106,7 @@ export default i18n.init({
     es: { translation: es },
     fr: { translation: fr },
     hu: { translation: hu },
+    id: { translation: id },
     it: { translation: it },
     ja: { translation: ja },
     ko: { translation: ko },
