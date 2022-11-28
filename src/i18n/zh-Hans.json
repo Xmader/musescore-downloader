@@ -1,10 +1,10 @@
 {
     "processing": "处理中…",
     "download": "下载 {{fileType}}",
-    "download_audio": "下载 {{fileType}} 音频文件",
+    "download_audio": "下载 {{fileType}} 音频",
     "full_score": "完整乐谱",
     "cli_usage_hint": "使用方式：{{bin}} [选项]",
-    "button_parent_not_found": "未找到父级按钮",
+    "button_parent_not_found": "未找到按钮父级",
     "unknown_button_list_mode": "未知的按钮模式列表",
     "cli_example_url": "从URL中下载MP3到指定位置",
     "path_to_folder": "路径/到/文件夹",
