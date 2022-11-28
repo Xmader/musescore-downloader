@@ -22,7 +22,7 @@
     "source_code": "Codigo fuente",
     "version": "Versión: {{version}}",
     "cli_usage_hint": "Uso: {{bin}} [opciones]",
-    "button_parent_not_found": "No se encuentra el botón padre",
+    "button_parent_not_found": "No se encontró el padre del botón",
     "unknown_button_list_mode": "Modo de lista de botones desconocido",
     "cli_example_url": "descargar MP3 de la URL al directorio especificado",
     "path_to_folder": "ruta/a/carpeta",
