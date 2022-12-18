@@ -32,7 +32,7 @@
     "title": "Tajuk: {{title}}",
     "source_code": "Kod sumber",
     "version": "Versi: {{version}}",
-    "id": "ID : {{id}}",
+    "id": "ID: {{id}}",
     "full_score": "Skor penuh",
     "cli_example_url": "muat turun MP3 URL ke direktori tertentu",
     "cli_option_input_description": "URL, fail atau folder untuk memuat turun atau menukar daripada",
