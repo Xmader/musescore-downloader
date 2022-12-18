@@ -34,7 +34,7 @@ Existují 4 různé instalovatelné programy:
 
 ### Aplikace
 
-1. Přejděte na stránku [PŘEČTĚTEMĚ](https://github.com/LibreScore/app-librescore#installation) v repozitáři `app-librescore`
+1. Přejděte na stránku [PŘEČTĚTEMĚ](https://github.com/LibreScore/app-librescore/blob/master/docs/cs/PŘEČTĚTEMĚ.md#instalace) v repozitáři `app-librescore`
 2. Postupujte podle pokynů k instalaci vašeho zařízení
 
 ### Uživatelský skript
