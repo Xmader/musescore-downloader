@@ -35,7 +35,7 @@
     "cli_saved_message": "{{file}} 저장됨",
     "cli_url_error": "잘못된 URL",
     "cli_url_type_error": "URL에서는 MIDI, MP3, PDF만 다운로드 가능",
-    "id": "ID: {{id}}",
+    "id": "식별자: {{id}}",
     "title": "제목: {{title}}",
     "no_sheet_images_error": "악보 이미지를 찾을 수 없음",
     "source_code": "소스 코드",
