@@ -1,3 +1,7 @@
+
+# ⚠️ This repo has been renamed and moved to <br> https://github.com/LibreScore/dl-librescore ⚠️
+
+---
   
 # musescore-downloader
 
