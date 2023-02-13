@@ -1,6 +1,6 @@
 {
   "name": "musescore-downloader",
-  "version": "0.26.0",
+  "version": "0.26.98",
   "description": "download sheet music from musescore.com for free, no login or Musescore Pro required | 免登录、免 Musescore Pro，免费下载 musescore.com 上的曲谱",
   "main": "dist/main.js",
   "bin": "dist/cli.js",
