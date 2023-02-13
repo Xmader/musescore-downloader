@@ -4,7 +4,7 @@
 
 ### Click [here](https://github.com/LibreScore/dl-librescore#browser-extension) to update to the newest version.  
 
-> If you want to restore previous download buttons, reinstall version `0.26.0` from [GitHub Releases](https://github.com/Xmader/musescore-downloader/releases) ([direct link](https://github.com/Xmader/musescore-downloader/releases/latest/download/musescore-downloader.user.js))
+> If you want to restore previous download buttons, disable auto-update and reinstall version `0.26.0` from [GitHub Releases](https://github.com/Xmader/musescore-downloader/releases) ([direct link](https://github.com/Xmader/musescore-downloader/releases/latest/download/musescore-downloader.user.js))
 
 ---
 
